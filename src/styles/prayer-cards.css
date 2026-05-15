@@ -79,3 +79,28 @@
 .eid-slot-time          { font-size:calc(clamp(0.688rem,1.3vw,1.312rem) * var(--t-fs, 1)); font-weight:700; color:#c49eff; font-variant-numeric:tabular-nums; }
 .eid-slot-iqamah        { font-size:calc(clamp(0.562rem,1vw,1rem) * var(--t-fs, 1)); color:rgba(196,158,255,.75); font-variant-numeric:tabular-nums; margin-top:1px; }
 .eid-next               { font-size:calc(clamp(0.438rem,.7vw,0.688rem) * var(--t-fs, 1)); color:rgba(196,158,255,.6); letter-spacing:.1em; text-transform:uppercase; }
+
+/* ── Prayer icon (left of name) ─────────────────────────────────────────
+ * SVG icon sized via container-query units so it scales with .pcol width.
+ * `color: currentColor` is inherited through .pen so the icon auto-tones
+ * to the active/passed state without needing per-state CSS. */
+.pcard-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: clamp(20px, 2.6vw, 38px);
+  height: clamp(20px, 2.6vw, 38px);
+  color: var(--t-accent-dim);
+  font-size: clamp(20px, 2.6vw, 38px);
+  margin-right: .3vw;
+}
+
+/* Active row: icon brightens to match the gold accent */
+.pcard.active .pcard-icon {
+  color: var(--t-accent-hi);
+  filter: drop-shadow(0 0 6px var(--t-active-glow));
+}
+
+/* Passed rows already get container opacity:.35 from .pcard.passed; no
+   extra rule needed here. */

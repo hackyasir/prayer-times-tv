@@ -95,7 +95,7 @@ export default function PrayerList({
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">صلاة الجمعة</span></div>
                 {nextJumuah ? (
-                  <div className="jumuah-next">{fmtStr(t('label.nextInMin'), { min: Math.ceil((nextJumuah - now) / 60000) })}</div>
+                  <div className="jumuah-next">{(() => { const m = Math.ceil((nextJumuah - now) / 60000); return fmtStr(t('label.nextIn'), { h: Math.floor(m/60), m: m%60 }); })()}</div>
                 ) : (
                   <div className="jumuah-next" style={{color:'rgba(61,200,120,.35)'}}>{t('label.complete')}</div>
                 )}
@@ -123,6 +123,7 @@ export default function PrayerList({
         return (
           <PrayerCard
             key={p.key}
+            prayerKey={p.key}
             enName={names.primary}
             arName={names.secondary}
             time={adhanT}
@@ -172,7 +173,7 @@ export default function PrayerList({
                   return <div className="eid-next">{fmtStr(t('label.daysAway'), { days: daysUntil, plural: daysUntil!==1?'s':'' })}</div>;
                 }
                 return nextEid
-                  ? <div className="eid-next">{fmtStr(t('label.nextInMin'), { min: Math.ceil((nextEid - now) / 60000) })}</div>
+                  ? <div className="eid-next">{(() => { const m = Math.ceil((nextEid - now) / 60000); return fmtStr(t('label.nextIn'), { h: Math.floor(m/60), m: m%60 }); })()}</div>
                   : <div className="eid-next" style={{color:'rgba(196,158,255,.35)'}}>{t('label.complete')}</div>;
               })()}
             </div>

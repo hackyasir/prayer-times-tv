@@ -21,7 +21,7 @@ import useLunarPhase   from './hooks/useLunarPhase.js';
 import useBlackoutMode from './hooks/useBlackoutMode.js';
 
 // Settings context — wraps applied + draft state, persists to localStorage
-import { useSettings } from './context/SettingsContext.jsx';
+import { useSettings, DEFAULTS } from './context/SettingsContext.jsx';
 import { useT }        from './i18n/I18nContext.jsx';
 
 // Visual components — extracted to their own files
@@ -31,7 +31,6 @@ import Ticker              from './components/Ticker.jsx';
 import BlackoutOverlay     from './components/BlackoutOverlay.jsx';
 import Clock               from './components/Clock.jsx';
 import PrayerList          from './components/PrayerList.jsx';
-import AudioUnlockBanner   from './components/AudioUnlockBanner.jsx';
 import PinOverlay          from './components/PinOverlay.jsx';
 import SettingsPanel       from './components/settings/SettingsPanel.jsx';
 import WeatherCard         from './components/widgets/WeatherCard.jsx';
@@ -87,7 +86,8 @@ export default function App() {
   const {
     lat, lng, locName, masjidName, cityTz,
     method, shadow, highLatRule,
-    iqamah, jumuah, eid, eidDaysBefore,
+    iqamah: rawIqamah, jumuah, eid, eidDaysBefore,
+    iqamahAutoCalc, iqamahAutoBuffers,
     hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
     announcements,
     blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
@@ -121,6 +121,8 @@ export default function App() {
   const draftMethod   = drafts.method;
   const draftAsr      = drafts.shadow === 2 ? 'Hanafi' : 'Standard';
   const draftIqamah   = drafts.iqamah;
+  const draftIqamahAutoCalc    = drafts.iqamahAutoCalc;
+  const draftIqamahAutoBuffers = drafts.iqamahAutoBuffers;
   const draftJumuah   = drafts.jumuah;
   const draftEid      = drafts.eid;
   const draftEidDays  = drafts.eidDaysBefore;
@@ -139,6 +141,8 @@ export default function App() {
   // Simple shims — each updates a single field with race-safe functional form
   const setDraftMethod    = v => updateDrafts(prev => ({ ...prev, method:        typeof v === 'function' ? v(prev.method)        : v }));
   const setDraftIqamah    = v => updateDrafts(prev => ({ ...prev, iqamah:        typeof v === 'function' ? v(prev.iqamah)        : v }));
+  const setDraftIqamahAutoCalc    = v => updateDrafts(prev => ({ ...prev, iqamahAutoCalc:    typeof v === 'function' ? v(prev.iqamahAutoCalc)    : v }));
+  const setDraftIqamahAutoBuffers = v => updateDrafts(prev => ({ ...prev, iqamahAutoBuffers: typeof v === 'function' ? v(prev.iqamahAutoBuffers) : v }));
   const setDraftJumuah    = v => updateDrafts(prev => ({ ...prev, jumuah:        typeof v === 'function' ? v(prev.jumuah)        : v }));
   const setDraftEid       = v => updateDrafts(prev => ({ ...prev, eid:           typeof v === 'function' ? v(prev.eid)           : v }));
   const setDraftEidDays   = v => updateDrafts(prev => ({ ...prev, eidDaysBefore: typeof v === 'function' ? v(prev.eidDaysBefore) : v }));
@@ -191,7 +195,11 @@ export default function App() {
   const { weather, weatherState } = useWeather(lat, lng);
 
   // Custom hook: audio unlock on first user gesture
-  const { audioReady, setAudioReady } = useAudioUnlock();
+  // Auto-unlock browser audio on first user gesture. Hook attaches global
+  // listeners and primes the audio singleton — no return value needed since
+  // the banner UI was removed. If chimes are disabled in settings the hook
+  // is harmless: it primes audio but nothing actually plays.
+  useAudioUnlock();
 
   // (Static CSS is imported in main.jsx via src/styles/index.css — Vite
   // handles bundling. Theme CSS variables still need runtime injection
@@ -259,16 +267,65 @@ export default function App() {
   // (Owned by useCityTime hook — gives us `now`, `cityNow`, `cityNowParts`, `isFriday`)
 
   // Prayer times + active/next/ringProgress derivation
+  // (rawNext from the hook may be Dhuhr on Friday; we override below to
+  //  Jumu'ah's first upcoming slot when applicable — see nextSubst)
   const {
     todayTimes,
     tomorrowTimes,
     yesterdayTimes,
-    active,
+    active: rawActive,
     activeStart,
-    next,
-    secsToNext,
+    next: rawNext,
+    secsToNext: rawSecsToNext,
     ringProgress,
   } = usePrayerTimes({ cityNow, now, lat, lng, method, shadow, cityTz, highLatRule });
+
+  // ── Effective iqamah offsets ─────────────────────────────────────────────
+  // When `iqamahAutoCalc` is ON, compute each prayer's iqamah by:
+  //   1. Take today's adhan time
+  //   2. Add `iqamahAutoBuffers[key]` minutes
+  //   3. Round UP to the next quarter-hour (:00 / :15 / :30 / :45)
+  //   4. Express the result as a minute-offset from adhan (since the rest
+  //      of the app stores iqamah as offset-from-adhan minutes)
+  // When OFF, return the user-configured `rawIqamah` map unchanged.
+  // Computed once per day (the dependency on todayTimes.fajr's date string
+  // makes useMemo recalc only at midnight or when settings change).
+  const iqamah = useMemo(() => {
+    if (!iqamahAutoCalc) return rawIqamah;
+    const out = {};
+    for (const key of ['fajr','dhuhr','asr','maghrib','isha']) {
+      const adhan = todayTimes?.[key];
+      const buf   = Number(iqamahAutoBuffers?.[key] ?? 0);
+      if (!adhan) { out[key] = rawIqamah[key] || 0; continue; }
+      // Step 1+2: shift adhan by buffer minutes
+      const target = new Date(adhan.getTime() + buf * 60 * 1000);
+      // Step 3: round UP to next quarter-hour. Compute target's minute,
+      // find ceiling to next multiple of 15, set seconds=0.
+      const rounded = new Date(target);
+      rounded.setSeconds(0, 0);
+      const m = rounded.getMinutes();
+      const remainder = m % 15;
+      if (remainder !== 0) rounded.setMinutes(m + (15 - remainder));
+      // If buffer was 0 AND adhan already lands on the boundary (e.g. Maghrib
+      // at 8:37 with buffer 0 → target 8:37, rounded to 8:45) the rounding
+      // would push it forward. For Maghrib with buf=0 we want the iqamah to
+      // EQUAL adhan. Handle this special case: if buf === 0, skip rounding.
+      const final = (buf === 0) ? adhan : rounded;
+      // Step 4: convert back to a minute-offset from adhan
+      out[key] = Math.round((final - adhan) / 60000);
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    iqamahAutoCalc,
+    JSON.stringify(rawIqamah),
+    JSON.stringify(iqamahAutoBuffers),
+    todayTimes?.fajr?.getTime(),
+    todayTimes?.dhuhr?.getTime(),
+    todayTimes?.asr?.getTime(),
+    todayTimes?.maghrib?.getTime(),
+    todayTimes?.isha?.getTime(),
+  ]);
 
   // Display helpers — recalc only when needed
   // CRITICAL: clock must show the CITY's local time (not device's local time),
@@ -357,6 +414,28 @@ export default function App() {
   const nextJumuah = isFridayEffective
     ? activeJumuahSlots.map(j => jumuahDate(j.time)).find(t => t > now) ?? null
     : null;
+
+  // ── Jumu'ah substitution for next-prayer display ─────────────────────────
+  // On Fridays with at least one upcoming Jumu'ah slot, the dashboard's
+  // "next prayer" should say Jumu'ah, not Dhuhr — Jumu'ah REPLACES Dhuhr in
+  // congregational practice. We override here AFTER the hook runs so the
+  // hook's pure prayer-time logic stays decoupled from Jumu'ah configuration.
+  // Substitution conditions ALL must hold:
+  //   - it's effectively Friday (real or QA test)
+  //   - there's an upcoming Jumu'ah slot today
+  //   - the hook's next prayer is Dhuhr (so we don't replace e.g. Fajr or Asr)
+  let next       = rawNext;
+  let active     = rawActive;
+  let secsToNext = rawSecsToNext;
+  if (isFridayEffective && nextJumuah && rawNext?.key === 'dhuhr') {
+    next = {
+      key: 'jumuah',
+      en:  "Jumu'ah",
+      ar:  'الجمعة',
+      time: nextJumuah,
+    };
+    secsToNext = Math.max(0, Math.floor((nextJumuah - now) / 1000));
+  }
 
   // Eid helpers — same approach
   const activeEidSlots = eid.filter(e => e.enabled);
@@ -464,6 +543,65 @@ export default function App() {
   }
   // city.tz comes from Open-Meteo geocoding API (IANA timezone string)
 
+  // ── Export / Import settings ─────────────────────────────────────────────
+  // Lets admins back up their config (themes, prayer offsets, Jumu'ah slots,
+  // blackout durations, etc.) and restore it elsewhere — useful when:
+  //   - moving the dashboard to a new device
+  //   - sharing a curated setup between multiple masajid
+  //   - rolling back after a bad change
+  // Format: JSON. We export the `applied` state (what's currently in effect),
+  // not drafts, so the file always reflects a known-good configuration.
+  function exportSettings() {
+    const payload = JSON.stringify(applied, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const d    = new Date();
+    const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.href     = url;
+    a.download = `prayer-times-settings-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Import reads a JSON file and merges it into DRAFTS (not applied) so the
+  // user can review the loaded settings in the panel and click Apply to
+  // commit, or Cancel to discard. Unknown keys are silently dropped at
+  // applySettings sanitization; missing keys fall through to DEFAULTS.
+  // Returns a Promise resolving to true on success, false on parse error,
+  // so the caller can show feedback.
+  function importSettings(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (typeof parsed !== 'object' || parsed === null) throw new Error('not an object');
+          // Merge into drafts so the panel can show the new values; user
+          // must click Apply to commit. We use updateDrafts with a function
+          // form so it spreads atomically over the current drafts state.
+          updateDrafts(prev => ({ ...prev, ...parsed }));
+          resolve(true);
+        } catch {
+          resolve(false);
+        }
+      };
+      reader.onerror = () => resolve(false);
+      reader.readAsText(file);
+    });
+  }
+
+  // Reset drafts to factory DEFAULTS. The user reviews the wiped state in
+  // the panel and clicks Apply to commit (or Cancel to discard). This is
+  // a destructive operation — the panel's Reset button uses a 2-click
+  // confirmation pattern to avoid accidental wipes. Same flow as import:
+  // changes live in drafts until Apply, so nothing is lost until then.
+  function resetSettings() {
+    updateDrafts(() => ({ ...DEFAULTS }));
+  }
+
   function applySettings() {
     // Clamp/sanitize drafts before applying. The Settings panel inputs let
     // users type freely; we enforce ranges here at commit time.
@@ -486,6 +624,10 @@ export default function App() {
     );
     // Blackout opacity: clamp 0..100 percent.
     const sanitizedBlackoutOpacity = Math.min(100, Math.max(0, Number(drafts.blackoutOpacity) || 0));
+    // Auto-iqamah buffers: clamp 0..60 min per prayer.
+    const sanitizedAutoBuf = Object.fromEntries(
+      Object.entries(drafts.iqamahAutoBuffers || {}).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
+    );
 
     // Build the new applied state in one shot. City selection (if any)
     // overrides lat/lng/cityTz/locName since the city search bypasses drafts.
@@ -500,6 +642,7 @@ export default function App() {
       fontScale:         sanitizedFont,
       blackoutDurations: sanitizedBlackoutDur,
       blackoutOpacity:   sanitizedBlackoutOpacity,
+      iqamahAutoBuffers: sanitizedAutoBuf,
       masjidName:        newMasjid,
     };
     if (selectedCity) {
@@ -596,10 +739,20 @@ export default function App() {
 
           {/* Bottom band: widgets + integrated status strip (replaces standalone footer) */}
           <div className="bottom-band">
-            <div className="rcol">
+            {(() => {
+              // Weather is hidden when fetch failed AND no cached data exists.
+              // This covers offline mode (no internet) and API outages alike.
+              // When hidden, .rcol switches to a 2-column grid so the
+              // remaining widgets re-flow tidily, left-justified.
+              const weatherAvailable = !(weatherState === 'error' && weather === null);
+              const widgetCount = weatherAvailable ? 3 : 2;
+              return (
+            <div className="rcol" data-widgets={widgetCount}>
 
-            {/* ── Weather ── */}
-            <WeatherCard weather={weather} weatherState={weatherState}/>
+            {/* ── Weather (hidden when offline / fetch failed) ── */}
+            {weatherAvailable && (
+              <WeatherCard weather={weather} weatherState={weatherState}/>
+            )}
 
             {/* ── Sun Day Cycle ── */}
             <SunDayCycle
@@ -618,13 +771,14 @@ export default function App() {
             />
 
           </div>
+              );
+            })()}
             {/* Announcement ticker — sits between widget row and status strip.
                 Renders nothing when announcements is empty (default). */}
             <Ticker announcements={announcements}/>
 
             {/* Status strip — inside the bottom band, sits below the widget cards */}
             <Footer
-              method={method}
               showTestBtns={SHOW_TEST_BTNS}
               testFriday={testFriday}
               testPrayer={testPrayer}
@@ -652,15 +806,11 @@ export default function App() {
 
       {/* (standalone footer removed — integrated into bottom-band above) */}
 
+      {/* Audio unlock — handled silently by useAudioUnlock hook on first
+          user gesture (any click anywhere). No visual banner; if chimes are
+          enabled, the unlock happens automatically the first time anyone
+          touches the dashboard, which is good enough for kiosk use. */}
 
-      {/* Audio unlock banner — shows only when chimes are on but browser hasn't
-          received any user interaction yet. Disappears on first interaction. */}
-      <AudioUnlockBanner
-        visible={(chimeAdhan || chimeIqamah) && !audioReady}
-        onUnlock={() => setAudioReady(true)}
-      />
-
-      {/* PIN entry overlay */}
       {/* PIN entry overlay */}
       <PinOverlay
         visible={showPin}
@@ -679,6 +829,8 @@ export default function App() {
         draftMethod={draftMethod}    setDraftMethod={setDraftMethod}
         draftAsr={draftAsr}          setDraftAsr={setDraftAsr}
         draftIqamah={draftIqamah}    setDraftIqamah={setDraftIqamah}
+        draftIqamahAutoCalc={draftIqamahAutoCalc}        setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
+        draftIqamahAutoBuffers={draftIqamahAutoBuffers}  setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
         draftJumuah={draftJumuah}    setDraftJumuah={setDraftJumuah}
         draftEid={draftEid}          setDraftEid={setDraftEid}
         draftEidDays={draftEidDays}  setDraftEidDays={setDraftEidDays}
@@ -703,6 +855,9 @@ export default function App() {
         onClearCity={() => { setSelectedCity(null); setSearchQuery(''); setSearchStatus('idle'); }}
         selectedCity={selectedCity}
         onGeolocate={geolocate}
+        onExportSettings={exportSettings}
+        onImportSettings={importSettings}
+        onResetSettings={resetSettings}
         cityNow={cityNow}
         cityTz={cityTz}
         currentLocName={locName}

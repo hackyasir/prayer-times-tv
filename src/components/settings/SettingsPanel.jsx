@@ -23,7 +23,7 @@
 // The result: SettingsContext owns persistence + applied/drafts lifecycle;
 // this component owns the form UI.
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { THEMES }        from '../../lib/themes.js';
 import { METHOD_LABELS } from '../../lib/constants.js';
 import { fmt12, addMins } from '../../lib/formatters.js';
@@ -41,6 +41,8 @@ export default function SettingsPanel({
   draftMethod,    setDraftMethod,
   draftAsr,       setDraftAsr,
   draftIqamah,    setDraftIqamah,
+  draftIqamahAutoCalc,    setDraftIqamahAutoCalc,
+  draftIqamahAutoBuffers, setDraftIqamahAutoBuffers,
   draftJumuah,    setDraftJumuah,
   draftEid,       setDraftEid,
   draftEidDays,   setDraftEidDays,
@@ -65,6 +67,9 @@ export default function SettingsPanel({
   selectedCity,
   // Geolocation handler
   onGeolocate,
+  onExportSettings,
+  onImportSettings,
+  onResetSettings,
   // City-time context — used for Hijri preview + Jumu'ah time displays
   cityNow, cityTz,
   currentLocName, currentLat, currentLng,
@@ -78,6 +83,44 @@ export default function SettingsPanel({
   // panel opens (since the component unmounts on close via if(!visible)).
   // Drafts persist across tab switches because they live in the parent.
   const [activeTab, setActiveTab] = useState('display');
+
+  // Hidden <input type="file"> used by the Import button — we click it
+  // programmatically since the default file picker UI is ugly. `importMsg`
+  // is the transient feedback message shown next to the buttons after an
+  // import attempt (success or parse error). Auto-clears after 3 seconds.
+  const fileInputRef = useRef(null);
+  const [importMsg, setImportMsg] = useState(null);  // { ok: bool, text: str } | null
+
+  // Reset confirmation — 2-click pattern to avoid accidental wipes. First
+  // click puts the button into "confirm?" state; second click within 5s
+  // commits. Timeout returns to safe state.
+  const [resetConfirming, setResetConfirming] = useState(false);
+  const resetTimeoutRef = useRef(null);
+
+  function handleResetClick() {
+    if (!resetConfirming) {
+      setResetConfirming(true);
+      resetTimeoutRef.current = setTimeout(() => setResetConfirming(false), 5000);
+      return;
+    }
+    // Confirmed — clear timeout, call handler, exit confirm state
+    if (resetTimeoutRef.current) clearTimeout(resetTimeoutRef.current);
+    setResetConfirming(false);
+    onResetSettings?.();
+  }
+
+  async function handleFilePick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ok = await onImportSettings?.(file);
+    setImportMsg({
+      ok,
+      text: ok ? t('settings.import.ok') : t('settings.import.error'),
+    });
+    setTimeout(() => setImportMsg(null), 3000);
+    // Reset the input so the same file can be re-picked
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   // Some local aliases to match the original variable names from App.jsx —
   // the inlined JSX below uses `setShowSett(false)` / `applySettings` /
@@ -625,7 +668,89 @@ export default function SettingsPanel({
           </div>
           </>)}
           {activeTab === 'iqamah' && (<>
-          {/* Iqamah offsets */}
+          {/* Auto-iqamah toggle + per-prayer buffers.
+              When enabled, iqamah times are computed daily from adhan +
+              buffer minutes rounded up to the next quarter-hour. When the
+              toggle is OFF, the manual "Iqamah Offset" section below is
+              active. When ON, manual offsets are hidden (avoids confusion). */}
+          <div className="sgrp">
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
+              <div>
+                <div style={{ fontSize:14, color:'var(--t-text)', fontWeight:600 }}>{t('settings.iqamahAuto')}</div>
+                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2, lineHeight:1.4, maxWidth:'48ch' }}>
+                  {t('settings.iqamahAuto.note')}
+                </div>
+              </div>
+              <button
+                onClick={() => setDraftIqamahAutoCalc(v => !v)}
+                style={{
+                  width:46, height:24, borderRadius:12,
+                  background: draftIqamahAutoCalc ? 'var(--t-accent)' : '#333',
+                  border:'none', cursor:'pointer', position:'relative',
+                  transition:'background .2s', flexShrink:0,
+                }}
+                aria-pressed={draftIqamahAutoCalc}
+              >
+                <div style={{ position:'absolute', top:2, left: draftIqamahAutoCalc ? 24 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
+              </button>
+            </div>
+
+            {/* Per-prayer buffer inputs — visible only when auto is enabled.
+                Each row shows: prayer name, today's adhan time, buffer +
+                minutes input, computed iqamah preview (rounded to quarter). */}
+            {draftIqamahAutoCalc && (() => {
+              // Defensive default — if a user upgraded from a build before
+              // iqamahAutoBuffers existed in DEFAULTS, the field may be
+              // briefly undefined on first render. Fall back to sensible
+              // values so the inputs always render.
+              const buffers = draftIqamahAutoBuffers || { fajr:30, dhuhr:15, asr:15, maghrib:0, isha:10 };
+              return (
+              <div style={{ marginTop:8 }}>
+                <label className="slbl">{t('settings.iqamahAuto.buffer')}</label>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  {['fajr','dhuhr','asr','maghrib','isha'].map(key => {
+                    const adhanTime = todayTimes[key];
+                    const buf = Math.min(60, Math.max(0, Number(buffers[key]) || 0));
+                    // Preview: same rounding logic as App.jsx's effective-iqamah memo
+                    let previewIqamah = null;
+                    if (adhanTime) {
+                      const target = new Date(adhanTime.getTime() + buf * 60 * 1000);
+                      target.setSeconds(0, 0);
+                      const m = target.getMinutes();
+                      const rem = m % 15;
+                      if (rem !== 0) target.setMinutes(m + (15 - rem));
+                      previewIqamah = (buf === 0) ? adhanTime : target;
+                    }
+                    return (
+                      <div key={key} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'7px 12px' }}>
+                        <span style={{ width:62, fontSize:13, color:'#9A8B6E', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0 }}>{t(`prayer.${key}`)}</span>
+                        <span style={{ width:72, fontSize:14, color:'#F5EDD8', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>
+                          {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
+                        </span>
+                        <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>+</span>
+                        <input
+                          type="number" min="0" max="60" step="15"
+                          value={buffers[key] ?? 0}
+                          onChange={e => setDraftIqamahAutoBuffers(prev => ({ ...(prev || {}), [key]: e.target.value }))}
+                          style={{ width:44, background:'#0A0A0A', border:'1px solid rgba(201,168,76,.3)', borderRadius:3, padding:'4px 6px', color:'#F0C96A', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, textAlign:'center', outline:'none' }}
+                        />
+                        <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
+                        <span style={{ fontSize:13, color:'rgba(201,168,76,.3)', flexShrink:0 }}>→</span>
+                        <span style={{ flex:1, fontSize:15, fontWeight:700, color:'#C9A84C', fontVariantNumeric:'tabular-nums', textAlign:'right' }}>
+                          {previewIqamah ? fmt12(previewIqamah, cityTz) : '--:--'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              );
+            })()}
+          </div>
+          </>)}
+
+          {activeTab === 'iqamah' && !draftIqamahAutoCalc && (<>
+          {/* Iqamah offsets — manual mode. Hidden when auto is on. */}
           <div className="sgrp">
             <label className="slbl">{t('settings.iqamahOffset')}</label>
             <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
@@ -758,6 +883,48 @@ export default function SettingsPanel({
           </>)}
 
           </div>{/* end sbox-body */}
+
+          {/* Sticky data-actions footer — Export / Import / Reset.
+              Sits at the very bottom of the panel, always visible regardless
+              of which tab is active or how far the user has scrolled within
+              a tab. Less prominent than Cancel/Apply (different button class)
+              since these are meta-operations on the WHOLE config, not part
+              of the regular edit flow. */}
+          <div className="sbox-data-footer">
+            <button
+              className="sbtn-meta"
+              onClick={onExportSettings}
+              title={t('settings.export')}
+            >⬇ {t('settings.export')}</button>
+            <button
+              className="sbtn-meta"
+              onClick={() => fileInputRef.current?.click()}
+              title={t('settings.import')}
+            >⬆ {t('settings.import')}</button>
+            <button
+              className={'sbtn-meta sbtn-meta-danger' + (resetConfirming ? ' confirming' : '')}
+              onClick={handleResetClick}
+              title={t('settings.reset')}
+            >↺ {resetConfirming ? t('settings.reset.confirm') : t('settings.reset')}</button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              style={{ display: 'none' }}
+              onChange={handleFilePick}
+            />
+            {/* Import feedback message — appears briefly after a load.
+                Green for success, red for parse error. */}
+            {importMsg && (
+              <span style={{
+                fontSize: 11,
+                color: importMsg.ok ? '#3DC878' : '#ff6b6b',
+                letterSpacing: '.04em',
+                marginLeft: 'auto',
+                alignSelf: 'center',
+              }}>{importMsg.text}</span>
+            )}
+          </div>
         </div>
       </div>
   );

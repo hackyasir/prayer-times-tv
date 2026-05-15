@@ -168,3 +168,67 @@
   letter-spacing: .03em;
   word-break: break-word;
 }
+
+/* ── Settings header meta buttons (Export / Import) ──────────────────────
+ * Smaller, less prominent than Cancel/Apply — sit on the LEFT of the
+ * action row as secondary actions. Same dim chrome as inactive tabs;
+ * hover brightens. */
+.sbtn-meta {
+  background: transparent;
+  border: 1px solid var(--t-border);
+  border-radius: 4px;
+  color: var(--t-text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  margin-right: 4px;
+}
+.sbtn-meta:hover {
+  color: var(--t-accent);
+  border-color: rgba(var(--t-accent-rgb), .4);
+  background: rgba(var(--t-accent-rgb), .06);
+}
+
+/* ── Settings data-actions footer ────────────────────────────────────────
+ * Sits at the bottom of the settings panel, below the scrollable body and
+ * above the panel's bottom edge. Holds Export / Import / Reset buttons —
+ * meta-operations on the entire config, always accessible from any tab.
+ * The top border separates it visually from tab content. */
+.sbox-data-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border-top: 1px solid var(--t-border);
+  background: var(--t-surface);
+  flex-shrink: 0;
+}
+
+/* Reset button: red-tinted to signal destructive action. The .confirming
+   modifier (set on first click) bumps the red intensity + filled background
+   to make "click again to confirm" visually obvious. */
+.sbtn-meta-danger {
+  color: rgba(255, 107, 107, .8);
+  border-color: rgba(255, 107, 107, .25);
+}
+.sbtn-meta-danger:hover {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, .5);
+  background: rgba(255, 107, 107, .08);
+}
+.sbtn-meta-danger.confirming {
+  color: #fff;
+  background: rgba(255, 107, 107, .85);
+  border-color: #ff6b6b;
+  animation: resetConfirmPulse .6s ease-in-out infinite alternate;
+}
+
+@keyframes resetConfirmPulse {
+  from { box-shadow: 0 0 0 0 rgba(255, 107, 107, .25); }
+  to   { box-shadow: 0 0 0 6px rgba(255, 107, 107, 0);   }
+}

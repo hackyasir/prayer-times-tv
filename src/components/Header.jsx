@@ -44,7 +44,15 @@ export default function Header({
       </div>
       <div className="arabic-title">مواقيت الصلاة</div>
       <div className="hdr-right">
-        <div className="loc"><span className="loc-dot"/>{locName}</div>
+        <div className="loc">
+          {/* Location pin SVG — replaces the previous pulsating green dot.
+              Uses currentColor so it inherits .loc's text-dim colour. */}
+          <svg className="loc-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 22s-7-7.5-7-13a7 7 0 0 1 14 0c0 5.5-7 13-7 13z"/>
+            <circle cx="12" cy="9" r="2.5"/>
+          </svg>
+          {locName}
+        </div>
         <div className="hijri">{hijri}</div>
         <div className="method-badge">{METHOD_LABELS[method]}</div>
       </div>
