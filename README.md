@@ -193,7 +193,7 @@ Six calculation methods are supported (see Settings → Calculation Method):
 | University of Karachi | 18° | 18° |
 | MUIS Singapore | 20° | 18° |
 
-Cross-validated against published values for Toronto · NYC · London · Karachi · Jakarta · Riyadh — matches to within ±1 minute.
+Cross-validated against published values for Oakville · NYC · London · Karachi · Jakarta · Riyadh — matches to within ±1 minute.
 
 ---
 
@@ -284,6 +284,8 @@ For **GitHub Pages** specifically, set the `VITE_BASE_URL` environment variable 
 | **vite-plugin-pwa** | Service worker + manifest injection |
 
 That's it for runtime dependencies. The prayer time math, hijri conversion, qibla calculation, theme system, audio handling, weather code interpretation, and timezone math are all **plain JavaScript** in `src/lib/`. No `adhan`, no `moment`, no `date-fns`, no UI library — every line of logic is in the repo and inspectable.
+
+> **Note**: `package.json` also declares `adhan`, `zod`, and `tailwindcss`. These are leftovers from earlier experiments (visible in `src/features/prayer/` and `src/hooks/usePrayerEngine.js`) that are no longer wired into the active code path. They could be removed.
 
 ---
 

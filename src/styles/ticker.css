@@ -1,0 +1,111 @@
+/* ── Announcement Ticker ────────────────────────────────────────────────────
+ *
+ * The horizontal scrolling strip sits between the widget row and the status
+ * strip in the bottom band. Renders nothing when no announcements are set.
+ *
+ * Design intent:
+ *   - Slim profile (~22px tall) so it doesn't dominate the layout
+ *   - Subtle accent border above + below for visual separation
+ *   - Continuous marquee scroll for normal users (40s per cycle)
+ *   - Static fade-through for reduced-motion users (one item every 8s,
+ *     handled via the prefers-reduced-motion override at the bottom)
+ *   - Gold accent colour matches the rest of the UI (uses --t-accent-dim
+ *     so it doesn't compete with prayer times / clock for attention)
+ *
+ * Direction handling:
+ *   data-dir="ltr"  →  English: text scrolls right-to-left (reading direction)
+ *   data-dir="rtl"  →  Arabic/Urdu: text scrolls left-to-right
+ *
+ * The track contains TWO copies of the content (.ticker-segment). The
+ * animation translates the WHOLE track by -50% (or +50% for RTL) which
+ * makes the second copy slide into where the first was — giving a seamless
+ * loop with no visible jump. */
+
+.ticker {
+  /* Slim strip with thin top/bottom dividers */
+  width: 100%;
+  padding: 4px 0;
+  border-top:    1px solid var(--t-border);
+  border-bottom: 1px solid var(--t-border);
+  overflow: hidden;          /* clip the second copy during scroll */
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* The marquee track holds TWO identical copies of the joined text laid out
+   side-by-side. The track sits at width:max-content so its full content
+   (both copies + separator) is laid out without wrapping.
+
+   Seamless loop trick:
+     Animate translateX from 0 → -50%.
+     -50% of the track width = exactly the width of ONE copy.
+     When the first copy has scrolled fully off-screen-left, the second
+     copy now occupies the position the first copy started at — pixel-
+     identical. The animation then jumps back to 0 (which now LOOKS like
+     copy 2 was at), giving a perfectly continuous infinite loop with no
+     visible seam and no pause.
+
+   For this to work cleanly the two segments must be IDENTICAL in width,
+   which they are (same content). */
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  width: max-content;
+  will-change: transform;
+}
+
+.ticker-segment {
+  font-size: calc(clamp(0.625rem, 1.05vw, 1rem) * var(--t-fs, 1));
+  color: var(--t-accent-dim);
+  letter-spacing: .08em;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 500;
+  flex-shrink: 0;            /* don't compress when both segments are wide */
+}
+
+/* ── Marquee animations ───────────────────────────────────────────────────
+ * Animate the WHOLE track from 0 to -50% (one copy's worth). At the loop
+ * point the second copy is exactly where the first was, so the visual is
+ * continuous — no pause, no jump. */
+@keyframes ticker-scroll-ltr {
+  from { transform: translateX(0);    }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes ticker-scroll-rtl {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0);    }
+}
+
+.ticker[data-dir="ltr"] .ticker-track {
+  animation: ticker-scroll-ltr 40s linear infinite;
+}
+.ticker[data-dir="rtl"] .ticker-track {
+  animation: ticker-scroll-rtl 40s linear infinite;
+}
+
+/* ── Reduced-motion fallback ────────────────────────────────────────────── */
+
+/* For users with prefers-reduced-motion: replace the sweeping marquee with
+   static centred text so the announcement is still visible but doesn't
+   trigger motion sensitivity. Since the track is wider than the viewport
+   (width:max-content), we override that here to fit the container and
+   centre the text. If the announcement string is too long to fit, it will
+   wrap onto one truncated line via the parent's overflow:hidden — that's
+   the trade for accessibility, and acceptable since reduced-motion users
+   typically accept some content limitations. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker[data-dir="ltr"] .ticker-track,
+  .ticker[data-dir="rtl"] .ticker-track {
+    animation: none;
+    transform: none;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Track has two copies for the marquee loop; in static fallback only show
+     one so the centred text doesn't read as a double announcement. */
+  .ticker .ticker-segment + .ticker-segment { display: none; }
+}

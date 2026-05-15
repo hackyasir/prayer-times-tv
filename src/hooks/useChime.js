@@ -1,16 +1,24 @@
-// ── useChime — fire iqamah/adhan beep at correct times ─────────────────────
+// ── useChime — fire adhan/iqamah beep at correct times ─────────────────────
 //
 // Watches `now` (tick every second from useCityTime) and fires playBeep()
 // whenever any of the configured prayer/Jumu'ah/Eid times falls within a
 // ±2 second window of now. Tracks already-fired keys in a ref so each beep
 // fires exactly once per day per event.
 //
-// Beep is fired at BOTH the adhan time (prayer entry) AND the iqamah time
-// (offset minutes after adhan), giving the masjid staff a heads-up and the
-// final start signal.
+// Beeps are split into TWO independent flags:
+//   chimeAdhan  — fires at the adhan time (prayer entry)
+//   chimeIqamah — fires at the iqamah time (offset minutes after adhan)
+//
+// Common configurations:
+//   - Iqamah only (default): most mosques play the real adhan from speakers
+//     and just want a "stand up" signal on the dashboard
+//   - Both: smaller jamaa'ats or home use, where the dashboard provides
+//     both notifications
+//   - Adhan only: rare but supported
+//   - Neither: dashboard stays silent
 //
 // Caller passes the data the hook needs:
-//   chimeEnabled    — boolean from settings
+//   chimeAdhan / chimeIqamah — booleans from settings
 //   now             — current Date (from useCityTime)
 //   todayTimes      — prayer times (from usePrayerTimes)
 //   iqamah          — { fajr: 45, dhuhr: 30, ... } minute offsets from adhan
@@ -27,7 +35,8 @@ import { addMins } from '../lib/formatters.js';
 import { playBeep } from '../lib/audio.js';
 
 export default function useChime({
-  chimeEnabled,
+  chimeAdhan,
+  chimeIqamah,
   now,
   todayTimes,
   iqamah,
@@ -41,39 +50,45 @@ export default function useChime({
   const firedRef = useRef(new Set());
 
   useEffect(() => {
-    if (!chimeEnabled) return;
+    // Both flags off → nothing to schedule
+    if (!chimeAdhan && !chimeIqamah) return;
 
-    // Build the list of beep times: adhan + iqamah per prayer/jumuah/eid
+    // Build the list of beep times. Each entry is tagged with `kind` so we
+    // can skip adhan or iqamah events when the corresponding flag is off.
     const checks = [];
     for (const p of PRAYERS) {
       if (p.key === 'sunrise') continue;  // no congregational sunrise prayer
       const adhanT = todayTimes[p.key];
       if (!adhanT) continue;
       const iqamahT = addMins(adhanT, iqamah[p.key] || 0);
-      checks.push({ key: `${p.key}_adhan`,  time: adhanT  });
-      checks.push({ key: `${p.key}_iqamah`, time: iqamahT });
+      checks.push({ key: `${p.key}_adhan`,  time: adhanT,  kind: 'adhan'  });
+      checks.push({ key: `${p.key}_iqamah`, time: iqamahT, kind: 'iqamah' });
     }
     if (isFriday) {
       for (const j of activeJumuahSlots) {
         const jt  = jumuahDate(j.time);
         const jiq = addMins(jt, j.iqamah);
-        checks.push({ key: `jumuah_${j.time}_adhan`,  time: jt  });
-        checks.push({ key: `jumuah_${j.time}_iqamah`, time: jiq });
+        checks.push({ key: `jumuah_${j.time}_adhan`,  time: jt,  kind: 'adhan'  });
+        checks.push({ key: `jumuah_${j.time}_iqamah`, time: jiq, kind: 'iqamah' });
       }
     }
     if (showEidBanner) {
       for (const e of activeEidSlots) {
         const et  = eidDate(e.time);
         const eiq = addMins(et, e.iqamah);
-        checks.push({ key: `eid_${e.time}_adhan`,  time: et  });
-        checks.push({ key: `eid_${e.time}_iqamah`, time: eiq });
+        checks.push({ key: `eid_${e.time}_adhan`,  time: et,  kind: 'adhan'  });
+        checks.push({ key: `eid_${e.time}_iqamah`, time: eiq, kind: 'iqamah' });
       }
     }
 
-    // Fire each beep once within a ±2 second window of its target time
+    // Fire each beep once within a ±2 second window of its target time.
+    // Skip entries whose `kind` flag is disabled — this is the per-event
+    // gate that makes "iqamah only" vs "both" actually different.
     const dateStr = now.toDateString();
     for (const ch of checks) {
       if (!ch.time) continue;
+      if (ch.kind === 'adhan'  && !chimeAdhan)  continue;
+      if (ch.kind === 'iqamah' && !chimeIqamah) continue;
       const diff = Math.abs(now - ch.time) / 1000;
       const id = `${dateStr}:${ch.key}:${ch.time.getHours()}${ch.time.getMinutes()}`;
       if (diff <= 2 && !firedRef.current.has(id)) {
@@ -90,5 +105,5 @@ export default function useChime({
       firedRef.current = keep;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now, chimeEnabled]);
+  }, [now, chimeAdhan, chimeIqamah]);
 }

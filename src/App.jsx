@@ -18,13 +18,17 @@ import useWeather      from './hooks/useWeather.js';
 import useAudioUnlock  from './hooks/useAudioUnlock.js';
 import useChime        from './hooks/useChime.js';
 import useLunarPhase   from './hooks/useLunarPhase.js';
+import useBlackoutMode from './hooks/useBlackoutMode.js';
 
 // Settings context — wraps applied + draft state, persists to localStorage
 import { useSettings } from './context/SettingsContext.jsx';
+import { useT }        from './i18n/I18nContext.jsx';
 
 // Visual components — extracted to their own files
 import Header              from './components/Header.jsx';
 import Footer              from './components/Footer.jsx';
+import Ticker              from './components/Ticker.jsx';
+import BlackoutOverlay     from './components/BlackoutOverlay.jsx';
 import Clock               from './components/Clock.jsx';
 import PrayerList          from './components/PrayerList.jsx';
 import AudioUnlockBanner   from './components/AudioUnlockBanner.jsx';
@@ -74,12 +78,19 @@ export default function App() {
     beginEditing,
   } = useSettings();
 
+  // Translation hook — used for alerts and any inline strings rendered
+  // directly from App.jsx. Most translated text lives in child components
+  // that call useT() themselves.
+  const { t } = useT();
+
   // Destructure applied → individual reactive values used throughout App.jsx
   const {
     lat, lng, locName, masjidName, cityTz,
     method, shadow, highLatRule,
     iqamah, jumuah, eid, eidDaysBefore,
-    hijriOffset, theme, chimeEnabled, fontScale, progressStyle,
+    hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
+    announcements,
+    blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
   } = applied;
 
   // Setter shims — preserve the existing setLat/setMethod/etc API so the
@@ -98,7 +109,8 @@ export default function App() {
   const setEidDaysBefore= v => updateApplied({ eidDaysBefore: v });
   const setHijriOffset  = v => updateApplied({ hijriOffset: v });
   const setTheme        = v => updateApplied({ theme: v });
-  const setChimeEnabled = v => updateApplied({ chimeEnabled: v });
+  const setChimeAdhan   = v => updateApplied({ chimeAdhan: v });
+  const setChimeIqamah  = v => updateApplied({ chimeIqamah: v });
   const setFontScale    = v => updateApplied({ fontScale: v });
   const setProgressStyle= v => updateApplied({ progressStyle: v });
 
@@ -115,9 +127,15 @@ export default function App() {
   const draftHijri    = drafts.hijriOffset;
   const draftHighLat  = drafts.highLatRule;
   const draftTheme    = drafts.theme;
-  const draftChime    = drafts.chimeEnabled;
+  const draftChimeAdhan  = drafts.chimeAdhan;
+  const draftChimeIqamah = drafts.chimeIqamah;
   const draftFontScale= drafts.fontScale;
   const draftProgress = drafts.progressStyle;
+  const draftLang     = drafts.lang;
+  const draftAnnouncements = drafts.announcements;
+  const draftBlackoutEnabled   = drafts.blackoutEnabled;
+  const draftBlackoutDurations = drafts.blackoutDurations;
+  const draftBlackoutOpacity   = drafts.blackoutOpacity;
   // Simple shims — each updates a single field with race-safe functional form
   const setDraftMethod    = v => updateDrafts(prev => ({ ...prev, method:        typeof v === 'function' ? v(prev.method)        : v }));
   const setDraftIqamah    = v => updateDrafts(prev => ({ ...prev, iqamah:        typeof v === 'function' ? v(prev.iqamah)        : v }));
@@ -127,9 +145,15 @@ export default function App() {
   const setDraftHijri     = v => updateDrafts(prev => ({ ...prev, hijriOffset:   typeof v === 'function' ? v(prev.hijriOffset)   : v }));
   const setDraftHighLat   = v => updateDrafts(prev => ({ ...prev, highLatRule:   typeof v === 'function' ? v(prev.highLatRule)   : v }));
   const setDraftTheme     = v => updateDrafts(prev => ({ ...prev, theme:         typeof v === 'function' ? v(prev.theme)         : v }));
-  const setDraftChime     = v => updateDrafts(prev => ({ ...prev, chimeEnabled:  typeof v === 'function' ? v(prev.chimeEnabled)  : v }));
+  const setDraftChimeAdhan  = v => updateDrafts(prev => ({ ...prev, chimeAdhan:  typeof v === 'function' ? v(prev.chimeAdhan)  : v }));
+  const setDraftChimeIqamah = v => updateDrafts(prev => ({ ...prev, chimeIqamah: typeof v === 'function' ? v(prev.chimeIqamah) : v }));
   const setDraftFontScale = v => updateDrafts(prev => ({ ...prev, fontScale:     typeof v === 'function' ? v(prev.fontScale)     : v }));
   const setDraftProgress  = v => updateDrafts(prev => ({ ...prev, progressStyle: typeof v === 'function' ? v(prev.progressStyle) : v }));
+  const setDraftLang      = v => updateDrafts(prev => ({ ...prev, lang:          typeof v === 'function' ? v(prev.lang)          : v }));
+  const setDraftAnnouncements = v => updateDrafts(prev => ({ ...prev, announcements: typeof v === 'function' ? v(prev.announcements) : v }));
+  const setDraftBlackoutEnabled   = v => updateDrafts(prev => ({ ...prev, blackoutEnabled:   typeof v === 'function' ? v(prev.blackoutEnabled)   : v }));
+  const setDraftBlackoutDurations = v => updateDrafts(prev => ({ ...prev, blackoutDurations: typeof v === 'function' ? v(prev.blackoutDurations) : v }));
+  const setDraftBlackoutOpacity   = v => updateDrafts(prev => ({ ...prev, blackoutOpacity:   typeof v === 'function' ? v(prev.blackoutOpacity)   : v }));
   // Asr translates Hanafi/Standard ↔ shadow 1/2
   const setDraftAsr = v => updateDrafts(prev => {
     const prevLabel = prev.shadow === 2 ? 'Hanafi' : 'Standard';
@@ -141,6 +165,7 @@ export default function App() {
   const [draftMasjid, setDraftMasjid] = useState('');
   const [testFriday,  setTestFriday]  = useState(false);
   const [testPrayer,  setTestPrayer]  = useState(null); // null = use real active prayer
+  const [testBlackoutUntil, setTestBlackoutUntil] = useState(null); // Date | null
   const [showPin,    setShowPin]    = useState(false);
   const [pinInput,   setPinInput]   = useState('');
   const [pinError,   setPinError]   = useState(false);
@@ -151,6 +176,13 @@ export default function App() {
   const [searchStatus,  setSearchStatus]  = useState('idle'); // idle|searching|done|error
   const [selectedCity,  setSelectedCity]  = useState(null);  // { name, country, lat, lng }
   const searchTimer = useRef(null);
+
+  // Blackout dismiss state — when the user holds-to-dismiss during a
+  // blackout window, we record the timestamp here. useBlackoutMode checks
+  // whether dismissedAt falls inside the current candidate window and
+  // suppresses activation if so. Next prayer's window starts fresh, so this
+  // doesn't need cleanup — old timestamps simply don't match new windows.
+  const [blackoutDismissedAt, setBlackoutDismissedAt] = useState(null);
 
   // Custom hook: city-time anchor (now ticks + cityNowParts derived in cityTz)
   const { now, cityNow, cityNowParts, isFriday } = useCityTime(cityTz);
@@ -176,6 +208,15 @@ export default function App() {
     document.head.appendChild(el);
     return () => el.remove();
   }, [theme]);
+
+  // Test-blackout auto-clear: once the test window has expired, clear the
+  // testBlackoutUntil flag so the Footer button label flips back to its
+  // default state. The check runs whenever `now` ticks (every second).
+  useEffect(() => {
+    if (testBlackoutUntil && now >= testBlackoutUntil) {
+      setTestBlackoutUntil(null);
+    }
+  }, [now, testBlackoutUntil]);
 
   // (now-tick is owned by useCityTime hook)
   // (audio-unlock-on-first-gesture is owned by useAudioUnlock hook)
@@ -273,6 +314,23 @@ export default function App() {
   // Lunar phase — owned by useLunarPhase hook (computed from Hijri day)
   const lunarPhase = useLunarPhase(hijri);
 
+  // Blackout mode — derives whether the dashboard should be in salah-blackout
+  // RIGHT NOW based on today's & yesterday's iqamah times + per-prayer
+  // durations from settings. Returns null/null when inactive (overlay
+  // renders nothing). See src/hooks/useBlackoutMode.js for the windowing
+  // logic + how yesterday's Isha edge case is handled.
+  const blackout = useBlackoutMode({
+    enabled:        blackoutEnabled,
+    leadSeconds:    blackoutLeadSeconds,
+    durations:      blackoutDurations,
+    todayTimes,
+    yesterdayTimes,
+    iqamah,
+    now,
+    dismissedAt:    blackoutDismissedAt,
+    forceUntil:     testBlackoutUntil,
+  });
+
   // Jumu'ah / Eid date helpers — must produce ABSOLUTE UTC instants whose
   // wall-clock value in the city's timezone equals (today_in_city @ HH:MM).
   // Same trick as calcTimes: Date.UTC(...) - cityTzOffset_ms.
@@ -326,9 +384,11 @@ export default function App() {
     ? activeEidSlots.map(e => eidDate(e.time)).find(t => t > now) ?? null
     : null;
 
-  // Hook: fire the iqamah/adhan beep at the right times
+  // Hook: fire adhan/iqamah beep at the right times. Each flag gates its
+  // own event type — caller can have either, both, or neither enabled.
   useChime({
-    chimeEnabled,
+    chimeAdhan,
+    chimeIqamah,
     now,
     todayTimes,
     iqamah,
@@ -419,19 +479,28 @@ export default function App() {
     const sanitizedDays  = Math.min(30, Math.max(0, Number(drafts.eidDaysBefore) || 0));
     const sanitizedHijri = Math.min(3,  Math.max(-3, Number(drafts.hijriOffset)  || 0));
     const sanitizedFont  = Math.min(130, Math.max(70, Number(drafts.fontScale)   || 100));
+    // Blackout per-prayer durations: clamp 0..60 min. 0 = effectively disabled
+    // for that prayer (window collapses to just the leadSeconds before iqamah).
+    const sanitizedBlackoutDur = Object.fromEntries(
+      Object.entries(drafts.blackoutDurations).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
+    );
+    // Blackout opacity: clamp 0..100 percent.
+    const sanitizedBlackoutOpacity = Math.min(100, Math.max(0, Number(drafts.blackoutOpacity) || 0));
 
     // Build the new applied state in one shot. City selection (if any)
     // overrides lat/lng/cityTz/locName since the city search bypasses drafts.
     const newMasjid = draftMasjid.trim();
     const newApplied = {
       ...drafts,
-      iqamah:        sanitizedIqamah,
-      jumuah:        sanitizedJumuah,
-      eid:           sanitizedEid,
-      eidDaysBefore: sanitizedDays,
-      hijriOffset:   sanitizedHijri,
-      fontScale:     sanitizedFont,
-      masjidName:    newMasjid,
+      iqamah:            sanitizedIqamah,
+      jumuah:            sanitizedJumuah,
+      eid:               sanitizedEid,
+      eidDaysBefore:     sanitizedDays,
+      hijriOffset:       sanitizedHijri,
+      fontScale:         sanitizedFont,
+      blackoutDurations: sanitizedBlackoutDur,
+      blackoutOpacity:   sanitizedBlackoutOpacity,
+      masjidName:        newMasjid,
     };
     if (selectedCity) {
       newApplied.lat     = selectedCity.lat;
@@ -448,7 +517,7 @@ export default function App() {
   }
 
   function geolocate() {
-    if (!navigator.geolocation) return alert('Geolocation not supported');
+    if (!navigator.geolocation) return alert(t('alert.geoUnsupported'));
     navigator.geolocation.getCurrentPosition(
       pos => {
         // Batch lat/lng/cityTz/locName into one update
@@ -460,7 +529,7 @@ export default function App() {
         });
         setShowSett(false);
       },
-      () => alert('Could not get location — please select a city instead')
+      () => alert(t('alert.geoFailed'))
     );
   }
 
@@ -549,12 +618,17 @@ export default function App() {
             />
 
           </div>
+            {/* Announcement ticker — sits between widget row and status strip.
+                Renders nothing when announcements is empty (default). */}
+            <Ticker announcements={announcements}/>
+
             {/* Status strip — inside the bottom band, sits below the widget cards */}
             <Footer
               method={method}
               showTestBtns={SHOW_TEST_BTNS}
               testFriday={testFriday}
               testPrayer={testPrayer}
+              testBlackoutActive={!!testBlackoutUntil}
               activeKey={active?.key || 'fajr'}
               onOpenSettings={openSettings}
               onToggleFriday={() => setTestFriday(f => !f)}
@@ -565,6 +639,12 @@ export default function App() {
                 setTestPrayer(next);
               }}
               onClearPrayer={() => setTestPrayer(null)}
+              onTestBlackout={() => {
+                // 60-second test window. Resets blackoutDismissedAt so a prior
+                // dismiss doesn't suppress the test.
+                setBlackoutDismissedAt(null);
+                setTestBlackoutUntil(new Date(Date.now() + 60 * 1000));
+              }}
             />
           </div>{/* end bottom-band */}
         </div>{/* end grid */}
@@ -576,7 +656,7 @@ export default function App() {
       {/* Audio unlock banner — shows only when chimes are on but browser hasn't
           received any user interaction yet. Disappears on first interaction. */}
       <AudioUnlockBanner
-        visible={chimeEnabled && !audioReady}
+        visible={(chimeAdhan || chimeIqamah) && !audioReady}
         onUnlock={() => setAudioReady(true)}
       />
 
@@ -605,10 +685,16 @@ export default function App() {
         draftHijri={draftHijri}      setDraftHijri={setDraftHijri}
         draftHighLat={draftHighLat}  setDraftHighLat={setDraftHighLat}
         draftTheme={draftTheme}      setDraftTheme={setDraftTheme}
-        draftChime={draftChime}      setDraftChime={setDraftChime}
+        draftChimeAdhan={draftChimeAdhan}    setDraftChimeAdhan={setDraftChimeAdhan}
+        draftChimeIqamah={draftChimeIqamah}  setDraftChimeIqamah={setDraftChimeIqamah}
         draftFontScale={draftFontScale}  setDraftFontScale={setDraftFontScale}
         draftProgress={draftProgress}    setDraftProgress={setDraftProgress}
         draftMasjid={draftMasjid}    setDraftMasjid={setDraftMasjid}
+        draftLang={draftLang}        setDraftLang={setDraftLang}
+        draftAnnouncements={draftAnnouncements}  setDraftAnnouncements={setDraftAnnouncements}
+        draftBlackoutEnabled={draftBlackoutEnabled}      setDraftBlackoutEnabled={setDraftBlackoutEnabled}
+        draftBlackoutDurations={draftBlackoutDurations}  setDraftBlackoutDurations={setDraftBlackoutDurations}
+        draftBlackoutOpacity={draftBlackoutOpacity}      setDraftBlackoutOpacity={setDraftBlackoutOpacity}
         searchQuery={searchQuery}
         searchResults={searchResults}
         searchStatus={searchStatus}
@@ -619,7 +705,22 @@ export default function App() {
         onGeolocate={geolocate}
         cityNow={cityNow}
         cityTz={cityTz}
+        currentLocName={locName}
+        currentLat={lat}
+        currentLng={lng}
         todayTimes={todayTimes}
+      />
+
+      {/* Blackout overlay — full-viewport during salah. Rendered LAST so its
+          z-index sits above everything else including PinOverlay/SettingsPanel.
+          When active, it covers them too (preventing accidental Settings
+          interaction during prayer). */}
+      <BlackoutOverlay
+        active={blackout.active}
+        endsAt={blackout.endsAt}
+        now={now}
+        opacity={blackoutOpacity}
+        onDismiss={() => setBlackoutDismissedAt(new Date())}
       />
     </>
   );

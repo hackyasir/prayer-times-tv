@@ -5,27 +5,32 @@
 //   CENTRE: five small dots (decorative)
 //   RIGHT:  Test buttons (gated by SHOW_TEST_BTNS) + "Updated every second"
 //
-// The test buttons (Test Jumu'ah, Test Pattern) help previewing edge cases
-// during setup and can be hidden in production via VITE_SHOW_TEST_BUTTONS=false.
+// The test buttons (Test Jumu'ah, Test Pattern, Test Blackout) help previewing
+// edge cases during setup and can be hidden in production via
+// VITE_SHOW_TEST_BUTTONS=false.
 
 import { METHOD_LABELS } from '../lib/constants.js';
+import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 
 export default function Footer({
   method,
   showTestBtns,
   testFriday,
   testPrayer,
+  testBlackoutActive,
   activeKey,
   onOpenSettings,
   onToggleFriday,
   onCyclePrayer,
   onClearPrayer,
+  onTestBlackout,
 }) {
+  const { t } = useT();
   return (
     <div className="ftr">
       <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
-        <button className="strig" onClick={onOpenSettings}>⚙ Settings</button>
-        <div className="ftr-txt">Offline · All times local · {METHOD_LABELS[method]}</div>
+        <button className="strig" onClick={onOpenSettings}>{t('footer.settings')}</button>
+        <div className="ftr-txt">{fmtStr(t('footer.offline'), { method: METHOD_LABELS[method] })}</div>
       </div>
       <div className="ftr-dots">{[0,1,2,3,4].map(i => <div key={i} className="ftr-dot"/>)}</div>
       <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
@@ -42,7 +47,7 @@ export default function Footer({
                 fontSize: 'clamp(0.438rem,.72vw,0.688rem)',
                 letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
               }}
-            >{testFriday ? "✓ Jumu'ah ON" : "Test Jumu'ah"}</button>
+            >{testFriday ? t('footer.jumuahOn') : t('footer.testJumuah')}</button>
             <button
               onClick={() => onCyclePrayer(activeKey)}
               style={{
@@ -54,7 +59,7 @@ export default function Footer({
                 fontSize: 'clamp(0.438rem,.72vw,0.688rem)',
                 letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
               }}
-            >🎨 {testPrayer ? testPrayer.toUpperCase() : 'Test Pattern'}</button>
+            >🎨 {testPrayer ? testPrayer.toUpperCase() : t('footer.testPattern')}</button>
             {testPrayer && (
               <button
                 onClick={onClearPrayer}
@@ -69,9 +74,29 @@ export default function Footer({
                 }}
               >✕</button>
             )}
+            {/* Test Blackout — fires a 60-second blackout overlay right now,
+                ignoring real iqamah times. Lets staff verify the dismiss
+                gesture works, the Bismillah renders correctly, and the
+                countdown ticks down properly without waiting for an actual
+                prayer time. Auto-clears after 60s. */}
+            <button
+              onClick={onTestBlackout}
+              disabled={testBlackoutActive}
+              style={{
+                background:'transparent',
+                border:`1px solid ${testBlackoutActive ? 'rgba(255,255,255,.5)' : 'rgba(201,168,76,.15)'}`,
+                borderRadius:3, padding:'2px 8px',
+                color: testBlackoutActive ? '#fff' : '#9A8B6E',
+                fontFamily:'Rajdhani,sans-serif',
+                fontSize: 'clamp(0.438rem,.72vw,0.688rem)',
+                letterSpacing:'.1em', textTransform:'uppercase',
+                cursor: testBlackoutActive ? 'default' : 'pointer',
+                opacity: testBlackoutActive ? 0.7 : 1,
+              }}
+            >⬛ {testBlackoutActive ? 'Active' : 'Test Blackout'}</button>
           </>
         )}
-        <div className="ftr-txt">Updated every second</div>
+        <div className="ftr-txt">{t('footer.updated')}</div>
       </div>
     </div>
   );

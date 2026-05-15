@@ -7,8 +7,10 @@
  * 3. prayer-cards  — prayer list rows + Jumu'ah + Eid banners
  * 4. clock         — centre column (clock + countdown + hadith)
  * 5. widgets       — bottom band widgets (weather, sun, fast-qibla, status strip)
- * 6. settings      — overlay panel + form controls + city search
- * 7. responsive    — media-query overrides (must come last to override base)
+ * 6. ticker        — bottom announcement marquee (Phase 2)
+ * 7. settings      — overlay panel + form controls + city search
+ * 8. blackout      — full-viewport overlay during salah (Phase 3)
+ * 9. responsive    — media-query overrides (must come last to override base)
  *
  * Importing this file from main.jsx (instead of injecting a CSS template
  * literal at runtime) means Vite handles CSS as a real asset — HMR, source
@@ -22,5 +24,7 @@
 @import './prayer-cards.css';
 @import './clock.css';
 @import './widgets.css';
+@import './ticker.css';
 @import './settings.css';
+@import './blackout.css';
 @import './responsive.css';

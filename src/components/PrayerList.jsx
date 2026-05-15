@@ -11,6 +11,7 @@
 
 import { PRAYERS } from '../lib/constants.js';
 import { fmt12, addMins } from '../lib/formatters.js';
+import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 import PrayerCard from './PrayerCard.jsx';
 
 export default function PrayerList({
@@ -28,21 +29,39 @@ export default function PrayerList({
   eidDate,            // (timeStr) → Date helper from parent
   showEidBanner,      // boolean — show the eid block at all
 }) {
+  const { t, lang } = useT();
+
+  // Bilingual name pair per prayer, language-aware:
+  //   - English UI: primary = English name,  secondary = Arabic name
+  //   - Arabic UI:  primary = Arabic name,   secondary = (no secondary — same as primary)
+  //                 We render the English transliteration as secondary for visual variety.
+  //   - Urdu UI:    primary = Urdu name,     secondary = Arabic name
+  // The English fallback ensures we always render two distinct lines so the
+  // visual rhythm of the prayer list (big + small) is preserved.
+  function namesFor(prayerKey) {
+    const arabicName = PRAYERS.find(p => p.key === prayerKey)?.ar || '';
+    const localized  = t(`prayer.${prayerKey}`);          // localized primary
+    const englishKey = PRAYERS.find(p => p.key === prayerKey)?.en || ''; // english fallback secondary
+    if (lang === 'ar') return { primary: arabicName, secondary: englishKey };
+    if (lang === 'ur') return { primary: localized,  secondary: arabicName };
+    return                    { primary: localized,  secondary: arabicName };
+  }
+
   return (
     <div className="pcol">
       {/* Column headers */}
       <div className="pheader">
         <div className="pheader-name"/>
-        <div className="pheader-col">Adhan</div>
-        <div className="pheader-col">Iqamah</div>
+        <div className="pheader-col">{t('label.adhan')}</div>
+        <div className="pheader-col">{t('label.iqamah')}</div>
       </div>
 
       {/* 5 daily prayers (Sunrise filtered out — observational only) */}
       {PRAYERS.filter(p => p.key !== 'sunrise').map(p => {
-        const t        = todayTimes[p.key];
-        const iqamahT  = addMins(t, iqamah[p.key]);
+        const adhanT   = todayTimes[p.key];
+        const iqamahT  = addMins(adhanT, iqamah[p.key]);
         const isActive = active?.key === p.key;
-        const isPassed = t && t < now && !isActive;
+        const isPassed = adhanT && adhanT < now && !isActive;
 
         // On Fridays with active slots, replace Dhuhr with the Jumu'ah block.
         if (p.key === 'dhuhr' && isFriday && activeJumuahSlots.length > 0) {
@@ -60,7 +79,7 @@ export default function PrayerList({
               }}>
                 <div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:'#3DC878', borderRadius:'4px 0 0 4px' }}/>
                 <div className="pcard-name">
-                  <div className="pen" style={{color:'#3DC878'}}>Jumu'ah</div>
+                  <div className="pen" style={{color:'#3DC878'}}>{t('prayer.jumuah')}</div>
                   <div className="par" style={{color:'rgba(61,200,120,.7)'}}>صلاة الجمعة</div>
                 </div>
                 <div className="pcard-times">
@@ -74,11 +93,11 @@ export default function PrayerList({
           return (
             <div key="jumuah-friday" className="jumuah-banner">
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                <div className="jumuah-title">Jumu'ah <span className="jumuah-arabic">صلاة الجمعة</span></div>
+                <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">صلاة الجمعة</span></div>
                 {nextJumuah ? (
-                  <div className="jumuah-next">Next in {Math.ceil((nextJumuah - now) / 60000)} min</div>
+                  <div className="jumuah-next">{fmtStr(t('label.nextInMin'), { min: Math.ceil((nextJumuah - now) / 60000) })}</div>
                 ) : (
-                  <div className="jumuah-next" style={{color:'rgba(61,200,120,.35)'}}>Complete</div>
+                  <div className="jumuah-next" style={{color:'rgba(61,200,120,.35)'}}>{t('label.complete')}</div>
                 )}
               </div>
               <div className="jumuah-slots">
@@ -88,7 +107,7 @@ export default function PrayerList({
                   const isPast = jt < now;
                   return (
                     <div key={i} className="jumuah-slot" style={{ opacity: isPast ? .35 : 1 }}>
-                      <div className="jumuah-slot-lbl">{i===0?'1st':i===1?'2nd':'3rd'}</div>
+                      <div className="jumuah-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
                       <div className="jumuah-slot-time">{fmt12(jt, cityTz)}</div>
                       <div className="jumuah-slot-iqamah">↪ {fmt12(jiq, cityTz)}</div>
                     </div>
@@ -100,12 +119,13 @@ export default function PrayerList({
         }
 
         // Standard prayer card
+        const names = namesFor(p.key);
         return (
           <PrayerCard
             key={p.key}
-            enName={p.en}
-            arName={p.ar}
-            time={t}
+            enName={names.primary}
+            arName={names.secondary}
+            time={adhanT}
             iqamahTime={iqamahT}
             cityTz={cityTz}
             isActive={isActive}
@@ -116,7 +136,7 @@ export default function PrayerList({
 
       {/* Eid prayer banner — shown all day until last iqamah ends */}
       {showEidBanner && (() => {
-        const eidLabel = activeEidSlots[0]?.label || 'Eid Prayer';
+        const eidLabel = activeEidSlots[0]?.label || t('prayer.eid');
         if (activeEidSlots.length === 1) {
           const e   = activeEidSlots[0];
           const et  = eidDate(e.time);
@@ -149,11 +169,11 @@ export default function PrayerList({
                 const msBefore = firstEidTime - now;
                 const daysUntil = Math.ceil(msBefore / (1000*60*60*24));
                 if (daysUntil > 0) {
-                  return <div className="eid-next">{daysUntil} day{daysUntil!==1?'s':''} away</div>;
+                  return <div className="eid-next">{fmtStr(t('label.daysAway'), { days: daysUntil, plural: daysUntil!==1?'s':'' })}</div>;
                 }
                 return nextEid
-                  ? <div className="eid-next">Next in {Math.ceil((nextEid - now) / 60000)} min</div>
-                  : <div className="eid-next" style={{color:'rgba(196,158,255,.35)'}}>Complete</div>;
+                  ? <div className="eid-next">{fmtStr(t('label.nextInMin'), { min: Math.ceil((nextEid - now) / 60000) })}</div>
+                  : <div className="eid-next" style={{color:'rgba(196,158,255,.35)'}}>{t('label.complete')}</div>;
               })()}
             </div>
             <div className="eid-slots">
@@ -163,7 +183,7 @@ export default function PrayerList({
                 const isPast = et < now;
                 return (
                   <div key={i} className="eid-slot" style={{ opacity: isPast ? .35 : 1 }}>
-                    <div className="eid-slot-lbl">{i===0?'1st':i===1?'2nd':'3rd'}</div>
+                    <div className="eid-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
                     <div className="eid-slot-time">{fmt12(et, cityTz)}</div>
                     <div className="eid-slot-iqamah">↪ {fmt12(eiq, cityTz)}</div>
                   </div>
@@ -184,7 +204,7 @@ export default function PrayerList({
             <div className="pcard jumuah-dim" style={{ borderColor:'rgba(61,200,120,.25)' }}>
               <div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:'#3DC878', borderRadius:'4px 0 0 4px' }}/>
               <div className="pcard-name">
-                <div className="pen" style={{color:'rgba(61,200,120,.7)'}}>Jumu'ah</div>
+                <div className="pen" style={{color:'rgba(61,200,120,.7)'}}>{t('prayer.jumuah')}</div>
                 <div className="par" style={{color:'rgba(61,200,120,.45)'}}>الجمعة</div>
               </div>
               <div className="pcard-times">
@@ -197,7 +217,7 @@ export default function PrayerList({
         return (
           <div className="jumuah-banner jumuah-dim">
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <div className="jumuah-title">Jumu'ah <span className="jumuah-arabic">الجمعة</span></div>
+              <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">الجمعة</span></div>
             </div>
             <div className="jumuah-slots">
               {activeJumuahSlots.map((j, i) => {
@@ -205,7 +225,7 @@ export default function PrayerList({
                 const jiq = addMins(jt, j.iqamah);
                 return (
                   <div key={i} className="jumuah-slot">
-                    <div className="jumuah-slot-lbl">{i===0?'1st':i===1?'2nd':'3rd'}</div>
+                    <div className="jumuah-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
                     <div className="jumuah-slot-time">{fmt12(jt, cityTz)}</div>
                     <div className="jumuah-slot-iqamah">↪ {fmt12(jiq, cityTz)}</div>
                   </div>

@@ -11,9 +11,11 @@
 // cleanliness — it's available in the prayer list at the top of the dashboard.
 
 import { fmt12, bearingToCompassLong } from '../../lib/formatters.js';
+import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import QiblaCompass from '../QiblaCompass.jsx';
 
 export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
+  const { t } = useT();
   return (
     <div className="icard">
       <div style={{
@@ -23,7 +25,7 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
 
         {/* LEFT half: Today's Fast */}
         <div style={{ display:'flex', flexDirection:'column', gap:'.4vh', minWidth:0 }}>
-          <div className="ilbl">Today's Fast</div>
+          <div className="ilbl">{t('widget.fast.title')}</div>
           {todayTimes.fajr && todayTimes.maghrib ? (() => {
             const total      = todayTimes.maghrib - todayTimes.fajr;
             const elapsed    = Math.max(0, Math.min(total, now - todayTimes.fajr));
@@ -43,7 +45,7 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
                   </div>
                 </div>
                 <div style={{ fontSize:'clamp(0.563rem,.95vw,0.938rem)', color:'#9A8B6E', letterSpacing:'.06em' }}>
-                  {Math.floor(totalMins/60)}h {totalMins%60}m total
+                  {fmtStr(t('widget.fast.total'), { hours: Math.floor(totalMins/60), mins: totalMins%60 })}
                 </div>
                 {isActive && (
                   <>
@@ -61,7 +63,7 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
                       fontSize:'clamp(0.5rem,.85vw,0.875rem)',
                       color:'var(--t-accent)', letterSpacing:'.08em',
                     }}>
-                      {Math.floor(remainMins/60)}h {remainMins%60}m to iftar
+                      {fmtStr(t('widget.fast.toIftar'), { hours: Math.floor(remainMins/60), mins: remainMins%60 })}
                     </div>
                   </>
                 )}
