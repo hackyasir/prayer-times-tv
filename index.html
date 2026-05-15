@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- ── Strict Content Security Policy ──────────────────────────────────── -->
+  <!--
+    Explanation of each directive:
+    default-src 'self'        – block everything not explicitly listed
+    script-src  'self'        – JS only from same origin (Vite handles hashes in prod)
+    style-src   'self' 'unsafe-inline' https://fonts.googleapis.com
+                              – Tailwind inline styles + Google Fonts CSS
+    font-src    'self' https://fonts.gstatic.com
+                              – Google Fonts WOFF2 files
+    img-src     'self' data:  – App icons, data URIs for favicons
+    connect-src 'self'        – Fetch/XHR only to same origin (adhan is local)
+    worker-src  'self'        – Service worker from same origin
+    manifest-src 'self'       – Web app manifest
+    frame-ancestors 'none'   – Prevent embedding in iframes (clickjacking)
+    base-uri    'self'        – Prevent base tag injection
+    form-action 'self'        – Prevent form hijacking
+    object-src  'none'        – No Flash / plugins
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src  'self';
+      style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src    'self' https://fonts.gstatic.com;
+      img-src     'self' data:;
+      connect-src 'self' https://geocoding-api.open-meteo.com https://api.open-meteo.com;
+      worker-src  'self';
+      manifest-src 'self';
+      frame-ancestors 'none';
+      base-uri    'self';
+      form-action 'self';
+      object-src  'none';
+    " />
+
+  <!-- ── SEO / Social ─────────────────────────────────────────────────────── -->
+  <title>Prayer Times — Digital Masjid Display</title>
+  <meta name="description"
+    content="A high-visibility prayer times dashboard optimised for Smart TVs, Fire Sticks, and large displays. Works offline. Open-source." />
+  <meta name="theme-color" content="#000000" />
+
+  <!-- ── PWA ──────────────────────────────────────────────────────────────── -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- ── Fonts ─────────────────────────────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body class="bg-black">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

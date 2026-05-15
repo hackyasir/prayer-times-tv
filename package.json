@@ -1,0 +1,31 @@
+{
+  "name": "prayer-times-tv",
+  "version": "1.0.0",
+  "private": true,
+  "description": "High-visibility prayer times dashboard for Smart TVs and large displays",
+  "type": "module",
+  "scripts": {
+    "dev":       "vite",
+    "build":     "vite build",
+    "preview":   "vite preview",
+    "lint":      "eslint src --ext .js,.jsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "adhan":      "^4.4.3",
+    "react":      "^19.0.0",
+    "react-dom":  "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react":              "^19.0.0",
+    "@types/react-dom":          "^19.0.0",
+    "@vitejs/plugin-react":      "^4.3.1",
+    "eslint":                    "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "vite":                      "^6.0.0",
+    "vite-plugin-pwa":           "^0.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
