@@ -31,7 +31,7 @@
 }
 
 .clock-main {
-    font-size: calc(clamp(2.75rem, 9vw, 16.25rem) * var(--t-fs, 1));
+    font-size: calc(clamp(4rem, 12vw, 22rem) * var(--t-fs, 1));
     font-weight: 700;
     color: var(--t-clock-color);
     line-height: 1;

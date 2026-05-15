@@ -8,8 +8,10 @@
 // Noon = solar noon = Dhuhr (sun is at its highest). We reuse todayTimes.dhuhr.
 
 import { fmt12 } from '../../lib/formatters.js';
+import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 
 export default function SunDayCycle({ todayTimes, now, cityTz, dayMins }) {
+  const { t } = useT();
   return (
     <div className="icard">
       {/* Three sun events laid out as a 3-col grid with separators */}
@@ -18,17 +20,17 @@ export default function SunDayCycle({ todayTimes, now, cityTz, dayMins }) {
         alignItems:'center',
       }}>
         <div className="sun-item">
-          <div className="sun-lbl">Sunrise</div>
+          <div className="sun-lbl">{t('widget.sun.sunrise')}</div>
           <div className="sun-val">{fmt12(todayTimes.sunrise, cityTz)}</div>
         </div>
         <div className="sun-sep"/>
         <div className="sun-item">
-          <div className="sun-lbl">Noon</div>
+          <div className="sun-lbl">{t('widget.sun.noon')}</div>
           <div className="sun-val">{fmt12(todayTimes.dhuhr, cityTz)}</div>
         </div>
         <div className="sun-sep"/>
         <div className="sun-item">
-          <div className="sun-lbl">Sunset</div>
+          <div className="sun-lbl">{t('widget.sun.sunset')}</div>
           <div className="sun-val">{fmt12(todayTimes.maghrib, cityTz)}</div>
         </div>
       </div>
@@ -56,9 +58,13 @@ export default function SunDayCycle({ todayTimes, now, cityTz, dayMins }) {
               fontSize:'clamp(0.375rem,.65vw,0.625rem)',
               color:'#9A8B6E', letterSpacing:'.08em', marginTop:'.3vh',
             }}>
-              <span>{isDay ? `${Math.round(pct)}% of day` : (pct === 0 ? 'Pre-dawn' : 'Night')}</span>
+              <span>{
+                isDay
+                  ? fmtStr(t('widget.sun.pctOfDay'), { pct: Math.round(pct) })
+                  : (pct === 0 ? t('widget.sun.preDawn') : t('widget.sun.night'))
+              }</span>
               {dayMins !== null && (
-                <span>☀️ {Math.floor(dayMins/60)}h {dayMins%60}m daylight</span>
+                <span>☀️ {fmtStr(t('widget.sun.daylight'), { hours: Math.floor(dayMins/60), mins: dayMins%60 })}</span>
               )}
             </div>
           </div>

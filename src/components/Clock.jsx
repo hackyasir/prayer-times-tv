@@ -14,6 +14,7 @@
 import ProgressVisual from './ProgressVisual.jsx';
 import { fmt12, fmtCountdown } from '../lib/formatters.js';
 import { PRAYERS } from '../lib/constants.js';
+import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 
 export default function Clock({
   // Pre-formatted display strings
@@ -34,6 +35,23 @@ export default function Clock({
   activeKey,
   hadiths,
 }) {
+  const { t, lang } = useT();
+
+  // Localized name pair for the next prayer.
+  // Same pattern as PrayerList.namesFor — keeps the visual rhythm (big + small)
+  // of the Arabic+Latin pair regardless of UI language.
+  // (Falls back to next's literal en/ar fields if no key — shouldn't happen.)
+  function nextNames() {
+    if (!next) return { primary: '', secondary: '' };
+    const arabicName = next.ar || '';
+    const localized  = next.key ? t(`prayer.${next.key}`) : next.en;
+    const englishKey = next.en  || '';
+    if (lang === 'ar') return { primary: arabicName, secondary: englishKey };
+    if (lang === 'ur') return { primary: localized,  secondary: arabicName };
+    return                    { primary: localized,  secondary: arabicName };
+  }
+  const names = nextNames();
+
   return (
     <div className="ccol">
       {/* Clock time block */}
@@ -53,9 +71,9 @@ export default function Clock({
       {/* Next-prayer section: Arabic + Latin name, then ProgressVisual + countdown */}
       {next ? (
         <div className="next-sec">
-          <div className="next-lbl">Next Prayer</div>
-          <div className="next-name">{next.en}</div>
-          <div className="next-ar">{next.ar}</div>
+          <div className="next-lbl">{t('label.next')}</div>
+          <div className="next-name">{names.primary}</div>
+          <div className="next-ar">{names.secondary}</div>
 
           <ProgressVisual
             style={progressStyle}
@@ -72,13 +90,18 @@ export default function Clock({
             <>
               <div className="countdown-big">{secsToNext}</div>
               <div className="countdown-lbl">
-                second{secsToNext === 1 ? '' : 's'} until {next.en}
+                {fmtStr(t('label.untilSeconds'), {
+                  plural: secsToNext === 1 ? '' : 's',
+                  prayer: names.primary,
+                })}
               </div>
             </>
           ) : (
             <>
               <div className="countdown">{fmtCountdown(secsToNext)}</div>
-              <div className="countdown-lbl">Until {next.en} · {fmt12(next.time, cityTz)}</div>
+              <div className="countdown-lbl">
+                {fmtStr(t('label.until'), { prayer: names.primary, time: fmt12(next.time, cityTz) })}
+              </div>
             </>
           )}
         </div>
@@ -89,7 +112,7 @@ export default function Clock({
           letterSpacing: '0.1em',
           textAlign: 'center',
         }}>
-          All prayers complete today
+          {t('label.allComplete')}
         </div>
       )}
 

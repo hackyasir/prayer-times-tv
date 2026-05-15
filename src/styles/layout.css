@@ -76,7 +76,13 @@
 }
 .lcol { grid-area: prayers; min-height: 0; overflow: hidden; }
 .ccol {
-  grid-area: clock; min-height: 0; overflow: hidden;
+  grid-area: clock; min-height: 0;
+  /* Note: NO overflow:hidden here. Earlier versions clipped because the
+     hadith at the bottom of the column fell past the flex container's
+     edge when content was tight (at 100% browser zoom). Letting overflow
+     be visible keeps the hadith readable; the widgets row below has
+     enough top margin from .grid's gap that visual overlap is unlikely
+     unless the viewport is extreme. */
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: .3vh;
@@ -95,18 +101,20 @@
   display: grid;
   grid-template-columns: 1.3fr 1.2fr 1.5fr;
   gap: .8vw;
-  align-items: start;
+  align-items: stretch;     /* all 3 cards match tallest's height */
 }
-/* Widget cards: size to content. Capped so a single overgrown card can't
-   blow up the layout. Empty space goes to the middle (clock + prayers),
-   not to the widgets — the dashboard's primary information gets emphasis. */
+/* Widget cards: equal height (stretched by .rcol). Internal content
+   distributes vertically via space-between so each section sits at its
+   natural place (top/middle/bottom) and any extra height becomes breathing
+   space BETWEEN sections, not dead space below them. */
 .rcol > * {
   min-height: 0;
   max-height: 26vh;
   overflow: hidden;
-  align-self: start;
+  align-self: stretch;
 }
 .icard, .weather-card {
   height: auto !important;
   max-height: 30vh;
+  justify-content: space-between !important;
 }

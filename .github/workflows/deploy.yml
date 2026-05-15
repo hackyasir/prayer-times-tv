@@ -47,7 +47,7 @@ jobs:
           # e.g. if your repo is github.com/you/prayer-times-tv → /prayer-times-tv/
           VITE_BASE_URL: /${{ github.event.repository.name }}/
           VITE_SETTINGS_PIN:      ${{ secrets.VITE_SETTINGS_PIN }}
-          VITE_SHOW_TEST_BUTTONS: ${{ vars.VITE_SHOW_TEST_BUTTONS }}
+          VITE_SHOW_TEST_BUTTONS: ${{ vars.VITE_SHOW_TEST_BUTTONS || 'true' }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

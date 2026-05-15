@@ -1,14 +1,19 @@
 // ── Header ───────────────────────────────────────────────────────────────────
 // Top strip across the dashboard with three sections:
 //   LEFT:    Mosque icon + Masjid name + subtitle
-//   CENTRE:  Arabic title "مواقيت الصلاة" (Times of Prayer)
+//   CENTRE:  Arabic decorative title "مواقيت الصلاة" (Times of Prayer)
 //   RIGHT:   Location pin · Hijri date · Method badge
+//
+// The Arabic centre title is INTENTIONALLY NOT translated — it's the
+// standard calligraphic identifier shown on mosques worldwide regardless
+// of local language, equivalent to a logo.
 //
 // The mosque icon reflects the active prayer's colour palette and current
 // lunar phase via its activePrayer + lunarPhase props.
 
 import MosqueIcon from './MosqueIcon.jsx';
 import { METHOD_LABELS } from '../lib/constants.js';
+import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Header({
   masjidName,
@@ -18,6 +23,7 @@ export default function Header({
   activePrayerKey,
   lunarPhase,
 }) {
+  const { t } = useT();
   return (
     <div className="hdr">
       <div className="hdr-left">
@@ -26,12 +32,12 @@ export default function Header({
           {masjidName ? (
             <>
               <div className="app-title">{masjidName}</div>
-              <div className="app-sub">Prayer Times · Digital Display</div>
+              <div className="app-sub">{t('app.subtitle.named')}</div>
             </>
           ) : (
             <>
-              <div className="app-title">Prayer Times</div>
-              <div className="app-sub">Digital Masjid Display</div>
+              <div className="app-title">{t('app.title')}</div>
+              <div className="app-sub">{t('app.subtitle')}</div>
             </>
           )}
         </div>

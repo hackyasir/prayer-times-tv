@@ -8,8 +8,10 @@
 // audioReady = true and the banner disappears on next render.
 
 import { primeAudio, isAudioUnlocked } from '../lib/audio.js';
+import { useT } from '../i18n/I18nContext.jsx';
 
 export default function AudioUnlockBanner({ visible, onUnlock }) {
+  const { t } = useT();
   if (!visible) return null;
   return (
     <div
@@ -36,7 +38,7 @@ export default function AudioUnlockBanner({ visible, onUnlock }) {
         boxShadow: '0 4px 16px rgba(0,0,0,.4)',
       }}
     >
-      🔔 Tap to enable iqamah beeps
+      {t('audio.unlock')}
     </div>
   );
 }

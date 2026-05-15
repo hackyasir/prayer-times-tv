@@ -54,16 +54,54 @@ export const DEFAULTS = {
   highLatRule:   'middleOfNight', // for cities above ~48° latitude
                                   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
   theme:         'Classic Gold',
-  chimeEnabled:  true, // play iqamah chime
+  // Prayer beeps — split into adhan + iqamah so admins can enable either
+  // independently. Default: iqamah ON (the "stand up, prayer starting now"
+  // signal everyone wants), adhan OFF (most mosques play the actual adhan
+  // from speakers; a beep would compete with that audio).
+  // Legacy `chimeEnabled` from earlier versions is migrated in loadSettings:
+  // a stored true value sets BOTH new flags true; false sets both false.
+  chimeAdhan:    false,
+  chimeIqamah:   true,
   fontScale:     100,  // % — 100 = default, 70..130 adjustable in settings
   progressStyle: 'ring', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
+  lang:          'en',   // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
+  announcements: '',     // Newline-separated list shown in the bottom ticker.
+                         // Empty string = hide ticker entirely.
+
+  // ── Blackout mode (Phase 3) ──────────────────────────────────────────────
+  // From `blackoutLeadSeconds` before each iqamah until `blackoutDurations[key]`
+  // minutes after, the dashboard goes dark with a small Arabic invocation
+  // centred — reverent, focused, no distractions during prayer.
+  // Defaults: ~30s lead, prayer-specific durations matching typical mosque
+  // congregational prayer lengths (Maghrib shortest, Isha longest).
+  blackoutEnabled:     true,
+  blackoutLeadSeconds: 30,
+  blackoutOpacity:     85,    // % opacity of the overlay (0..100)
+                              // 0 = fully transparent (dashboard fully visible)
+                              // 85 = default — clearly "in prayer mode" but
+                              //      dashboard still faintly visible underneath
+                              // 100 = fully opaque (pure black, current behaviour)
+  blackoutDurations:   { fajr:10, dhuhr:10, asr:10, maghrib:7, isha:12 },
 };
 
 function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const stored = JSON.parse(raw);
+
+    // ── Legacy migration: chimeEnabled → chimeAdhan + chimeIqamah ─────────
+    // Pre-split builds had a single `chimeEnabled` flag that controlled both
+    // adhan and iqamah beeps. If we find that key in storage and the new
+    // split keys aren't present, map the old value to both new fields so
+    // users don't lose their preference on upgrade. After migration, the
+    // old key is harmless (just ignored), so we don't actively delete it.
+    if ('chimeEnabled' in stored && !('chimeAdhan' in stored) && !('chimeIqamah' in stored)) {
+      stored.chimeAdhan  = !!stored.chimeEnabled;
+      stored.chimeIqamah = !!stored.chimeEnabled;
+    }
+
+    return { ...DEFAULTS, ...stored };
   } catch { return DEFAULTS; }
 }
 function saveSettings(s) {

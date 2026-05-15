@@ -7,7 +7,10 @@
 // The PIN is verified by the parent — this component is purely presentational:
 // it tracks its own input state and emits `onSubmit(input)` for verification.
 
+import { useT } from '../i18n/I18nContext.jsx';
+
 export default function PinOverlay({ visible, input, error, onChange, onSubmit, onCancel }) {
+  const { t } = useT();
   if (!visible) return null;
   return (
     <div className="overlay">
@@ -23,13 +26,13 @@ export default function PinOverlay({ visible, input, error, onChange, onSubmit, 
           fontFamily:"'Amiri',serif", fontSize:20,
           color:'#C9A84C', letterSpacing:'.1em', textTransform:'uppercase',
           marginBottom:20,
-        }}>🔒 Settings PIN</div>
+        }}>{t('pin.title')}</div>
         <input
           type="password"
           value={input}
           onChange={e => onChange(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && onSubmit()}
-          placeholder="Enter PIN"
+          placeholder={t('pin.placeholder')}
           autoFocus
           style={{
             width:'100%',
@@ -43,10 +46,10 @@ export default function PinOverlay({ visible, input, error, onChange, onSubmit, 
         />
         {error && <div style={{
           fontSize:13, color:'#c0392b', marginBottom:8, letterSpacing:'.05em',
-        }}>Incorrect PIN — try again</div>}
+        }}>{t('pin.error')}</div>}
         <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:16 }}>
-          <button className="sbtn" onClick={onCancel}>Cancel</button>
-          <button className="sbtn pri" onClick={onSubmit}>Unlock</button>
+          <button className="sbtn" onClick={onCancel}>{t('pin.cancel')}</button>
+          <button className="sbtn pri" onClick={onSubmit}>{t('pin.unlock')}</button>
         </div>
       </div>
     </div>
