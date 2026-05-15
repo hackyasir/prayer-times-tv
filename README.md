@@ -193,7 +193,7 @@ Six calculation methods are supported (see Settings → Calculation Method):
 | University of Karachi | 18° | 18° |
 | MUIS Singapore | 20° | 18° |
 
-Cross-validated against published values for Oakville · NYC · London · Karachi · Jakarta · Riyadh — matches to within ±1 minute.
+Cross-validated against published values for Toronto · NYC · London · Karachi · Jakarta · Riyadh — matches to within ±1 minute.
 
 ---
 
