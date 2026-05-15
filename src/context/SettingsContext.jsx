@@ -39,6 +39,15 @@ export const DEFAULTS = {
   cityTz: 'Europe/London', masjidName: '',
   method: 'MWL', shadow: 1,
   iqamah: { fajr:20, dhuhr:20, asr:20, maghrib:10, isha:20 },
+  // ── Auto-iqamah (Smart Mode) ─────────────────────────────────────────────
+  // When iqamahAutoCalc is true, the iqamah offsets above are IGNORED at
+  // runtime. Instead, iqamah is computed daily as:
+  //   adhan + iqamahAutoBuffers[key] minutes, then rounded UP to the next
+  //   :00 / :15 / :30 / :45.
+  // Maghrib's default buffer is 0 (immediate iqamah is common at sunset).
+  // OPT-IN: default OFF so existing setups behave identically.
+  iqamahAutoCalc:    false,
+  iqamahAutoBuffers: { fajr:30, dhuhr:15, asr:15, maghrib:0, isha:10 },
   jumuah: [
     { time:'13:00', iqamah:20, enabled:true  },
     { time:'13:45', iqamah:20, enabled:false },

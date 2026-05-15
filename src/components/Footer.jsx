@@ -9,11 +9,9 @@
 // edge cases during setup and can be hidden in production via
 // VITE_SHOW_TEST_BUTTONS=false.
 
-import { METHOD_LABELS } from '../lib/constants.js';
-import { useT, fmtStr } from '../i18n/I18nContext.jsx';
+import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Footer({
-  method,
   showTestBtns,
   testFriday,
   testPrayer,
@@ -30,7 +28,7 @@ export default function Footer({
     <div className="ftr">
       <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
         <button className="strig" onClick={onOpenSettings}>{t('footer.settings')}</button>
-        <div className="ftr-txt">{fmtStr(t('footer.offline'), { method: METHOD_LABELS[method] })}</div>
+        <div className="ftr-txt">{t('footer.offline')}</div>
       </div>
       <div className="ftr-dots">{[0,1,2,3,4].map(i => <div key={i} className="ftr-dot"/>)}</div>
       <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>

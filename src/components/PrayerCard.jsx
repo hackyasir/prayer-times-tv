@@ -5,8 +5,13 @@
 //   - active: golden glow + pulsing dot, current prayer window
 //   - passed: dimmed, prayer's time is behind us
 //   - upcoming: default styling
+//
+// Optional `prayerKey` prop renders an SVG icon to the left of the name.
+// Icon colour follows the parent text colour via currentColor so it auto-
+// matches the active/passed/upcoming visual state.
 
 import { fmt12 } from '../lib/formatters.js';
+import PrayerIcon from './PrayerIcons.jsx';
 
 /** Standard prayer row. */
 export default function PrayerCard({
@@ -17,9 +22,15 @@ export default function PrayerCard({
   cityTz,
   isActive,
   isPassed,
+  prayerKey,
 }) {
   return (
     <div className={`pcard${isActive ? ' active' : ''}${isPassed ? ' passed' : ''}`}>
+      {prayerKey && (
+        <div className="pcard-icon" aria-hidden="true">
+          <PrayerIcon prayerKey={prayerKey}/>
+        </div>
+      )}
       <div className="pcard-name">
         <div className="pen">{enName}</div>
         <div className="par">{arName}</div>
