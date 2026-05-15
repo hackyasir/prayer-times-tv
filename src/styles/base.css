@@ -1,0 +1,145 @@
+/* ── Base styles ─────────────────────────────────────────────────────────────
+ *
+ * Font imports + global reset + the four shared keyframe animations.
+ * Every other stylesheet builds on what's here.
+ *
+ *  - Fonts: Amiri (Arabic display), Rajdhani (Latin), Noto Naskh Arabic (Arabic body)
+ *  - Reset: zero margins/padding, border-box sizing on everything
+ *  - Root font-size 16px so rem-based clamps are predictable but still scale
+ *    with user browser-zoom / OS accessibility text-size
+ *  - Animations:
+ *      blink       — status dot (2s)
+ *      cardpulse   — active prayer card outline (2.8s)
+ *      ablink      — active prayer indicator dot (1.4s)
+ *      secondtick  — final-minute countdown digit (1s)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap');
+
+*,
+*::before,
+*::after {
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+}
+
+/* Root font-size: explicit 16px baseline so rem-based clamps are predictable.
+   User browser-zoom and OS accessibility text-size settings cascade through,
+   since rem is relative to root. This means our font-size:clamp(2.75rem,9vw,16.25rem)
+   for the main clock will scale with user zoom while still being viewport-fluid. */
+html {
+   font-size: 16px;
+}
+
+html,
+body,
+#root {
+   width: 100%;
+   height: 100%;
+   background: var(--t-bg);
+   overflow: hidden;
+}
+
+body {
+   font-family: 'Rajdhani', sans-serif;
+   color: var(--t-text);
+}
+
+/* Shared animations (used across multiple components) */
+@keyframes blink {
+
+   0%,
+   100% {
+      opacity: 1;
+      transform: scale(1)
+   }
+
+   50% {
+      opacity: .4;
+      transform: scale(.7)
+   }
+}
+
+@keyframes cardpulse {
+
+   0%,
+   100% {
+      box-shadow: 0 0 0 0 rgba(var(--t-accent-rgb), 0)
+   }
+
+   50% {
+      box-shadow: 0 0 0 3px var(--t-card-pulse)
+   }
+}
+
+@keyframes ablink {
+
+   0%,
+   100% {
+      opacity: 1;
+      transform: scale(1);
+      box-shadow: 0 0 0 0 transparent
+   }
+
+   50% {
+      opacity: .5;
+      transform: scale(.65);
+      box-shadow: 0 0 8px 4px var(--t-dot-glow)
+   }
+}
+
+@keyframes secondtick {
+   0% {
+      transform: scale(1.08);
+      opacity: 1
+   }
+
+   30% {
+      transform: scale(1);
+      opacity: 1
+   }
+
+   100% {
+      transform: scale(1);
+      opacity: .92
+   }
+}
+
+/* ── Reduced motion — accessibility override ────────────────────────────────
+ *
+ * Respects the user's OS-level "minimize animations" preference (System
+ * Preferences → Accessibility on macOS; Settings → Accessibility → Display
+ * on Windows; similar settings on iOS/Android/ChromeOS).
+ *
+ * Why this matters specifically for a mosque display:
+ *   - Audience often includes elderly viewers and people with vestibular
+ *     or migraine sensitivities
+ *   - Pulsing/blinking patterns are a known trigger for photosensitive
+ *     conditions
+ *   - The active-prayer card and pulsing dot are still clearly indicated
+ *     by colour and border alone — animations are decorative, not load-bearing
+ *
+ * What it does:
+ *   - Collapses all CSS animations to a single ~instant frame
+ *   - Collapses all CSS transitions to ~instant
+ *   - Affects every element, every pseudo-element, every animation/transition
+ *
+ * Won't affect:
+ *   - The 1-second clock tick (driven by setInterval in useCityTime, not CSS)
+ *   - The actual countdown digits updating
+ *   - Theme switches (functional state changes)
+ *   - SVG attribute animations (animateTransform inside MosqueIcon) — those
+ *     are SMIL, not CSS. Considered acceptable: the mandala rotation is slow
+ *     and small, not a flicker pattern.
+ */
+@media (prefers-reduced-motion: reduce) {
+
+   *,
+   *::before,
+   *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+   }
+}

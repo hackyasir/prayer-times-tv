@@ -1,0 +1,92 @@
+/* ── Responsive overrides ────────────────────────────────────────────────────
+ *
+ * Five breakpoints, in cascade order (smallest to largest):
+ *
+ *   ≤700px           Phone / very narrow — single-column stack
+ *   ≤420px           Very small phones — widgets also stack
+ *   ≥700px portrait  Tall portrait kiosks — middle band gets more height
+ *   ≤760px landscape Short landscape (e.g. half-screen browser) — compress clock
+ *   ≥2400px          Ultra-wide / 4K — selective font scaling for far viewing
+ *
+ * The canonical layout (layout.css) is tuned for ~1920×1080 landscape kiosks.
+ * These overrides keep the dashboard legible on everything else without
+ * changing the structural grid — only sizing/stacking/font tweaks.
+ */
+
+/* Phone / very narrow (≤700px) — single column stack */
+@media (max-width: 700px) {
+  .app { padding: 2vh 3vw; height: auto; min-height: 100vh; }
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'clock'
+      'prayers'
+      'widgets';
+    gap: 1.6vh;
+  }
+  .rcol {
+    grid-template-columns: repeat(2, 1fr);      /* 2-up at small width */
+    gap: 1.2vh 2vw;
+  }
+  .hdr { flex-wrap: wrap; gap: 1vh; }
+  .hdr-right { text-align: left; flex: 1 1 100%; }
+}
+
+/* Very small phones (≤420px) — single-column widgets too */
+@media (max-width: 420px) {
+  .rcol { grid-template-columns: 1fr; }
+}
+
+/* Tall portrait (height > width) — middle band gets more vertical space */
+@media (orientation: portrait) and (min-width: 700px) {
+  .grid { grid-template-rows: 1.4fr auto; }     /* middle takes more vertical */
+  .ccol { gap: 2vh; }
+}
+
+/* Short landscape (e.g. half-screen browser, low-res TV) — compress clock area */
+@media (max-height: 760px) and (orientation: landscape) {
+  .app { padding: 1.6vh 2.4vw; }
+  .clock-main { font-size: calc(clamp(2rem, 6vw, 6rem) * var(--t-fs, 1)); }
+  .clock-sec  { font-size: calc(clamp(0.875rem, 2vw, 2.25rem) * var(--t-fs, 1)); }
+  .clock-date { margin-top: 0.2vh; }
+  .next-en    { font-size: calc(clamp(1.5rem, 3vw, 3.5rem) * var(--t-fs, 1)); }
+  .next-ar    { font-size: calc(clamp(1rem, 2vw, 2.25rem) * var(--t-fs, 1)); }
+  .countdown      { font-size: calc(clamp(1.5rem, 3.2vw, 4rem) * var(--t-fs, 1)); }
+  .countdown-big  { font-size: calc(clamp(3rem, 7vw, 8rem) * var(--t-fs, 1)); }
+  .ccol { gap: 0.4vh; }
+  .ring-wrap { transform: scale(0.7); margin: -2vh 0; }
+  .hadith { display: none; }
+  .ftr { padding-top: 0.8vh; }
+}
+
+/* Ultra-wide / 4K+ — selective font scaling sized for far viewing in a hall.
+   Layout stays the same; only fonts grow. Primary info bumps significantly;
+   secondary info holds steady to preserve visual hierarchy. */
+@media (min-width: 2400px) {
+  .app  { padding: 3.5vh 3.5vw; }
+  .grid { gap: 2vw; }
+
+  .clock-main     { font-size: calc(clamp(8rem, 11vw, 22rem) * var(--t-fs, 1)); }
+  .clock-sec      { font-size: calc(clamp(2.5rem, 4vw, 7.5rem) * var(--t-fs, 1)); }
+  .countdown      { font-size: calc(clamp(3rem, 6vw, 12rem) * var(--t-fs, 1)); }
+  .countdown-big  { font-size: calc(clamp(7rem, 15vw, 28rem) * var(--t-fs, 1)); }
+  .next-en        { font-size: calc(clamp(3rem, 6vw, 12.5rem) * var(--t-fs, 1)); }
+  .next-ar        { font-size: calc(clamp(2rem, 4vw, 8rem) * var(--t-fs, 1)); }
+  .clock-date     { font-size: calc(clamp(1rem, 1.5vw, 2.5rem) * var(--t-fs, 1)); }
+
+  .pen            { font-size: calc(clamp(1.5rem, 2.2vw, 5rem) * var(--t-fs, 1)); }
+  .par            { font-size: calc(clamp(1.1rem, 1.6vw, 3.5rem) * var(--t-fs, 1)); }
+  .ptime, .ptime-iqamah {
+    font-size: calc(clamp(1.5rem, 2.4vw, 5rem) * var(--t-fs, 1));
+  }
+  .pheader-col    { font-size: calc(clamp(0.6rem, 0.85vw, 1.4rem) * var(--t-fs, 1)); }
+
+  .app-title      { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
+  .arabic-title   { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
+  .loc            { font-size: calc(clamp(0.85rem, 1.2vw, 2rem) * var(--t-fs, 1)); }
+  .hijri          { font-size: calc(clamp(1rem, 1.4vw, 2.4rem) * var(--t-fs, 1)); }
+
+  .hadith-ar      { font-size: calc(clamp(1.2rem, 1.6vw, 2.6rem) * var(--t-fs, 1)); }
+  .hadith-en      { font-size: calc(clamp(0.7rem, 0.95vw, 1.5rem) * var(--t-fs, 1)); }
+}

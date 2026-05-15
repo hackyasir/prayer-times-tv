@@ -1,0 +1,26 @@
+/* ── Stylesheet barrel ───────────────────────────────────────────────────────
+ *
+ * Imports every CSS file in the order they should cascade.
+ *
+ * 1. base          — fonts, reset, root font-size, animations
+ * 2. layout        — main grid, corners, header
+ * 3. prayer-cards  — prayer list rows + Jumu'ah + Eid banners
+ * 4. clock         — centre column (clock + countdown + hadith)
+ * 5. widgets       — bottom band widgets (weather, sun, fast-qibla, status strip)
+ * 6. settings      — overlay panel + form controls + city search
+ * 7. responsive    — media-query overrides (must come last to override base)
+ *
+ * Importing this file from main.jsx (instead of injecting a CSS template
+ * literal at runtime) means Vite handles CSS as a real asset — HMR, source
+ * maps, postcss/autoprefixer all work properly. Theme CSS variables are
+ * still injected dynamically at runtime by buildThemeVars() in App.jsx,
+ * since they need to change when the user switches themes.
+ */
+
+@import './base.css';
+@import './layout.css';
+@import './prayer-cards.css';
+@import './clock.css';
+@import './widgets.css';
+@import './settings.css';
+@import './responsive.css';

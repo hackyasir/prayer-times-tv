@@ -1,0 +1,59 @@
+/* ── Settings panel (overlay) ────────────────────────────────────────────────
+ *
+ * The full-viewport modal overlay used by both the Settings panel and the
+ * PIN entry overlay. Styles cover:
+ *
+ *  - .overlay     full-viewport dimmed backdrop with centered child
+ *  - .sbox*       the panel chrome (header + body + max sizing)
+ *  - .sgrp        a settings group (label + input)
+ *  - .slbl        section label
+ *  - .ssel        styled <select>
+ *  - .sinput      styled <input>
+ *  - .sbtn        action buttons (Cancel / Apply / Unlock)
+ *  - .geo-btn     "Use my location" button
+ *  - .search-*    city-search dropdown styling
+ *
+ * The PIN overlay reuses .overlay + .sbtn (+ inline styles for its inner
+ * card) — no PIN-specific classes are needed here.
+ */
+
+.overlay     { position:fixed; inset:0; background:rgba(0,0,0,.96); z-index:100; display:flex; align-items:center; justify-content:center; }
+
+/* Panel chrome */
+.sbox        { background:var(--t-surface); border:1px solid var(--t-border-hi); border-radius:8px; width:min(520px,92vw); height:min(92vh,860px); display:flex; flex-direction:column; overflow:hidden; }
+.sbox-hdr    { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--t-border); flex-shrink:0; gap:12px; background:var(--t-surface); border-radius:8px 8px 0 0; }
+.stitle      { font-family:'Amiri',serif; font-size:20px; color:var(--t-accent); letter-spacing:.1em; text-transform:uppercase; margin:0; flex:1; }
+.sbox-body   { flex:1; overflow-y:scroll; padding:20px 24px 24px; min-height:0; }
+
+/* Settings groups (label + input pair) */
+.sgrp        { margin-bottom:16px; }
+.slbl        { display:block; font-size:12px; letter-spacing:.15em; text-transform:uppercase; color:var(--t-text-dim); margin-bottom:7px; }
+
+/* Form controls */
+.ssel        { width:100%; background:var(--t-surface2); border:1px solid var(--t-border); border-radius:4px; padding:9px 13px; font-family:'Rajdhani',sans-serif; font-size:15px; color:var(--t-text); outline:none; cursor:pointer; appearance:none; }
+.ssel:focus  { border-color:var(--t-border-hi); }
+.sinput      { width:100%; background:var(--t-surface2); border:1px solid var(--t-border); border-radius:4px; padding:9px 13px; font-family:'Rajdhani',sans-serif; font-size:15px; color:var(--t-text); outline:none; }
+.sinput:focus           { border-color:var(--t-border-hi); }
+.sinput::placeholder    { color:#4a4035; }
+
+/* City search dropdown */
+.search-results          { margin-top:4px; background:var(--t-surface2); border:1px solid var(--t-border); border-radius:4px; max-height:200px; overflow-y:auto; }
+.search-item             { padding:9px 13px; cursor:pointer; border-bottom:1px solid rgba(var(--t-accent-rgb),.08); transition:background .15s; }
+.search-item:last-child  { border-bottom:none; }
+.search-item:hover       { background:rgba(var(--t-accent-rgb),.08); }
+.search-item-name        { font-size:15px; color:var(--t-text); font-family:'Rajdhani',sans-serif; }
+.search-item-sub         { font-size:12px; color:var(--t-text-dim); font-family:'Rajdhani',sans-serif; margin-top:1px; }
+.search-selected         { padding:9px 13px; background:rgba(var(--t-accent-rgb),.08); border:1px solid rgba(var(--t-accent-rgb),.3); border-radius:4px; display:flex; align-items:center; justify-content:space-between; }
+.search-selected-name    { font-size:15px; color:var(--t-accent-hi); font-family:'Rajdhani',sans-serif; }
+.search-selected-sub     { font-size:12px; color:var(--t-text-dim); font-family:'Rajdhani',sans-serif; }
+.search-clear            { background:none; border:none; color:var(--t-text-dim); cursor:pointer; font-size:16px; padding:0 4px; line-height:1; }
+.search-clear:hover      { color:var(--t-accent); }
+.search-status           { padding:10px 13px; font-size:13px; color:#9A8B6E; font-family:'Rajdhani',sans-serif; letter-spacing:.05em; text-align:center; }
+
+/* Action buttons (Cancel / Apply / Unlock / Use my location) */
+.sbtn        { padding:9px 22px; border-radius:4px; border:1px solid var(--t-border-hi); background:transparent; color:var(--t-accent); font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:600; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; transition:background .2s; }
+.sbtn:hover  { background:rgba(var(--t-accent-rgb),.12); }
+.sbtn.pri    { background:rgba(var(--t-accent-rgb),.14); }
+.sbtn-row    { display:flex; gap:10px; align-items:center; }
+.geo-btn         { width:100%; text-align:center; border:1px solid rgba(var(--t-accent-rgb),.3); border-radius:4px; padding:10px; color:var(--t-accent); font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:600; letter-spacing:.15em; text-transform:uppercase; background:transparent; cursor:pointer; transition:background .2s; margin-top:4px; }
+.geo-btn:hover   { background:rgba(var(--t-accent-rgb),.1); }
