@@ -100,7 +100,7 @@ function ProgressDayBar({ prayers, todayTimes, tomorrowTimes, now }) {
           <div key={m.key} style={{
             position:'absolute', left:`${m.frac * 100}%`,
             transform:'translateX(-50%)',
-            fontSize:'clamp(0.45rem,.75vw,0.812rem)',
+            fontSize:'calc(clamp(0.45rem,.75vw,0.812rem) * var(--t-fs, 1))',
             color: m.time <= now ? 'var(--t-text-dim)' : 'var(--t-accent)',
             letterSpacing:'.08em', textTransform:'uppercase',
             whiteSpace:'nowrap',

@@ -1,89 +1,181 @@
-/* ── Prayer cards (left column) ──────────────────────────────────────────────
- *
- * The 5 prayer rows + their headers + the Jumu'ah/Eid special banners.
- *
- *  - .pcol           container with CSS container queries enabled so child
- *                    sizing scales to column width, not viewport (fixes the
- *                    iqamah-column overflow at narrow widths)
- *  - .pheader        column titles (Adhan / Iqamah)
- *  - .pcard          a single prayer row — has .active / .passed modifiers
- *  - .abadge*        pulsing dot shown next to the active prayer
- *  - .jumuah-*       Friday Jumu'ah banner styling (green palette)
- *  - .eid-*          Eid banner styling (purple palette)
+/* ── prayer-cards.css — prayer list content only ─────────────────────────
+ * Styles for .pcol and all its children.
+ * No layout overrides. No @media blocks (all in responsive.css).
+ * Typography uses cqi (container-query units) — scales with .pcol width.
  */
 
+/* ── Prayer column container ─────────────────────────────────────────────── */
 .pcol {
-  display: flex; flex-direction: column; gap: .5vh;
-  /* CONTAINER QUERY ROOT — child .pcard / .pheader respond to .pcol's actual
-     rendered width (cqw), not the viewport. This fixes the iqamah-column
-     overflow problem at its root: when the column is narrow (1.3fr of a
-     1100px grid) the time column shrinks accordingly; when it's full-width
-     (portrait), the time column grows to match. */
+  flex: 1 1 280px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: .5vh;
   container-type: inline-size;
   container-name: pcol;
 }
 
-/* Column header row (Adhan / Iqamah labels) */
-.pheader      { display:flex; align-items:center; padding:0 clamp(8px,1.1vw,18px); flex-shrink:0; }
-.pheader-name { flex:1; }
-.pheader-col  { width:calc(clamp(48px,22cqi,130px) * var(--t-fs, 1)); text-align:right; white-space:nowrap; font-size:calc(clamp(0.375rem,2.2cqi,0.625rem) * var(--t-fs, 1)); letter-spacing:.2em; text-transform:uppercase; color:rgba(var(--t-accent-rgb),.7); font-weight:700; }
+/* ── Column header (Adhan / Iqamah labels) ───────────────────────────────── */
+.pheader {
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(8px, 1.1vw, 18px);
+  flex-shrink: 0;
+}
 
-/* Prayer row base */
-.pcard         { position:relative; display:flex; align-items:center; background:var(--t-surface); border:1px solid var(--t-border); border-radius:4px; padding:clamp(4px,.65vh,9px) clamp(8px,1.1vw,18px); transition:all .3s; flex:1; overflow:hidden; gap:.5vw; }
-.pcard-name    { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; }
-.pcard-times   { display:flex; align-items:center; justify-content:flex-end; gap:.4vw; flex-shrink:0; position:relative; }
-.pcard::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:rgba(var(--t-accent-rgb),.15); }
+.pheader-name {
+  flex: 1;
+}
 
-/* Active state — pulsing accent border + glow */
-.pcard.active          { background:var(--t-active-bg); border-color:var(--t-accent); animation:cardpulse 2.8s ease-in-out infinite; }
-.pcard.active::before  { background:var(--t-accent); }
-.pcard.passed          { opacity:.35; }
+.pheader-col {
+  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
+  text-align: center;
+  white-space: nowrap;
+  font-size: calc(clamp(0.775rem, 2.2cqi, 1.025rem) * var(--t-fs, 1));
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: rgba(var(--t-accent-rgb), .7);
+  font-weight: 700;
+}
 
-/* Prayer name (en + ar) */
-.pen                   { font-size:calc(clamp(0.688rem,4.5cqi,1.438rem) * var(--t-fs, 1)); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--t-text); }
-.par                   { font-family:'Noto Naskh Arabic',serif; font-size:calc(clamp(0.625rem,3.5cqi,1.125rem) * var(--t-fs, 1)); color:var(--t-text-dim); direction:rtl; }
-.pcard.active .pen     { color:var(--t-accent-hi); }
-.pcard.active .par     { color:var(--t-accent); }
+/* ── Prayer row ──────────────────────────────────────────────────────────── */
+.pcard {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: 4px;
+  padding: clamp(4px, .65vh, 9px) clamp(8px, 1.1vw, 18px);
+  transition: all .3s;
+  flex: 0 1 auto;
+  min-height: clamp(24px, 5vh, 56px);
+  max-height: clamp(32px, 8vh, 72px);
+  overflow: hidden;
+  gap: .5vw;
+}
 
-/* Adhan + Iqamah time columns */
-.ptime                 { width:calc(clamp(48px,22cqi,130px) * var(--t-fs, 1)); text-align:right; white-space:nowrap; font-size:calc(clamp(0.75rem,5.2cqi,1.625rem) * var(--t-fs, 1)); font-weight:700; color:var(--t-text); letter-spacing:.03em; font-variant-numeric:tabular-nums; }
-.ptime-iqamah          { width:calc(clamp(48px,22cqi,130px) * var(--t-fs, 1)); text-align:right; white-space:nowrap; font-size:calc(clamp(0.688rem,1.35vw,1.375rem) * var(--t-fs, 1)); font-weight:600; color:var(--t-accent); letter-spacing:.03em; font-variant-numeric:tabular-nums; opacity:.85; }
-.pcard.active .ptime         { color:var(--t-accent-hi); }
-.pcard.active .ptime-iqamah  { color:var(--t-accent-hi); opacity:1; }
+.pcard-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
 
-/* Active-prayer pulsing dot (sits between name and times) */
-.abadge      { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:clamp(16px,1.8vw,30px); }
-.abadge-dot  { width:clamp(9px,.9vw,15px); height:clamp(9px,.9vw,15px); border-radius:50%; background:var(--t-dot-color); animation:ablink 1.4s ease-in-out infinite; }
+.pcard-times {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .4vw;
+  flex-shrink: 0;
+  position: relative;
+}
 
-/* Jumu'ah banner — replaces Dhuhr row on Fridays. Green palette. */
-.jumuah-banner          { background:linear-gradient(135deg,rgba(26,92,58,.5) 0%,rgba(10,10,10,1) 100%); border:1px solid rgba(61,200,120,.3); border-radius:4px; padding:clamp(4px,.65vh,9px) clamp(8px,1.1vw,18px); flex-shrink:0; position:relative; overflow:hidden; }
-.jumuah-banner::before  { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:#3DC878; }
-.jumuah-title           { font-size:calc(clamp(0.688rem,1.2vw,1.25rem) * var(--t-fs, 1)); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#3DC878; }
-.jumuah-arabic          { font-family:'Noto Naskh Arabic',serif; font-size:calc(clamp(0.625rem,1vw,1.062rem) * var(--t-fs, 1)); color:rgba(61,200,120,.7); direction:rtl; }
-.jumuah-slots           { display:flex; gap:.6vw; flex-wrap:wrap; margin-top:.4vh; }
-.jumuah-slot            { background:rgba(61,200,120,.08); border:1px solid rgba(61,200,120,.2); border-radius:3px; padding:clamp(2px,.4vh,5px) clamp(6px,.7vw,12px); text-align:center; flex:1; min-width:0; }
-.jumuah-slot-lbl        { font-size:calc(clamp(0.375rem,.6vw,0.562rem) * var(--t-fs, 1)); letter-spacing:.15em; text-transform:uppercase; color:rgba(61,200,120,.6); }
-.jumuah-slot-time       { font-size:calc(clamp(0.688rem,1.3vw,1.312rem) * var(--t-fs, 1)); font-weight:700; color:#3DC878; font-variant-numeric:tabular-nums; }
-.jumuah-slot-iqamah     { font-size:calc(clamp(0.562rem,1vw,1rem) * var(--t-fs, 1)); color:rgba(61,200,120,.75); font-variant-numeric:tabular-nums; margin-top:1px; }
-.jumuah-next            { font-size:calc(clamp(0.438rem,.7vw,0.688rem) * var(--t-fs, 1)); color:rgba(61,200,120,.6); letter-spacing:.1em; text-transform:uppercase; margin-top:.3vh; }
-.jumuah-dim             { opacity:.45; filter:saturate(.4); }
+.pcard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: rgba(var(--t-accent-rgb), .15);
+}
 
-/* Eid banner — same shape as Jumu'ah but purple palette */
-.eid-banner             { background:linear-gradient(135deg,rgba(120,60,180,.35) 0%,rgba(10,10,10,1) 100%); border:1px solid rgba(180,120,255,.35); border-radius:4px; padding:clamp(4px,.65vh,9px) clamp(8px,1.1vw,18px); flex-shrink:0; position:relative; overflow:hidden; }
-.eid-banner::before     { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:#b47cff; }
-.eid-title              { font-size:calc(clamp(0.688rem,1.2vw,1.25rem) * var(--t-fs, 1)); font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#c49eff; }
-.eid-arabic             { font-family:'Noto Naskh Arabic',serif; font-size:calc(clamp(0.625rem,1vw,1.062rem) * var(--t-fs, 1)); color:rgba(196,158,255,.7); direction:rtl; }
-.eid-slots              { display:flex; gap:.6vw; flex-wrap:wrap; margin-top:.4vh; }
-.eid-slot               { background:rgba(180,120,255,.08); border:1px solid rgba(180,120,255,.2); border-radius:3px; padding:clamp(2px,.4vh,5px) clamp(6px,.7vw,12px); text-align:center; flex:1; min-width:0; }
-.eid-slot-lbl           { font-size:calc(clamp(0.375rem,.6vw,0.562rem) * var(--t-fs, 1)); letter-spacing:.15em; text-transform:uppercase; color:rgba(180,120,255,.6); }
-.eid-slot-time          { font-size:calc(clamp(0.688rem,1.3vw,1.312rem) * var(--t-fs, 1)); font-weight:700; color:#c49eff; font-variant-numeric:tabular-nums; }
-.eid-slot-iqamah        { font-size:calc(clamp(0.562rem,1vw,1rem) * var(--t-fs, 1)); color:rgba(196,158,255,.75); font-variant-numeric:tabular-nums; margin-top:1px; }
-.eid-next               { font-size:calc(clamp(0.438rem,.7vw,0.688rem) * var(--t-fs, 1)); color:rgba(196,158,255,.6); letter-spacing:.1em; text-transform:uppercase; }
+/* Active state */
+.pcard.active {
+  background: var(--t-active-bg);
+  border-color: var(--t-accent);
+  animation: cardpulse 2.8s ease-in-out infinite;
+}
 
-/* ── Prayer icon (left of name) ─────────────────────────────────────────
- * SVG icon sized via container-query units so it scales with .pcol width.
- * `color: currentColor` is inherited through .pen so the icon auto-tones
- * to the active/passed state without needing per-state CSS. */
+.pcard.active::before {
+  background: var(--t-accent);
+}
+
+.pcard.passed {
+  opacity: .35;
+}
+
+/* ── Prayer name ─────────────────────────────────────────────────────────── */
+.pen {
+  font-size: calc(clamp(0.688rem, 4.5cqi, 1.438rem) * var(--t-fs, 1));
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--t-text);
+}
+
+.par {
+  font-family: 'Noto Naskh Arabic', serif;
+  font-size: calc(clamp(0.625rem, 3.5cqi, 1.125rem) * var(--t-fs, 1));
+  color: var(--t-text-dim);
+  direction: rtl;
+}
+
+.pcard.active .pen {
+  color: var(--t-accent-hi);
+}
+
+.pcard.active .par {
+  color: var(--t-accent);
+}
+
+/* ── Time columns ────────────────────────────────────────────────────────── */
+.ptime {
+  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
+  text-align: right;
+  white-space: nowrap;
+  font-size: calc(clamp(0.75rem, 5.2cqi, 1.625rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: var(--t-text);
+  letter-spacing: .03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ptime-iqamah {
+  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
+  text-align: right;
+  white-space: nowrap;
+  font-size: calc(clamp(0.75rem, 5.2cqi, 1.625rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: var(--t-accent);
+  letter-spacing: .03em;
+  font-variant-numeric: tabular-nums;
+  opacity: .85;
+}
+
+.pcard.active .ptime {
+  color: var(--t-accent-hi);
+}
+
+.pcard.active .ptime-iqamah {
+  color: var(--t-accent-hi);
+  opacity: 1;
+}
+
+/* ── Active pulsing dot ──────────────────────────────────────────────────── */
+.abadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: clamp(16px, 1.8vw, 30px);
+}
+
+.abadge-dot {
+  width: clamp(9px, .9vw, 15px);
+  height: clamp(9px, .9vw, 15px);
+  border-radius: 50%;
+  background: var(--t-dot-color);
+  animation: ablink 1.4s ease-in-out infinite;
+}
+
+/* ── Prayer icon ─────────────────────────────────────────────────────────── */
 .pcard-icon {
   display: flex;
   align-items: center;
@@ -92,15 +184,215 @@
   width: clamp(20px, 2.6vw, 38px);
   height: clamp(20px, 2.6vw, 38px);
   color: var(--t-accent-dim);
-  font-size: clamp(20px, 2.6vw, 38px);
+  font-size: calc(clamp(20px, 2.6vw, 38px) * var(--t-fs, 1));
   margin-right: .3vw;
 }
 
-/* Active row: icon brightens to match the gold accent */
 .pcard.active .pcard-icon {
   color: var(--t-accent-hi);
   filter: drop-shadow(0 0 6px var(--t-active-glow));
 }
 
-/* Passed rows already get container opacity:.35 from .pcard.passed; no
-   extra rule needed here. */
+/* ── Jumu'ah banner ──────────────────────────────────────────────────────── */
+.jumuah-banner {
+  background: linear-gradient(135deg, rgba(26, 92, 58, .5) 0%, rgba(10, 10, 10, 1) 100%);
+  border: 1px solid rgba(61, 200, 120, .3);
+  border-radius: 4px;
+  padding: clamp(4px, .65vh, 9px) clamp(8px, 1.1vw, 18px);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.jumuah-banner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #3DC878;
+}
+
+.jumuah-title {
+  font-size: calc(clamp(0.888rem, 4.5cqi, 1.45rem) * var(--t-fs, 1));
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #3DC878;
+}
+
+.jumuah-arabic {
+  font-family: 'Noto Naskh Arabic', serif;
+  font-size: calc(clamp(0.888rem, 4.5cqi, 1.45rem) * var(--t-fs, 1));
+  color: rgba(61, 200, 120, .7);
+  direction: rtl;
+}
+
+.jumuah-slots {
+  display: flex;
+  gap: .6vw;
+  flex-wrap: wrap;
+  margin-top: .4vh;
+}
+
+.jumuah-slot {
+  background: rgba(61, 200, 120, .08);
+  border: 1px solid rgba(61, 200, 120, .2);
+  border-radius: 3px;
+  padding: clamp(2px, .4vh, 5px) clamp(6px, .7vw, 12px);
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.jumuah-slot-lbl {
+  font-size: calc(clamp(0.975rem, 9cqi, 1.262rem) * var(--t-fs, 1));
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(61, 200, 120, .6);
+  font-weight: 600;
+}
+
+.jumuah-slot-time {
+  font-size: calc(clamp(0.975rem, 9cqi, 1.262rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: #3DC878;
+  font-variant-numeric: tabular-nums;
+}
+
+.jumuah-slot-iqamah {
+  font-size: calc(clamp(0.975rem, 9cqi, 1.262rem) * var(--t-fs, 1));
+  color: rgba(61, 200, 120, .75);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+.jumuah-next {
+  font-size: calc(clamp(0.638rem, .7vw, 0.888rem) * var(--t-fs, 1));
+  color: rgba(61, 200, 120, .6);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: .3vh;
+  font-weight: 700;
+}
+
+.jumuah-dim {
+  opacity: .45;
+  filter: saturate(.4);
+}
+
+/* ── Eid banner ──────────────────────────────────────────────────────────── */
+.eid-banner {
+  background: linear-gradient(135deg, rgba(120, 60, 180, .35) 0%, rgba(10, 10, 10, 1) 100%);
+  border: 1px solid rgba(180, 120, 255, .35);
+  border-radius: 4px;
+  padding: clamp(4px, .65vh, 9px) clamp(8px, 1.1vw, 18px);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.eid-banner::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #b47cff;
+}
+
+.eid-title {
+  font-size: calc(clamp(0.688rem, 1.2vw, 1.25rem) * var(--t-fs, 1));
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #c49eff;
+}
+
+.eid-arabic {
+  font-family: 'Noto Naskh Arabic', serif;
+  font-size: calc(clamp(0.625rem, 1vw, 1.062rem) * var(--t-fs, 1));
+  color: rgba(196, 158, 255, .7);
+  direction: rtl;
+}
+
+.eid-slots {
+  display: flex;
+  gap: .6vw;
+  flex-wrap: wrap;
+  margin-top: .4vh;
+}
+
+.eid-slot {
+  background: rgba(180, 120, 255, .08);
+  border: 1px solid rgba(180, 120, 255, .2);
+  border-radius: 3px;
+  padding: clamp(2px, .4vh, 5px) clamp(6px, .7vw, 12px);
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.eid-slot-lbl {
+  font-size: calc(clamp(0.575rem, .6vw, 0.762rem) * var(--t-fs, 1));
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: rgba(180, 120, 255, .6);
+}
+
+.eid-slot-time {
+  font-size: calc(clamp(0.688rem, 1.3vw, 1.312rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: #c49eff;
+  font-variant-numeric: tabular-nums;
+}
+
+.eid-slot-iqamah {
+  font-size: calc(clamp(0.562rem, 1vw, 1rem) * var(--t-fs, 1));
+  color: rgba(196, 158, 255, .75);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+.eid-next {
+  font-size: calc(clamp(0.638rem, .7vw, 0.888rem) * var(--t-fs, 1));
+  color: rgba(196, 158, 255, .6);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* ── .pcol-wrap — outer flex column for PrayerList ───────────────────────
+ * Wraps the prayer-cards column (.pcol) PLUS the optional embedded-variant
+ * footer slot (WeatherStrip). The slot must sit OUTSIDE .pcol because .pcol
+ * has overflow:hidden, which would clip any content below its 5 prayer cards.
+ *
+ * The wrap inherits the grid sizing previously held by .pcol so the overall
+ * column shape is unchanged when no footerSlot is provided.  */
+.pcol-wrap {
+  flex: 1 1 280px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* No align-self override — inherits .grid-main's align-items: stretch
+     so .pcol-wrap fills the row's full height. The prayer list + optional
+     weather strip pack at the top via .pcol-wrap's own flex-direction:
+     column without justify-content (defaults to flex-start). */
+}
+
+/* When inside .pcol-wrap, .pcol no longer needs its own flex sizing;
+ * the wrap holds it. Keep .pcol's internal structure intact. */
+.pcol-wrap>.pcol {
+  flex: 0 1 auto;
+  width: 100%;
+}
+
+/* Weather strip when inside .pcol-wrap (embedded layout, below prayer list):
+ * push to the bottom of the wrap so .pcol-wrap fills its row height without
+ * empty space below the strip. margin-top:auto inside a flex column = shove
+ * to the end of the cross-axis. */
+.pcol-wrap>.weather-strip {
+  margin-top: auto;
+}

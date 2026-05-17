@@ -22,6 +22,7 @@ export default function Header({
   method,
   activePrayerKey,
   lunarPhase,
+  centerSlot,            // optional: replaces the decorative Arabic title
 }) {
   const { t } = useT();
   return (
@@ -42,7 +43,11 @@ export default function Header({
           )}
         </div>
       </div>
-      <div className="arabic-title">مواقيت الصلاة</div>
+      {/* Centre slot — defaults to the decorative Arabic title "مواقيت الصلاة"
+          but can be overridden via the centerSlot prop. The embedded
+          layout variant passes <HeaderQibla/> here so a useful compass
+          + bearing replaces the purely-ornamental title. */}
+      {centerSlot ?? <div className="arabic-title">مواقيت الصلاة</div>}
       <div className="hdr-right">
         <div className="loc">
           {/* Location pin SVG — replaces the previous pulsating green dot.

@@ -28,6 +28,8 @@ export default function PrayerList({
   nextEid,            // next upcoming Eid Date | null
   eidDate,            // (timeStr) → Date helper from parent
   showEidBanner,      // boolean — show the eid block at all
+  footerSlot,         // optional: rendered below all prayer cards (embedded
+                      //   layout uses this for the compact WeatherStrip)
 }) {
   const { t, lang } = useT();
 
@@ -48,6 +50,7 @@ export default function PrayerList({
   }
 
   return (
+    <div className="pcol-wrap">
     <div className="pcol">
       {/* Column headers */}
       <div className="pheader">
@@ -236,6 +239,11 @@ export default function PrayerList({
           </div>
         );
       })()}
+    </div>{/* end .pcol */}
+    {/* Optional embedded-variant slot — compact WeatherStrip etc. Rendered
+        OUTSIDE .pcol so it isn't clipped by .pcol's overflow:hidden. Sits
+        as a sibling under the prayer cards within .pcol-wrap. */}
+    {footerSlot}
     </div>
   );
 }

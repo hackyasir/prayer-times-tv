@@ -1,220 +1,401 @@
-/* ── Widget cards (bottom band) ──────────────────────────────────────────────
- *
- * The 3 widget cards in the bottom row + the integrated status strip below
- * them. Each widget shares the .icard base styling; weather has a custom
- * .weather-card variant with a subtle accent radial-gradient overlay.
- *
- *  - .icard          shared widget card chrome (background, border, padding)
- *  - .ilbl / .ival   label + value pair used inside cards
- *  - .qrow           horizontal row inside a card
- *  - .sun-*          sun day cycle widget (Sunrise / Noon / Sunset columns)
- *  - .weather-*      weather card — emoji + temperature + description + stats
- *  - .ftr / .ftr-*   integrated status strip below the widget row
+/* ── widgets.css — widget cards + footer strip ───────────────────────────
+ * Styles for .icard, .weather-card, sun/weather internals, .ftr strip.
+ * No layout overrides. No @media blocks (all in responsive.css).
  */
 
-/* Base widget card — Sun cycle + Fast/Qibla use this directly */
+/* ── Base widget card ────────────────────────────────────────────────────── */
 .icard {
-    background: var(--t-surface);
-    border: 1px solid var(--t-border);
-    border-radius: 4px;
-    padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: .35vh;
-    min-height: 0;
-    overflow: hidden;
+  background: var(--t-surface);
+  border: 1px solid var(--t-border);
+  border-radius: 4px;
+  padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: .35vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .ilbl {
-    font-size: calc(clamp(0.563rem, .95vw, 0.938rem) * var(--t-fs, 1));
-    letter-spacing: .2em;
-    text-transform: uppercase;
-    color: var(--t-text-dim);
+  font-size: calc(clamp(0.563rem, .95vw, 0.938rem) * var(--t-fs, 1));
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
 }
 
 .ival {
-    font-size: calc(clamp(1.0rem, 1.85vw, 2rem) * var(--t-fs, 1));
-    font-weight: 600;
-    color: var(--t-text);
-    font-variant-numeric: tabular-nums;
+  font-size: calc(clamp(2rem, 1.85vw, 4rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
 }
 
-.qrow {
-    display: flex;
-    align-items: center;
-    gap: 1vw;
-}
-
-/* Sun day cycle widget — 3 columns with vertical dividers */
-.sun-row {
-    display: grid;
-    grid-template-columns: 1fr 1px 1fr;
-    align-items: center;
-    gap: 0;
-}
-
+/* ── Sun day cycle ───────────────────────────────────────────────────────── */
 .sun-item {
-    text-align: center;
-    padding: 0 .4vw;
-}
-
-.sun-sep {
-    width: 1px;
-    background: var(--t-border);
-    align-self: stretch;
-    margin: 2px 0;
+  text-align: center;
+  padding: 0 .4vw;
 }
 
 .sun-lbl {
-    font-size: calc(clamp(0.5rem, .9vw, 0.875rem) * var(--t-fs, 1));
-    letter-spacing: .15em;
-    text-transform: uppercase;
-    color: var(--t-text-dim);
+  font-size: calc(clamp(0.5rem, .9vw, 0.875rem) * var(--t-fs, 1));
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
 }
 
 .sun-val {
-    font-size: calc(clamp(0.938rem, 1.7vw, 1.875rem) * var(--t-fs, 1));
-    font-weight: 600;
-    color: var(--t-text);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+  font-size: calc(clamp(0.938rem, 1.7vw, 1.875rem) * var(--t-fs, 1));
+  font-weight: 600;
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* Weather card — distinct variant with subtle accent radial overlay */
+.sun-sep {
+  width: 1px;
+  background: var(--t-border);
+  align-self: stretch;
+  margin: clamp(2px, .2vh, 5px) 0;
+}
+
+/* ── Weather card ────────────────────────────────────────────────────────── */
 .weather-card {
-    background: linear-gradient(135deg, var(--t-surface) 0%, var(--t-surface2) 100%);
-    border: 1px solid rgba(var(--t-accent-rgb), .25);
-    border-radius: 4px;
-    padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    gap: .45vh;
-    position: relative;
-    overflow: hidden;
-    min-height: 0;
+  background: linear-gradient(135deg, var(--t-surface) 0%, var(--t-surface2) 100%);
+  border: 1px solid rgba(var(--t-accent-rgb), .25);
+  border-radius: 4px;
+  padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: .45vh;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .weather-card::before {
-    content: '';
-    position: absolute;
-    top: -30%;
-    right: -10%;
-    width: 60%;
-    height: 140%;
-    background: radial-gradient(ellipse, rgba(var(--t-accent-rgb), .04) 0%, transparent 70%);
-    pointer-events: none;
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -10%;
+  width: 60%;
+  height: 140%;
+  background: radial-gradient(ellipse, rgba(var(--t-accent-rgb), .04) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .weather-emoji {
-    font-size: calc(clamp(1.75rem, 3.8vw, 4.25rem) * var(--t-fs, 1));
-    line-height: 1;
+  font-size: calc(clamp(1.75rem, 3.8vw, 4.25rem) * var(--t-fs, 1));
+  line-height: 1;
 }
 
 .weather-temp {
-    font-size: calc(clamp(1.75rem, 4vw, 4.5rem) * var(--t-fs, 1));
-    font-weight: 700;
-    color: var(--t-text);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
+  font-size: calc(clamp(1.75rem, 4vw, 4.5rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .weather-desc {
-    font-size: calc(clamp(0.625rem, 1.15vw, 1.75rem) * var(--t-fs, 1));
-    color: var(--t-accent);
-    letter-spacing: .05em;
-    text-transform: capitalize;
-    margin-top: .2vh;
-}
-
-.weather-row {
-    display: flex;
-    gap: 1vw;
-    flex-wrap: wrap;
-    margin-top: .4vh;
+  font-size: calc(clamp(0.625rem, 1.15vw, 1.75rem) * var(--t-fs, 1));
+  color: var(--t-accent);
+  letter-spacing: .05em;
+  text-transform: capitalize;
+  margin-top: .2vh;
 }
 
 .weather-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .weather-stat-lbl {
-    font-size: calc(clamp(0.5rem, .85vw, 0.812rem) * var(--t-fs, 1));
-    letter-spacing: .15em;
-    text-transform: uppercase;
-    color: var(--t-text-dim);
+  font-size: calc(clamp(0.5rem, .85vw, 0.812rem) * var(--t-fs, 1));
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
 }
 
 .weather-stat-val {
-    font-size: calc(clamp(0.812rem, 1.4vw, 1.5rem) * var(--t-fs, 1));
-    font-weight: 600;
-    color: var(--t-text);
-    font-variant-numeric: tabular-nums;
+  font-size: calc(clamp(0.812rem, 1.4vw, 1.5rem) * var(--t-fs, 1));
+  font-weight: 600;
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .weather-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    font-size: calc(clamp(0.562rem, 1vw, 1rem) * var(--t-fs, 1));
-    color: var(--t-text-dim);
-    letter-spacing: .1em;
-    text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: calc(clamp(0.562rem, 1vw, 1rem) * var(--t-fs, 1));
+  color: var(--t-text-dim);
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
-/* Status strip (below the widget row, inside .bottom-band) */
+/* ── Footer / status strip ───────────────────────────────────────────────── */
 .ftr {
-    flex-shrink: 0;
-    padding: .5vh 0 .2vh;
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1vw;
+  flex-shrink: 0;
+  padding: .5vh 0 .2vh;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1vw;
 }
 
 .ftr-txt {
-    font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
-    letter-spacing: .15em;
-    text-transform: uppercase;
-    color: var(--t-text-dim);
+  font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
 }
 
 .ftr-dots {
-    display: flex;
-    gap: 5px;
-    align-items: center;
+  display: flex;
+  gap: clamp(4px, .4vw, 8px);
+  align-items: center;
 }
 
 .ftr-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: var(--t-border);
+  width: clamp(3px, .3vw, 6px);
+  height: clamp(3px, .3vw, 6px);
+  border-radius: 50%;
+  background: var(--t-border);
 }
 
-/* "⚙ Settings" trigger button in the status strip */
+/* Settings trigger button */
 .strig {
-    background: transparent;
-    border: 1px solid var(--t-border);
-    border-radius: 4px;
-    padding: 3px 10px;
-    color: var(--t-text-dim);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all .2s;
-    white-space: nowrap;
+  background: transparent;
+  border: 1px solid var(--t-border);
+  border-radius: 4px;
+  padding: clamp(3px, .35vh, 6px) clamp(8px, .6vw, 14px);
+  color: var(--t-text-dim);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
 }
 
 .strig:hover {
-    border-color: var(--t-border-hi);
-    color: var(--t-accent);
+  border-color: var(--t-border-hi);
+  color: var(--t-accent);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * EMBEDDED layout variant — slim widget pieces injected into surrounding
+ * regions (header / above clock / below prayer list / under countdown).
+ * Each replaces its corresponding bottom-band widget when the user has
+ * chosen layoutVariant='embedded' (via the Test Layout footer button).
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ── HeaderQibla — Qibla compass + bearing text, replaces the decorative
+ *    Arabic title in the header centre zone. */
+.header-qibla {
+  display: flex;
+  align-items: center;
+  gap: .8vw;
+  flex-shrink: 0;
+}
+
+.header-qibla-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+.header-qibla-lbl {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.5rem, .8vw, 0.875rem) * var(--t-fs, 1));
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
+}
+
+.header-qibla-val {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.75rem, 1.1vw, 1.25rem) * var(--t-fs, 1));
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--t-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SunArc — daylight progress arc above the clock (embedded layout) ────
+ * All visual styling lives here; SunArc.jsx contains only structure + data.
+ * Edit colors, strokes, fonts here without touching JSX. */
+.sun-arc {
+  width: 92%;
+  max-width: 600px;
+  margin: 0 auto .8vh;
+  flex-shrink: 0;
+}
+
+.sun-arc-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* Set a font on the SVG root so child <text> elements inherit it
+     without per-element fontFamily attrs. */
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* The dotted full-day arc (always drawn) */
+.sun-arc-path {
+  fill: none;
+  stroke: rgba(var(--t-accent-rgb), .18);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+/* The bright gradient overlay (during daylight only). Gradient ID
+ * referenced from the SVG; stops defined inline because <stop> can't
+ * inherit stroke colors from a class. */
+.sun-arc-path-active {
+  fill: none;
+  stroke: url(#sunArcGrad);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* Marker dots at sunrise/noon/sunset positions */
+.sun-arc-marker {
+  fill: var(--t-accent-dim);
+}
+
+/* Current-sun dot — bright with a halo behind it */
+.sun-arc-sun {
+  fill: var(--t-accent-hi);
+}
+
+.sun-arc-sun-halo {
+  fill: var(--t-accent);
+  opacity: .3;
+}
+
+/* Labels under the markers (Sunrise / Noon / Sunset) */
+.sun-arc-label {
+  font-size: calc(10px * var(--t-fs, 1));
+  fill: rgba(var(--t-accent-rgb), .6);
+  letter-spacing: 0.5px;
+  text-anchor: middle;
+  font-weight: 700;
+}
+
+/* Times under each label (5:54 AM, 1:16 PM, 8:37 PM) */
+.sun-arc-time {
+  font-size: calc(10px * var(--t-fs, 1));
+  font-weight: 700;
+  fill: var(--t-text-dim);
+  text-anchor: middle;
+}
+
+/* ── WeatherStrip — slim weather line under the prayer list (below the
+ *    Eid banner if any). Compact, no card chrome, dim text. */
+.weather-strip {
+  display: flex;
+  align-items: center;
+  gap: .8vw;
+  padding: .6vh 1vw;
+  margin-top: .6vh;
+  background: rgba(var(--t-accent-rgb), .04);
+  border: 1px solid rgba(var(--t-accent-rgb), .1);
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: calc(clamp(0.825rem, 1vw, 1rem) * var(--t-fs, 1));
+}
+
+.weather-strip-temp {
+  font-size: calc(clamp(1rem, 1.6vw, 1.75rem) * var(--t-fs, 1));
+  color: var(--t-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-strip-emoji {
+  line-height: 1;
+}
+
+.weather-strip-desc {
+  color: var(--t-text-dim);
+  letter-spacing: .04em;
+  flex: 1;
+}
+
+.weather-strip-hilo {
+  color: var(--t-text-dim);
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ── FastBar — slim 3-column row under the clock countdown. Only renders
+ *    during the active fasting window (Fajr → Maghrib). */
+.fast-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8vw;
+  margin-top: .8vh;
+  padding: .5vh .8vw;
+  background: rgba(var(--t-accent-rgb), .06);
+  border: 1px solid rgba(var(--t-accent-rgb), .12);
+  border-radius: 4px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 520px;
+}
+
+.fast-bar-times {
+  display: flex;
+  align-items: center;
+  gap: .4vw;
+  flex-shrink: 0;
+}
+
+.fast-bar-time {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(1.2rem, 1vw, 1.6rem) * var(--t-fs, 1));
+  font-weight: 600;
+  color: var(--t-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fast-bar-arrow {
+  color: var(--t-accent-dim);
+  font-size: calc(1.2rem * var(--t-fs, 1));
+  opacity: .6;
+}
+
+.fast-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(var(--t-accent-rgb), .12);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.fast-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--t-accent-dim), var(--t-accent));
+  transition: width 1s linear;
+}
+
+.fast-bar-remaining {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(1.2rem, 1vw, 1.6rem) * var(--t-fs, 1));
+  color: var(--t-accent);
+  letter-spacing: .05em;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }

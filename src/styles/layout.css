@@ -1,127 +1,126 @@
-/* ── Layout ──────────────────────────────────────────────────────────────────
+/* ── layout.css — skeleton only ──────────────────────────────────────────
+ * Defines structure and position of every layout region.
+ * No typography. No @media blocks (all in responsive.css).
  *
- * The dashboard's structural skeleton.
+ * Base = mobile portrait (0px+). responsive.css adds min-width enhancements.
  *
- *  - .app           outer frame, full-viewport, corner decorations anchored
- *                   to top/bottom × left/right
- *  - .hdr           top header strip (mosque icon + titles + location info)
- *  - .grid          two-column main grid (prayers | clock) + bottom band
- *  - .lcol/.ccol    column areas
- *  - .bottom-band   widgets row + status strip below
- *  - .rcol          widget cards (3 across)
- *
- * The canonical layout (1920×1080 landscape kiosk TVs, portrait kiosks,
- * laptops — anything ≥700px wide):
- *
- *   ┌─────────────────────────────────────┐
- *   │              HEADER                 │  auto height
- *   ├──────────────────┬──────────────────┤
- *   │                  │                  │
- *   │   PRAYER TIMES   │     CLOCK +      │  1fr (grows)
- *   │       (lcol)     │     COUNTDOWN    │
- *   │                  │      (ccol)      │
- *   │                  │                  │
- *   ├──────────────────┴──────────────────┤
- *   │    WEATHER · QIBLA · SUN · FAST     │  auto height
- *   └─────────────────────────────────────┘
- *
- * Responsive overrides live in responsive.css.
+ *   .app          outer frame — flex column, full screen
+ *   .corner       decorative L-corners (absolute, hidden on mobile)
+ *   .hdr          header strip
+ *   .grid         main content area — flex column, absorbs spare height
+ *   .grid-main    prayer list + clock side by side (or stacked when narrow)
+ *   .ccol         clock column
+ *   .rcol         widget row — 1 col mobile → 3 col desktop
+ *   .app-footer   ticker + status strip, always below .grid
  */
 
+/* ── Outer frame ─────────────────────────────────────────────────────────── */
 .app {
-  width:100%; height:100vh;
-  display:flex; flex-direction:column;
-  padding:2.4vh 2.8vw;
-  position:relative;
-  background:var(--t-bg);
-  isolation:isolate;
+  width: 100%;
+  height: auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: 2vh 3vw;
+  position: relative;
+  background: var(--t-bg);
+  isolation: isolate;
 }
 
-/* Corner decorations — thin gold-tinted L-shapes at each corner of the frame */
-.corner    { position:absolute; width:clamp(36px,4vw,72px); height:clamp(36px,4vw,72px); opacity:.4; }
-.corner.tl { top:2vh;    left:2.5vw;  border-top:1px solid var(--t-accent);    border-left:1px solid var(--t-accent); }
-.corner.tr { top:2vh;    right:2.5vw; border-top:1px solid var(--t-accent);    border-right:1px solid var(--t-accent); }
-.corner.bl { bottom:2vh; left:2.5vw;  border-bottom:1px solid var(--t-accent); border-left:1px solid var(--t-accent); }
-.corner.br { bottom:2vh; right:2.5vw; border-bottom:1px solid var(--t-accent); border-right:1px solid var(--t-accent); }
+/* ── Corner decorations (hidden on mobile) ───────────────────────────────── */
+.corner    { display: none; position: absolute; width: clamp(36px,4vw,72px); height: clamp(36px,4vw,72px); opacity: .4; }
+.corner.tl { top: 2vh;    left: 2.5vw;  border-top:    1px solid var(--t-accent); border-left:  1px solid var(--t-accent); }
+.corner.tr { top: 2vh;    right: 2.5vw; border-top:    1px solid var(--t-accent); border-right: 1px solid var(--t-accent); }
+.corner.bl { bottom: 2vh; left: 2.5vw;  border-bottom: 1px solid var(--t-accent); border-left:  1px solid var(--t-accent); }
+.corner.br { bottom: 2vh; right: 2.5vw; border-bottom: 1px solid var(--t-accent); border-right: 1px solid var(--t-accent); }
 
-/* Header strip */
-.hdr           { display:flex; align-items:center; justify-content:space-between; padding-bottom:1.4vh; border-bottom:1px solid var(--t-border); flex-shrink:0; position:relative; z-index:1; }
-.hdr-left      { display:flex; align-items:center; gap:1.2vw; }
-.hdr-right     { text-align:right; }
-.app-title     { font-family:'Amiri',serif; font-size:calc(clamp(0.875rem,2vw,3.5rem) * var(--t-fs, 1)); color:var(--t-accent); line-height:1; letter-spacing:.05em; }
-.app-sub       { font-size:calc(clamp(0.5rem,.95vw,1.5rem) * var(--t-fs, 1)); color:var(--t-text-dim); letter-spacing:.2em; text-transform:uppercase; margin-top:.2em; }
-.arabic-title  { font-family:'Noto Naskh Arabic',serif; font-size:calc(clamp(0.875rem,2vw,3.5rem) * var(--t-fs, 1)); color:var(--t-accent); direction:rtl; }
-.loc           { font-size:calc(clamp(0.562rem,1.1vw,1.188rem) * var(--t-fs, 1)); color:var(--t-text-dim); letter-spacing:.1em; display:flex; align-items:center; gap:.5em; justify-content:flex-end; }
-.loc-pin       { width:1em; height:1em; flex-shrink:0; color:var(--t-accent-dim); }
-.hijri         { font-family:'Amiri',serif; font-size:calc(clamp(0.625rem,1.3vw,2rem) * var(--t-fs, 1)); color:var(--t-text-dim); margin-top:.3em; }
-.method-badge  { font-size:calc(clamp(0.375rem,.7vw,0.688rem) * var(--t-fs, 1)); letter-spacing:.15em; text-transform:uppercase; color:rgba(var(--t-accent-rgb),.5); border:1px solid rgba(var(--t-accent-rgb),.15); padding:2px 6px; border-radius:2px; display:inline-block; margin-top:3px; }
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.hdr       { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1vh; padding-bottom: 1.4vh; border-bottom: 1px solid var(--t-border); flex-shrink: 0; position: relative; z-index: 1; }
+.hdr-left  { display: flex; align-items: center; gap: 1.2vw; }
+.hdr-right { flex: 1 1 100%; text-align: left; }
 
-/* Main grid — two columns above the widget band */
+/* Header typography */
+.app-title    { font-family: 'Amiri', serif; font-size: calc(clamp(0.875rem, 2vw, 3.5rem) * var(--t-fs, 1)); color: var(--t-accent); line-height: 1; letter-spacing: .05em; }
+.app-sub      { font-size: calc(clamp(0.5rem, .95vw, 1.5rem) * var(--t-fs, 1)); color: var(--t-text-dim); letter-spacing: .2em; text-transform: uppercase; margin-top: .2em; }
+.arabic-title { font-family: 'Noto Naskh Arabic', serif; font-size: calc(clamp(0.875rem, 2vw, 3.5rem) * var(--t-fs, 1)); color: var(--t-accent); direction: rtl; }
+.loc          { font-size: calc(clamp(0.562rem, 1.1vw, 1.188rem) * var(--t-fs, 1)); color: var(--t-text-dim); letter-spacing: .1em; display: flex; align-items: center; gap: .5em; justify-content: flex-end; }
+.loc-pin      { width: 1em; height: 1em; flex-shrink: 0; color: var(--t-accent-dim); }
+.hijri        { font-family: 'Amiri', serif; font-size: calc(clamp(0.625rem, 1.3vw, 2rem) * var(--t-fs, 1)); color: var(--t-text-dim); margin-top: .3em; }
+.method-badge { font-size: calc(clamp(0.375rem, .7vw, 0.688rem) * var(--t-fs, 1)); letter-spacing: .15em; text-transform: uppercase; color: rgba(var(--t-accent-rgb), .5); border: 1px solid rgba(var(--t-accent-rgb), .15); padding: 2px 6px; border-radius: 2px; display: inline-block; margin-top: 3px; }
+
+/* ── Main content grid ───────────────────────────────────────────────────── */
 .grid {
   flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  grid-template-rows: minmax(0, 1fr) auto;
-  /* middle row grows; widget row auto-sized — cards capped internally to
-     prevent any single oversized card from blowing up the layout */
-  grid-template-areas:
-    'prayers clock'
-    'widgets widgets';
-  gap: 1.2vw;
+  display: flex;
+  flex-direction: column;
+  /* Children stretch to fill the cross-axis (width) AND .grid-main / .rcol
+     get flex:1 each so they share the available HEIGHT proportionally.
+     This means the prayer list + clock region (.grid-main) absorbs spare
+     vertical space when the bottom widget row is hidden (embedded layout)
+     OR when there's room above and below it (classic layout). */
+  justify-content: stretch;
+  gap: 1.6vh;
   padding-top: 1vh;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
   z-index: 1;
 }
-.lcol { grid-area: prayers; min-height: 0; overflow: hidden; }
-.ccol {
-  grid-area: clock; min-height: 0;
-  /* Note: NO overflow:hidden here. Earlier versions clipped because the
-     hadith at the bottom of the column fell past the flex container's
-     edge when content was tight (at 100% browser zoom). Letting overflow
-     be visible keeps the hadith readable; the widgets row below has
-     enough top margin from .grid's gap that visual overlap is unlikely
-     unless the viewport is extreme. */
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: .3vh;
+
+/* Prayer list + clock — flex-wrap stacks intrinsically when viewport < ~620px */
+.grid-main {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1.6vh;
+  min-height: 0;
+  align-items: stretch;       /* row direction: children stretch to row height */
+  align-content: stretch;     /* wrapped rows distribute vertical space */
+  overflow: hidden;
 }
 
-/* Bottom band: widget row + integrated status strip beneath it.
-   Replaces the standalone footer — keeps everything as one visual block. */
-.bottom-band {
-  grid-area: widgets;
-  min-width: 0; min-height: 0;
-  display: flex; flex-direction: column;
-  gap: .4vh;
-}
-.rcol {
+/* Clock column */
+.ccol {
+  flex: 1 1 300px;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4vh;
+}
+
+/* ── Widget row ──────────────────────────────────────────────────────────── */
+/* Base: 1-col grid, only FastQiblaCard (last-child) visible. 480px+ restores all. */
+.rcol {
   display: grid;
-  grid-template-columns: 1.3fr 1.2fr 1.5fr;
-  gap: .8vw;
-  align-items: stretch;     /* all 3 cards match tallest's height */
+  min-height: 0;
+  grid-template-columns: 1fr;
+  gap: 1.2vh;
+  align-items: stretch;
 }
-/* When weather is hidden (offline / fetch failed), the row drops to 2
-   widgets — Sun Cycle + Fast/Qibla. Use a 2-column grid with the same
-   fractional ratios as the 3-col case minus the weather column. Cards
-   remain left-justified naturally because the grid starts at the left edge. */
-.rcol[data-widgets="2"] {
-  grid-template-columns: 1.2fr 1.5fr;
-}
-/* Widget cards: equal height (stretched by .rcol). Internal content
-   distributes vertically via space-between so each section sits at its
-   natural place (top/middle/bottom) and any extra height becomes breathing
-   space BETWEEN sections, not dead space below them. */
+
 .rcol > * {
   min-height: 0;
-  max-height: 26vh;
   overflow: hidden;
   align-self: stretch;
+  max-height: clamp(70px, 10vh, 120px);
 }
-.icard, .weather-card {
-  height: auto !important;
-  max-height: 30vh;
-  justify-content: space-between !important;
+
+.rcol > *:not(:last-child) {
+  display: none;
+}
+
+/* ── App footer ──────────────────────────────────────────────────────────── */
+/* Always below .grid — ticker + status strip */
+.app-footer {
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .4vh;
 }

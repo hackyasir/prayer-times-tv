@@ -36,6 +36,8 @@
   "widget.fast.title": "آج کا روزہ",
   "widget.fast.total": "{hours} گھنٹے {mins} منٹ کل",
   "widget.fast.toIftar": "{hours} گھنٹے {mins} منٹ افطار تک",
+  "widget.fast.toSuhoor": "سحری تک {hours} گھنٹے {mins} منٹ",
+  "widget.qibla.label": "قبلہ",
   "footer.offline": "آف لائن · مقامی وقت",
   "footer.updated": "ہر سیکنڈ اپ ڈیٹ",
   "footer.settings": "⚙ ترتیبات",
@@ -135,5 +137,7 @@
   "ord.3rd": "تیسری",
   "unit.min": "منٹ",
   "unit.days": "دن",
-  "label.nextIn": "{h} گھنٹے {m} منٹ میں"
+  "label.nextIn": "{h} گھنٹے {m} منٹ میں",
+  "test.layout": "لے آؤٹ ٹیسٹ",
+  "test.countdown": "کاؤنٹ ڈاؤن ٹیسٹ"
 }

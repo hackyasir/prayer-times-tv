@@ -36,6 +36,8 @@
   "widget.fast.title": "Today's Fast",
   "widget.fast.total": "{hours}h {mins}m total",
   "widget.fast.toIftar": "{hours}h {mins}m to iftar",
+  "widget.fast.toSuhoor": "{hours}h {mins}m to Suhoor",
+  "widget.qibla.label": "Qibla",
   "footer.offline": "Offline · All times local",
   "footer.updated": "Updated every second",
   "footer.settings": "⚙ Settings",
@@ -135,5 +137,7 @@
   "ord.3rd": "3rd",
   "unit.min": "min",
   "unit.days": "days",
-  "label.nextIn": "Next in {h}h {m}m"
+  "label.nextIn": "Next in {h}h {m}m",
+  "test.layout": "Test Layout",
+  "test.countdown": "Test Countdown"
 }

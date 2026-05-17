@@ -35,10 +35,10 @@ import { STORAGE_KEY } from '../lib/constants.js';
 // over defaults, so any saved value wins; defaults only fill in missing keys.
 
 export const DEFAULTS = {
-  lat: 51.5074, lng: -0.1278, locName: 'London, UK',
-  cityTz: 'Europe/London', masjidName: '',
+  lat: 43.6532, lng: -79.3832, locName: 'Toronto, Ontario, Canada',
+  cityTz: 'America/Toronto', masjidName: '',
   method: 'MWL', shadow: 1,
-  iqamah: { fajr:20, dhuhr:20, asr:20, maghrib:10, isha:20 },
+  iqamah: { fajr: 20, dhuhr: 20, asr: 20, maghrib: 10, isha: 20 },
   // ── Auto-iqamah (Smart Mode) ─────────────────────────────────────────────
   // When iqamahAutoCalc is true, the iqamah offsets above are IGNORED at
   // runtime. Instead, iqamah is computed daily as:
@@ -46,36 +46,46 @@ export const DEFAULTS = {
   //   :00 / :15 / :30 / :45.
   // Maghrib's default buffer is 0 (immediate iqamah is common at sunset).
   // OPT-IN: default OFF so existing setups behave identically.
-  iqamahAutoCalc:    false,
-  iqamahAutoBuffers: { fajr:30, dhuhr:15, asr:15, maghrib:0, isha:10 },
+  iqamahAutoCalc: false,
+  iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 },
   jumuah: [
-    { time:'13:00', iqamah:20, enabled:true  },
-    { time:'13:45', iqamah:20, enabled:false },
-    { time:'14:30', iqamah:20, enabled:false },
+    { time: '13:00', iqamah: 20, enabled: true },
+    { time: '13:45', iqamah: 20, enabled: false },
+    { time: '14:30', iqamah: 20, enabled: false },
   ],
   eid: [
-    { time:'08:00', iqamah:20, enabled:false, label:'Eid ul-Fitr' },
-    { time:'08:45', iqamah:20, enabled:false, label:'Eid ul-Fitr' },
-    { time:'09:30', iqamah:20, enabled:false, label:'Eid ul-Fitr' },
+    { time: '08:00', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
+    { time: '08:45', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
+    { time: '09:30', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
   ],
   eidDaysBefore: 3,    // show Eid banner this many days before the prayer
-  hijriOffset:   0,    // ±days adjustment for Hijri date display
-  highLatRule:   'middleOfNight', // for cities above ~48° latitude
-                                  // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
-  theme:         'Classic Gold',
+  hijriOffset: 0,    // ±days adjustment for Hijri date display
+  highLatRule: 'middleOfNight', // for cities above ~48° latitude
+  // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
+  theme: 'Classic Gold',
   // Prayer beeps — split into adhan + iqamah so admins can enable either
   // independently. Default: iqamah ON (the "stand up, prayer starting now"
   // signal everyone wants), adhan OFF (most mosques play the actual adhan
   // from speakers; a beep would compete with that audio).
   // Legacy `chimeEnabled` from earlier versions is migrated in loadSettings:
   // a stored true value sets BOTH new flags true; false sets both false.
-  chimeAdhan:    false,
-  chimeIqamah:   true,
-  fontScale:     100,  // % — 100 = default, 70..130 adjustable in settings
-  progressStyle: 'ring', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
-  lang:          'en',   // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
+  chimeAdhan: false,
+  chimeIqamah: true,
+  fontScale: 100,  // % — 100 = default, 70..130 adjustable in settings
+  progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
+  // ── Layout variant ───────────────────────────────────────────────────────
+  // 'classic' (default): traditional layout — clock+prayer list in middle,
+  //   3 widget cards (Weather, Sun Cycle, Fast/Qibla) across the bottom band
+  // 'embedded': widgets pulled into the surrounding chrome — Qibla compass
+  //   in header centre, Sun arc above the clock, Weather strip under the
+  //   prayer list, Fast bar under the clock countdown. The bottom widget
+  //   row is hidden entirely, reclaiming the vertical space for the main
+  //   regions. Toggle live with the "Test Layout" footer button (gated by
+  //   SHOW_TEST_BTNS) to compare both modes without committing.
+  layoutVariant: 'embedded',  // 'classic' | 'embedded'
+  lang: 'en',   // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
   announcements: '',     // Newline-separated list shown in the bottom ticker.
-                         // Empty string = hide ticker entirely.
+  // Empty string = hide ticker entirely.
 
   // ── Blackout mode (Phase 3) ──────────────────────────────────────────────
   // From `blackoutLeadSeconds` before each iqamah until `blackoutDurations[key]`
@@ -83,14 +93,14 @@ export const DEFAULTS = {
   // centred — reverent, focused, no distractions during prayer.
   // Defaults: ~30s lead, prayer-specific durations matching typical mosque
   // congregational prayer lengths (Maghrib shortest, Isha longest).
-  blackoutEnabled:     true,
+  blackoutEnabled: false,
   blackoutLeadSeconds: 30,
-  blackoutOpacity:     85,    // % opacity of the overlay (0..100)
-                              // 0 = fully transparent (dashboard fully visible)
-                              // 85 = default — clearly "in prayer mode" but
-                              //      dashboard still faintly visible underneath
-                              // 100 = fully opaque (pure black, current behaviour)
-  blackoutDurations:   { fajr:10, dhuhr:10, asr:10, maghrib:7, isha:12 },
+  blackoutOpacity: 70,    // % opacity of the overlay (0..100)
+  // 0 = fully transparent (dashboard fully visible)
+  // 85 = default — clearly "in prayer mode" but
+  //      dashboard still faintly visible underneath
+  // 100 = fully opaque (pure black, current behaviour)
+  blackoutDurations: { fajr: 10, dhuhr: 10, asr: 10, maghrib: 7, isha: 12 },
 };
 
 function loadSettings() {
@@ -106,7 +116,7 @@ function loadSettings() {
     // users don't lose their preference on upgrade. After migration, the
     // old key is harmless (just ignored), so we don't actively delete it.
     if ('chimeEnabled' in stored && !('chimeAdhan' in stored) && !('chimeIqamah' in stored)) {
-      stored.chimeAdhan  = !!stored.chimeEnabled;
+      stored.chimeAdhan = !!stored.chimeEnabled;
       stored.chimeIqamah = !!stored.chimeEnabled;
     }
 
@@ -114,7 +124,7 @@ function loadSettings() {
   } catch { return DEFAULTS; }
 }
 function saveSettings(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { }
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
@@ -125,7 +135,7 @@ export function SettingsProvider({ children }) {
   // applied = currently in effect (renders the dashboard)
   const [applied, setApplied] = useState(loadSettings);
   // drafts = what the Settings panel edits; initially mirrors applied
-  const [drafts,  setDrafts]  = useState(applied);
+  const [drafts, setDrafts] = useState(applied);
 
   // Direct setter for applied — used when settings change without going
   // through the panel (geolocation, city-search select, geolocation pin).

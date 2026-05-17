@@ -36,15 +36,15 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
             return (
               <>
                 <div style={{ display:'flex', alignItems:'baseline', gap:'.4vw', flexWrap:'wrap' }}>
-                  <div className="ival" style={{ fontSize: 'clamp(0.938rem,1.55vw,1.75rem)' }}>
+                  <div className="ival" style={{ fontSize: 'calc(clamp(0.938rem,1.55vw,1.75rem) * var(--t-fs, 1))' }}>
                     {fmt12(todayTimes.fajr, cityTz)}
                   </div>
-                  <span style={{ fontSize:'clamp(0.5rem,.85vw,0.875rem)', color:'#9A8B6E' }}>→</span>
-                  <div className="ival" style={{ fontSize: 'clamp(0.938rem,1.55vw,1.75rem)' }}>
+                  <span style={{ fontSize:'calc(clamp(0.5rem,.85vw,0.875rem) * var(--t-fs, 1))', color:'#9A8B6E' }}>→</span>
+                  <div className="ival" style={{ fontSize: 'calc(clamp(0.938rem,1.55vw,1.75rem) * var(--t-fs, 1))' }}>
                     {fmt12(todayTimes.maghrib, cityTz)}
                   </div>
                 </div>
-                <div style={{ fontSize:'clamp(0.563rem,.95vw,0.938rem)', color:'#9A8B6E', letterSpacing:'.06em' }}>
+                <div style={{ fontSize:'calc(clamp(0.563rem,.95vw,0.938rem) * var(--t-fs, 1))', color:'#9A8B6E', letterSpacing:'.06em' }}>
                   {fmtStr(t('widget.fast.total'), { hours: Math.floor(totalMins/60), mins: totalMins%60 })}
                 </div>
                 {isActive && (
@@ -60,7 +60,7 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
                       }}/>
                     </div>
                     <div style={{
-                      fontSize:'clamp(0.5rem,.85vw,0.875rem)',
+                      fontSize:'calc(clamp(0.5rem,.85vw,0.875rem) * var(--t-fs, 1))',
                       color:'var(--t-accent)', letterSpacing:'.08em',
                     }}>
                       {fmtStr(t('widget.fast.toIftar'), { hours: Math.floor(remainMins/60), mins: remainMins%60 })}
@@ -85,13 +85,13 @@ export default function FastQiblaCard({ todayTimes, now, cityTz, qibla }) {
           </div>
           <div style={{ textAlign:'center', lineHeight:1.05 }}>
             <div style={{
-              fontSize:'clamp(1.125rem,1.85vw,2.25rem)', fontWeight:700,
+              fontSize:'calc(clamp(1.125rem,1.85vw,2.25rem) * var(--t-fs, 1))', fontWeight:700,
               color:'var(--t-text)', fontVariantNumeric:'tabular-nums',
             }}>
               {qibla}°
             </div>
             <div style={{
-              fontSize: 'clamp(0.5rem,.85vw,0.875rem)', color:'#9A8B6E',
+              fontSize: 'calc(clamp(0.5rem,.85vw,0.875rem) * var(--t-fs, 1))', color:'#9A8B6E',
               letterSpacing:'.14em', textTransform:'uppercase', marginTop:'.15vh',
             }}>
               {bearingToCompassLong(qibla)}
