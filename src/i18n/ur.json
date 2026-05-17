@@ -29,6 +29,9 @@
   "widget.sun.sunrise": "طلوع",
   "widget.sun.noon": "زوال",
   "widget.sun.sunset": "غروب",
+  "widget.moon.moonrise": "چاند طلوع",
+  "widget.moon.transit": "عبور",
+  "widget.moon.moonset": "چاند غروب",
   "widget.sun.preDawn": "صبحِ کاذب",
   "widget.sun.night": "رات",
   "widget.sun.pctOfDay": "{pct}٪ دن کا",
@@ -114,7 +117,7 @@
   "settings.asr.hanafi": "حنفی — دو سائے",
   "settings.iqamahOffset": "اقامت کا فرق (اذان کے بعد منٹ)",
   "settings.iqamahAuto": "خودکار اقامت کا حساب",
-  "settings.iqamahAuto.note": "فعال ہونے پر، اقامت کے اوقات روزانہ اذان + بفر منٹ کے طور پر شمار ہوتے ہیں، قریب ترین چوتھائی گھنٹے تک گول کیے جاتے ہیں۔",
+  "settings.iqamahAuto.note": "فعال ہونے پر، اقامہ کے اوقات روزانہ اذان + بفر منٹ کے طور پر شمار کیے جاتے ہیں، قریب ترین چوتھائی گھنٹہ (00:، 15:، 30:، 45:) پر گول کیے جاتے ہیں۔ اگر گول کرنے سے اقامہ اذان سے پہلے ہو، تو اگلی چوتھائی گھنٹہ پر آگے بڑھ جاتا ہے۔ ان مساجد کے لیے مفید جو متوقع اقامہ شیڈول پسند کرتے ہیں۔",
   "settings.iqamahAuto.buffer": "اذان کے بعد بفر (منٹ)",
   "settings.jumuah": "جمعہ کی جماعتیں",
   "settings.eid": "عید کی نمازیں",
@@ -138,6 +141,12 @@
   "unit.min": "منٹ",
   "unit.days": "دن",
   "label.nextIn": "{h} گھنٹے {m} منٹ میں",
-  "test.layout": "لے آؤٹ ٹیسٹ",
-  "test.countdown": "کاؤنٹ ڈاؤن ٹیسٹ"
+  "test.moon": "چاند ٹیسٹ",
+  "test.countdown": "کاؤنٹ ڈاؤن ٹیسٹ",
+  "jumuah.adhan": "اذان",
+  "jumuah.iqamah": "اقامہ",
+  "jumuah.status.done": "مکمل",
+  "jumuah.status.next": "اگلی",
+  "jumuah.status.later": "بعد میں",
+  "label.nthJamaatIn": "{ord} جماعت · {h}گ {m}م"
 }

@@ -670,9 +670,10 @@ export default function SettingsPanel({
           {activeTab === 'iqamah' && (<>
           {/* Auto-iqamah toggle + per-prayer buffers.
               When enabled, iqamah times are computed daily from adhan +
-              buffer minutes rounded up to the next quarter-hour. When the
-              toggle is OFF, the manual "Iqamah Offset" section below is
-              active. When ON, manual offsets are hidden (avoids confusion). */}
+              buffer minutes, rounded to the NEAREST quarter-hour, with a
+              safety floor (iqamah never before adhan). When the toggle is
+              OFF, the manual "Iqamah Offset" section below is active. When
+              ON, manual offsets are hidden (avoids confusion). */}
           <div className="sgrp">
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
               <div>
@@ -711,15 +712,31 @@ export default function SettingsPanel({
                   {['fajr','dhuhr','asr','maghrib','isha'].map(key => {
                     const adhanTime = todayTimes[key];
                     const buf = Math.min(60, Math.max(0, Number(buffers[key]) || 0));
-                    // Preview: same rounding logic as App.jsx's effective-iqamah memo
+                    // Preview — MUST match App.jsx's effective-iqamah memo
+                    // logic exactly. Rule: nearest quarter-hour, floored at
+                    // adhan (iqamah can never be before adhan). Special case
+                    // buf=0 → iqamah=adhan exactly.
                     let previewIqamah = null;
                     if (adhanTime) {
-                      const target = new Date(adhanTime.getTime() + buf * 60 * 1000);
-                      target.setSeconds(0, 0);
-                      const m = target.getMinutes();
-                      const rem = m % 15;
-                      if (rem !== 0) target.setMinutes(m + (15 - rem));
-                      previewIqamah = (buf === 0) ? adhanTime : target;
+                      if (buf === 0) {
+                        previewIqamah = adhanTime;
+                      } else {
+                        const target = new Date(adhanTime.getTime() + buf * 60 * 1000);
+                        target.setSeconds(0, 0);
+                        const totalMin = target.getHours() * 60 + target.getMinutes();
+                        let roundedMin = Math.round(totalMin / 15) * 15;
+                        const rounded = new Date(target);
+                        rounded.setHours(0, 0, 0, 0);
+                        rounded.setMinutes(roundedMin);
+                        // Floor: if nearest-rounding put iqamah before adhan,
+                        // bump forward to next quarter-hour ≥ adhan.
+                        while (rounded < adhanTime) {
+                          roundedMin += 15;
+                          rounded.setHours(0, 0, 0, 0);
+                          rounded.setMinutes(roundedMin);
+                        }
+                        previewIqamah = rounded;
+                      }
                     }
                     return (
                       <div key={key} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'7px 12px' }}>

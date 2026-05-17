@@ -33,17 +33,14 @@ import Clock               from './components/Clock.jsx';
 import PrayerList          from './components/PrayerList.jsx';
 import PinOverlay          from './components/PinOverlay.jsx';
 import SettingsPanel       from './components/settings/SettingsPanel.jsx';
-import WeatherCard         from './components/widgets/WeatherCard.jsx';
-import SunDayCycle         from './components/widgets/SunDayCycle.jsx';
-import FastQiblaCard       from './components/widgets/FastQiblaCard.jsx';
-
-// Embedded-variant widgets — used when layoutVariant === 'embedded'.
-// Each replaces a piece of the bottom widget row by sliding into a
-// different region (header / above clock / below prayer list / under clock).
-import SunArc              from './components/embedded/SunArc.jsx';
-import WeatherStrip        from './components/embedded/WeatherStrip.jsx';
-import FastBar             from './components/embedded/FastBar.jsx';
-import HeaderQibla         from './components/embedded/HeaderQibla.jsx';
+// Layout widgets — pulled into the surrounding chrome (header / above
+// clock / below prayer list / under countdown). These are the dashboard's
+// only widget set after removing the classic bottom-band cards.
+import SunArc              from './components/widgets/SunArc.jsx';
+import MoonArc             from './components/widgets/MoonArc.jsx';
+import WeatherStrip        from './components/widgets/WeatherStrip.jsx';
+import FastBar             from './components/widgets/FastBar.jsx';
+import HeaderQibla         from './components/widgets/HeaderQibla.jsx';
 
 // ── App-only static data ─────────────────────────────────────────────────────
 // HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS now live in lib/constants.js
@@ -97,7 +94,6 @@ export default function App() {
     iqamah: rawIqamah, jumuah, eid, eidDaysBefore,
     iqamahAutoCalc, iqamahAutoBuffers,
     hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
-    layoutVariant,
     announcements,
     blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
   } = applied;
@@ -122,7 +118,6 @@ export default function App() {
   const setChimeIqamah  = v => updateApplied({ chimeIqamah: v });
   const setFontScale    = v => updateApplied({ fontScale: v });
   const setProgressStyle= v => updateApplied({ progressStyle: v });
-  const setLayoutVariant= v => updateApplied({ layoutVariant: v });
 
   // Draft mirror — destructure drafts. Each `setDraftX(value)` updates ONE
   // field via updateDrafts. The shims accept either a value or a function
@@ -186,6 +181,14 @@ export default function App() {
   // secsToNext is <= 60. Auto-clears via the same effect that clears the
   // blackout test (see below).
   const [testCountdownUntil, setTestCountdownUntil] = useState(null); // Date | null
+  // Test moon mode — when true, forces the centre-column arc to show
+  // MoonArc regardless of whether the sun is currently up. Useful for
+  // verifying the night-mode visual without waiting for sunset.
+  const [testMoonActive, setTestMoonActive] = useState(false);
+  // Test moon phase — when null, MoonArc uses real lunar illumination from
+  // suncalc. When set to 0..1, it overrides the phase value (Test Phase
+  // footer button cycles through 8 preset phases for visual verification).
+  const [testMoonPhase, setTestMoonPhase] = useState(null);
   const [showPin,    setShowPin]    = useState(false);
   const [pinInput,   setPinInput]   = useState('');
   const [pinError,   setPinError]   = useState(false);
@@ -302,11 +305,21 @@ export default function App() {
   // ── Effective iqamah offsets ─────────────────────────────────────────────
   // When `iqamahAutoCalc` is ON, compute each prayer's iqamah by:
   //   1. Take today's adhan time
-  //   2. Add `iqamahAutoBuffers[key]` minutes
-  //   3. Round UP to the next quarter-hour (:00 / :15 / :30 / :45)
-  //   4. Express the result as a minute-offset from adhan (since the rest
-  //      of the app stores iqamah as offset-from-adhan minutes)
-  // When OFF, return the user-configured `rawIqamah` map unchanged.
+  //   2. Add `iqamahAutoBuffers[key]` minutes → target
+  //   3. Round target to the NEAREST quarter-hour (:00 / :15 / :30 / :45)
+  //   4. SAFETY FLOOR: if rounded result < adhan, bump to the next
+  //      quarter-hour ≥ adhan. Iqamah must never be before adhan.
+  //   5. Express as minute-offset from adhan
+  //
+  // Rounding policy rationale:
+  //   - 10:18 adhan + 15min buffer = 10:33 → nearest quarter = 10:30 ✓
+  //     (3 min away vs 12 min to 10:45 — closer)
+  //   - 4:17 adhan + 1min buffer = 4:18 → nearest = 4:15 → SAFETY → 4:30
+  //     (4:15 is before adhan! Bump up to next quarter ≥ 4:17)
+  //   - When buf=0 we skip rounding entirely (iqamah=adhan exactly) since
+  //     rounding 8:37 with buf=0 would shift to 8:45 which is wrong for
+  //     mosques that follow "iqamah immediately after adhan" convention.
+  //
   // Computed once per day (the dependency on todayTimes.fajr's date string
   // makes useMemo recalc only at midnight or when settings change).
   const iqamah = useMemo(() => {
@@ -316,22 +329,33 @@ export default function App() {
       const adhan = todayTimes?.[key];
       const buf   = Number(iqamahAutoBuffers?.[key] ?? 0);
       if (!adhan) { out[key] = rawIqamah[key] || 0; continue; }
+
+      // Special case: buf=0 means iqamah=adhan exactly. Don't round.
+      if (buf === 0) { out[key] = 0; continue; }
+
       // Step 1+2: shift adhan by buffer minutes
       const target = new Date(adhan.getTime() + buf * 60 * 1000);
-      // Step 3: round UP to next quarter-hour. Compute target's minute,
-      // find ceiling to next multiple of 15, set seconds=0.
+
+      // Step 3: round to NEAREST quarter-hour
       const rounded = new Date(target);
       rounded.setSeconds(0, 0);
-      const m = rounded.getMinutes();
-      const remainder = m % 15;
-      if (remainder !== 0) rounded.setMinutes(m + (15 - remainder));
-      // If buffer was 0 AND adhan already lands on the boundary (e.g. Maghrib
-      // at 8:37 with buffer 0 → target 8:37, rounded to 8:45) the rounding
-      // would push it forward. For Maghrib with buf=0 we want the iqamah to
-      // EQUAL adhan. Handle this special case: if buf === 0, skip rounding.
-      const final = (buf === 0) ? adhan : rounded;
-      // Step 4: convert back to a minute-offset from adhan
-      out[key] = Math.round((final - adhan) / 60000);
+      const totalMin = rounded.getHours() * 60 + rounded.getMinutes();
+      let roundedMin = Math.round(totalMin / 15) * 15;
+      rounded.setHours(0, 0, 0, 0);
+      rounded.setMinutes(roundedMin);
+
+      // Step 4: safety floor — if nearest-rounding pulled iqamah BEFORE
+      // adhan (e.g. adhan 4:17 + 1min buf = 4:18 → rounded down to 4:15),
+      // bump forward to the next quarter-hour ≥ adhan. Iqamah must never
+      // be before the call to prayer.
+      while (rounded < adhan) {
+        roundedMin += 15;
+        rounded.setHours(0, 0, 0, 0);
+        rounded.setMinutes(roundedMin);
+      }
+
+      // Step 5: convert back to a minute-offset from adhan
+      out[key] = Math.round((rounded - adhan) / 60000);
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -732,7 +756,7 @@ export default function App() {
           method={method}
           activePrayerKey={testPrayer || active?.key || 'fajr'}
           lunarPhase={lunarPhase}
-          centerSlot={layoutVariant === 'embedded' ? <HeaderQibla qibla={qibla}/> : undefined}
+          centerSlot={<HeaderQibla qibla={qibla}/>}
         />
 
         {/* Grid */}
@@ -756,9 +780,7 @@ export default function App() {
               nextEid={nextEid}
               eidDate={eidDate}
               showEidBanner={showEidBanner}
-              footerSlot={layoutVariant === 'embedded'
-                ? <WeatherStrip weather={weather} weatherState={weatherState}/>
-                : undefined}
+              footerSlot={<WeatherStrip weather={weather} weatherState={weatherState}/>}
             />
 
             {/* Centre: clock + countdown */}
@@ -776,43 +798,26 @@ export default function App() {
               cityTz={cityTz}
               activeKey={active?.key}
               hadiths={HADITHS}
-              topSlot={layoutVariant === 'embedded'
-                ? <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz}/>
-                : undefined}
-              bottomSlot={layoutVariant === 'embedded'
-                ? <FastBar todayTimes={todayTimes} tomorrowTimes={tomorrowTimes} now={now} cityTz={cityTz}/>
-                : undefined}
+              topSlot={(() => {
+                // Determine whether to show sun or moon arc:
+                //   - testMoonActive forces moon (Test Moon button)
+                //   - Otherwise: sun if currently between sunrise & sunset,
+                //     moon otherwise (covers pre-dawn, dusk, and overnight)
+                const sun = todayTimes?.sunrise;
+                const set = todayTimes?.maghrib;  // maghrib ≈ sunset
+                const isDay = !testMoonActive && sun && set && now >= sun && now < set;
+                return isDay
+                  ? <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz}/>
+                  : <MoonArc lat={lat} lng={lng} now={now} cityTz={cityTz} phaseOverride={testMoonPhase}/>;
+              })()}
+              bottomSlot={<FastBar todayTimes={todayTimes} tomorrowTimes={tomorrowTimes} now={now} cityTz={cityTz}/>}
             />
 
           </div>{/* end grid-main */}
 
-          {/* Widgets row — hidden entirely in embedded layout variant since
-              each widget has moved to its surrounding chrome (qibla in
-              header, sun arc above clock, weather strip under prayer list,
-              fast bar under countdown). */}
-          {layoutVariant !== 'embedded' && (() => {
-            const weatherAvailable = !(weatherState === 'error' && weather === null);
-            const widgetCount = weatherAvailable ? 3 : 2;
-            return (
-              <div className="rcol" data-widgets={widgetCount}>
-                {weatherAvailable && (
-                  <WeatherCard weather={weather} weatherState={weatherState}/>
-                )}
-                <SunDayCycle
-                  todayTimes={todayTimes}
-                  now={now}
-                  cityTz={cityTz}
-                  dayMins={dayMins}
-                />
-                <FastQiblaCard
-                  todayTimes={todayTimes}
-                  now={now}
-                  cityTz={cityTz}
-                  qibla={qibla}
-                />
-              </div>
-            );
-          })()}
+          {/* (Bottom widget row removed — each widget now lives in its
+              surrounding chrome: HeaderQibla in header, SunArc/MoonArc above
+              clock, WeatherStrip below prayer list, FastBar under countdown.) */}
 
         </div>{/* end grid */}
 
@@ -825,7 +830,8 @@ export default function App() {
             testPrayer={testPrayer}
             testBlackoutActive={!!testBlackoutUntil}
             testCountdownActive={!!testCountdownUntil}
-            layoutVariantEmbedded={layoutVariant === 'embedded'}
+            testMoonActive={testMoonActive}
+            testMoonPhaseValue={testMoonPhase}
             activeKey={active?.key || 'fajr'}
             onOpenSettings={openSettings}
             onToggleFriday={() => setTestFriday(f => !f)}
@@ -845,12 +851,24 @@ export default function App() {
               // .countdown-big mode (auto-triggered when secsToNext <= 60).
               setTestCountdownUntil(new Date(Date.now() + 60 * 1000));
             }}
-            onToggleLayout={() => {
-              // Persistent setting. Click in classic → switch to embedded;
-              // click in embedded → switch back to classic. Apply happens
-              // immediately (not via drafts) so the test button behaves
-              // like an instant toggle.
-              setLayoutVariant(layoutVariant === 'embedded' ? 'classic' : 'embedded');
+            onToggleMoon={() => {
+              // Test Moon — force the arc above the clock to render MoonArc
+              // (with phase visualization) regardless of whether the sun
+              // is up. Toggles off on second click.
+              setTestMoonActive(m => !m);
+            }}
+            onCyclePhase={() => {
+              // Test Phase — cycle through 9 stops: real-phase (null),
+              // new (0), waxing-crescent (.125), first-quarter (.25),
+              // waxing-gibbous (.375), full (.5), waning-gibbous (.625),
+              // last-quarter (.75), waning-crescent (.875), back to real.
+              // Each click advances by one stop. Forces Test Moon ON so
+              // the change is visible immediately.
+              const stops = [null, 0, .125, .25, .375, .5, .625, .75, .875];
+              const idx = stops.indexOf(testMoonPhase);
+              const nextIdx = (idx + 1) % stops.length;
+              setTestMoonPhase(stops[nextIdx]);
+              if (stops[nextIdx] != null) setTestMoonActive(true);
             }}
           />
         </div>

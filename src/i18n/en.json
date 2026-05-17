@@ -29,6 +29,9 @@
   "widget.sun.sunrise": "Sunrise",
   "widget.sun.noon": "Noon",
   "widget.sun.sunset": "Sunset",
+  "widget.moon.moonrise": "Moonrise",
+  "widget.moon.transit": "Transit",
+  "widget.moon.moonset": "Moonset",
   "widget.sun.preDawn": "Pre-dawn",
   "widget.sun.night": "Night",
   "widget.sun.pctOfDay": "{pct}% of day",
@@ -114,7 +117,7 @@
   "settings.asr.hanafi": "Hanafi — Double shadow",
   "settings.iqamahOffset": "Iqamah Offset (minutes after Adhan)",
   "settings.iqamahAuto": "Auto-Calculate Iqamah",
-  "settings.iqamahAuto.note": "When enabled, iqamah times are computed daily as adhan + buffer minutes, rounded up to the nearest quarter-hour. Useful for mosques that prefer predictable iqamah schedules aligned to :00 / :15 / :30 / :45.",
+  "settings.iqamahAuto.note": "When enabled, iqamah times are computed daily as adhan + buffer minutes, rounded to the nearest quarter-hour (:00 / :15 / :30 / :45). If rounding would place iqamah before adhan, it bumps to the next quarter-hour. Useful for mosques that prefer predictable iqamah schedules.",
   "settings.iqamahAuto.buffer": "Buffer After Adhan (minutes)",
   "settings.jumuah": "Jumu'ah Congregations",
   "settings.eid": "Eid Prayer Congregations",
@@ -138,6 +141,12 @@
   "unit.min": "min",
   "unit.days": "days",
   "label.nextIn": "Next in {h}h {m}m",
-  "test.layout": "Test Layout",
-  "test.countdown": "Test Countdown"
+  "test.moon": "Test Moon",
+  "test.countdown": "Test Countdown",
+  "jumuah.adhan": "Adhan",
+  "jumuah.iqamah": "Iqamah",
+  "jumuah.status.done": "Done",
+  "jumuah.status.next": "Next",
+  "jumuah.status.later": "Later",
+  "label.nthJamaatIn": "{ord} jamaat · {h}h {m}m"
 }

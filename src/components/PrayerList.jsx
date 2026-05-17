@@ -66,53 +66,64 @@ export default function PrayerList({
         const isActive = active?.key === p.key;
         const isPassed = adhanT && adhanT < now && !isActive;
 
-        // On Fridays with active slots, replace Dhuhr with the Jumu'ah block.
+        // On Fridays with active slots, replace Dhuhr with the Jumu'ah banner.
+        // Unified design — same banner used for 1, 2, or 3 slots. The grid's
+        // column count adapts via inline style, and single-slot is just a
+        // 1-column banner. Keeps Jumu'ah visually consistent regardless of
+        // how many jamaats the mosque holds.
         if (p.key === 'dhuhr' && isFriday && activeJumuahSlots.length > 0) {
-          const single = activeJumuahSlots.length === 1;
-          if (single) {
-            const j   = activeJumuahSlots[0];
-            const jt  = jumuahDate(j.time);
-            const jiq = addMins(jt, j.iqamah);
-            const isPast = jt < now;
-            return (
-              <div key="jumuah-friday" className="pcard" style={{
-                borderColor:'rgba(61,200,120,.4)',
-                background: isPast ? 'transparent' : 'rgba(61,200,120,.06)',
-                opacity: isPast ? .4 : 1,
-              }}>
-                <div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:'#3DC878', borderRadius:'4px 0 0 4px' }}/>
-                <div className="pcard-name">
-                  <div className="pen" style={{color:'#3DC878'}}>{t('prayer.jumuah')}</div>
-                  <div className="par" style={{color:'rgba(61,200,120,.7)'}}>صلاة الجمعة</div>
-                </div>
-                <div className="pcard-times">
-                  <div className="ptime" style={{color: isPast ? '#9A8B6E' : '#3DC878'}}>{fmt12(jt, cityTz)}</div>
-                  <div className="ptime-iqamah" style={{color:'rgba(61,200,120,.8)'}}>{fmt12(jiq, cityTz)}</div>
-                </div>
-              </div>
-            );
-          }
-          // Multi-slot Jumu'ah: large banner with up to 3 slots
+          // Multi-slot Jumu'ah banner — each slot is a card with:
+          //   - Big background numeral (1, 2, 3) at low opacity
+          //   - Adhan + Iqamah times side-by-side
+          //   - Status badge (✓ done / ● next / later) top-right
+          //   - Active "next" slot gets gold border + larger times + pulse
+          // Header shows which slot's countdown it refers to ("2nd jamaat · 2h 15m").
+          const nextSlotIdx = activeJumuahSlots.findIndex(j => jumuahDate(j.time) > now);
+          const ordWord = (i) => i === 0 ? '1st' : i === 1 ? '2nd' : '3rd';
           return (
             <div key="jumuah-friday" className="jumuah-banner">
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div className="jumuah-banner-head">
                 <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">صلاة الجمعة</span></div>
-                {nextJumuah ? (
-                  <div className="jumuah-next">{(() => { const m = Math.ceil((nextJumuah - now) / 60000); return fmtStr(t('label.nextIn'), { h: Math.floor(m/60), m: m%60 }); })()}</div>
+                {nextJumuah && nextSlotIdx >= 0 ? (
+                  <div className="jumuah-next">{(() => {
+                    const m = Math.ceil((nextJumuah - now) / 60000);
+                    return fmtStr(t('label.nthJamaatIn'), {
+                      ord: t(`ord.${ordWord(nextSlotIdx)}`),
+                      h: Math.floor(m/60),
+                      m: m%60,
+                    });
+                  })()}</div>
                 ) : (
-                  <div className="jumuah-next" style={{color:'rgba(61,200,120,.35)'}}>{t('label.complete')}</div>
+                  <div className="jumuah-next jumuah-next-complete">{t('label.complete')}</div>
                 )}
               </div>
-              <div className="jumuah-slots">
+              <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(${activeJumuahSlots.length}, 1fr)` }}>
                 {activeJumuahSlots.map((j, i) => {
                   const jt  = jumuahDate(j.time);
                   const jiq = addMins(jt, j.iqamah);
                   const isPast = jt < now;
+                  const isNext = i === nextSlotIdx;
+                  const statusKey = isPast ? 'done' : isNext ? 'next' : 'later';
                   return (
-                    <div key={i} className="jumuah-slot" style={{ opacity: isPast ? .35 : 1 }}>
-                      <div className="jumuah-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
-                      <div className="jumuah-slot-time">{fmt12(jt, cityTz)}</div>
-                      <div className="jumuah-slot-iqamah">↪ {fmt12(jiq, cityTz)}</div>
+                    <div key={i} className={`jumuah-slot jumuah-slot-${statusKey}`}>
+                      {/* Big background numeral — decorative, centered, low-opacity */}
+                      <span className="jumuah-slot-bg-num" aria-hidden="true">{i + 1}</span>
+                      {/* Status badge top-right */}
+                      <span className="jumuah-slot-status">
+                        {isNext && <span className="jumuah-slot-pulse"/>}
+                        {t(`jumuah.status.${statusKey}`)}
+                      </span>
+                      {/* Adhan + Iqamah times side-by-side */}
+                      <div className="jumuah-slot-times">
+                        <div className="jumuah-slot-col">
+                          <div className="jumuah-slot-col-lbl">{t('jumuah.adhan')}</div>
+                          <div className="jumuah-slot-col-time">{fmt12(jt, cityTz)}</div>
+                        </div>
+                        <div className="jumuah-slot-col jumuah-slot-col-right">
+                          <div className="jumuah-slot-col-lbl">{t('jumuah.iqamah')}</div>
+                          <div className="jumuah-slot-col-time">{fmt12(jiq, cityTz)}</div>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -138,35 +149,17 @@ export default function PrayerList({
         );
       })}
 
-      {/* Eid prayer banner — shown all day until last iqamah ends */}
+      {/* Eid prayer banner — shown all day until last iqamah ends.
+       * Unified design — same banner used for 1, 2, or 3 slots. */}
       {showEidBanner && (() => {
         const eidLabel = activeEidSlots[0]?.label || t('prayer.eid');
-        if (activeEidSlots.length === 1) {
-          const e   = activeEidSlots[0];
-          const et  = eidDate(e.time);
-          const eiq = addMins(et, e.iqamah);
-          const isPast = et < now;
-          return (
-            <div className="pcard" style={{
-              borderColor:'rgba(180,120,255,.4)',
-              background: isPast ? 'transparent' : 'rgba(180,120,255,.06)',
-              opacity: isPast ? .4 : 1,
-            }}>
-              <div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:'#b47cff', borderRadius:'4px 0 0 4px' }}/>
-              <div className="pcard-name">
-                <div className="pen" style={{color:'#c49eff'}}>{eidLabel}</div>
-                <div className="par" style={{color:'rgba(196,158,255,.7)'}}>صلاة العيد</div>
-              </div>
-              <div className="pcard-times">
-                <div className="ptime" style={{color: isPast ? '#9A8B6E' : '#c49eff'}}>{fmt12(et, cityTz)}</div>
-                <div className="ptime-iqamah" style={{color:'rgba(196,158,255,.8)'}}>{fmt12(eiq, cityTz)}</div>
-              </div>
-            </div>
-          );
-        }
+        // Multi-slot Eid banner — mirrors Jumu'ah design: big background
+        // numeral, Adhan/Iqamah side-by-side, status badges, active highlight.
+        const nextEidSlotIdx = activeEidSlots.findIndex(e => eidDate(e.time) > now);
+        const eidOrdWord = (i) => i === 0 ? '1st' : i === 1 ? '2nd' : '3rd';
         return (
           <div className="eid-banner">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div className="eid-banner-head">
               <div className="eid-title">{eidLabel} <span className="eid-arabic">صلاة العيد</span></div>
               {(() => {
                 const firstEidTime = eidDate(activeEidSlots[0].time);
@@ -175,21 +168,41 @@ export default function PrayerList({
                 if (daysUntil > 0) {
                   return <div className="eid-next">{fmtStr(t('label.daysAway'), { days: daysUntil, plural: daysUntil!==1?'s':'' })}</div>;
                 }
-                return nextEid
-                  ? <div className="eid-next">{(() => { const m = Math.ceil((nextEid - now) / 60000); return fmtStr(t('label.nextIn'), { h: Math.floor(m/60), m: m%60 }); })()}</div>
-                  : <div className="eid-next" style={{color:'rgba(196,158,255,.35)'}}>{t('label.complete')}</div>;
+                if (nextEid && nextEidSlotIdx >= 0) {
+                  const m = Math.ceil((nextEid - now) / 60000);
+                  return <div className="eid-next">{fmtStr(t('label.nthJamaatIn'), {
+                    ord: t(`ord.${eidOrdWord(nextEidSlotIdx)}`),
+                    h: Math.floor(m/60),
+                    m: m%60,
+                  })}</div>;
+                }
+                return <div className="eid-next eid-next-complete">{t('label.complete')}</div>;
               })()}
             </div>
-            <div className="eid-slots">
+            <div className="eid-slots" style={{ gridTemplateColumns: `repeat(${activeEidSlots.length}, 1fr)` }}>
               {activeEidSlots.map((e, i) => {
                 const et  = eidDate(e.time);
                 const eiq = addMins(et, e.iqamah);
                 const isPast = et < now;
+                const isNext = i === nextEidSlotIdx;
+                const statusKey = isPast ? 'done' : isNext ? 'next' : 'later';
                 return (
-                  <div key={i} className="eid-slot" style={{ opacity: isPast ? .35 : 1 }}>
-                    <div className="eid-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
-                    <div className="eid-slot-time">{fmt12(et, cityTz)}</div>
-                    <div className="eid-slot-iqamah">↪ {fmt12(eiq, cityTz)}</div>
+                  <div key={i} className={`eid-slot eid-slot-${statusKey}`}>
+                    <span className="eid-slot-bg-num" aria-hidden="true">{i + 1}</span>
+                    <span className="eid-slot-status">
+                      {isNext && <span className="eid-slot-pulse"/>}
+                      {t(`jumuah.status.${statusKey}`)}
+                    </span>
+                    <div className="eid-slot-times">
+                      <div className="eid-slot-col">
+                        <div className="eid-slot-col-lbl">{t('jumuah.adhan')}</div>
+                        <div className="eid-slot-col-time">{fmt12(et, cityTz)}</div>
+                      </div>
+                      <div className="eid-slot-col eid-slot-col-right">
+                        <div className="eid-slot-col-lbl">{t('jumuah.iqamah')}</div>
+                        <div className="eid-slot-col-time">{fmt12(eiq, cityTz)}</div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -198,40 +211,34 @@ export default function PrayerList({
         );
       })()}
 
-      {/* Jumu'ah preview block — shown on non-Fridays so staff can verify times */}
+      {/* Jumu'ah preview block — shown on non-Fridays so staff can verify
+       * times. Same banner design as Friday — unified for 1/2/3 slots. */}
       {activeJumuahSlots.length > 0 && !isFriday && (() => {
-        if (activeJumuahSlots.length === 1) {
-          const j   = activeJumuahSlots[0];
-          const jt  = jumuahDate(j.time);
-          const jiq = addMins(jt, j.iqamah);
-          return (
-            <div className="pcard jumuah-dim" style={{ borderColor:'rgba(61,200,120,.25)' }}>
-              <div style={{ position:'absolute', left:0, top:0, bottom:0, width:3, background:'#3DC878', borderRadius:'4px 0 0 4px' }}/>
-              <div className="pcard-name">
-                <div className="pen" style={{color:'rgba(61,200,120,.7)'}}>{t('prayer.jumuah')}</div>
-                <div className="par" style={{color:'rgba(61,200,120,.45)'}}>الجمعة</div>
-              </div>
-              <div className="pcard-times">
-                <div className="ptime" style={{color:'rgba(61,200,120,.7)'}}>{fmt12(jt, cityTz)}</div>
-                <div className="ptime-iqamah" style={{color:'rgba(61,200,120,.5)'}}>{fmt12(jiq, cityTz)}</div>
-              </div>
-            </div>
-          );
-        }
         return (
           <div className="jumuah-banner jumuah-dim">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div className="jumuah-banner-head">
               <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">الجمعة</span></div>
             </div>
-            <div className="jumuah-slots">
+            <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(${activeJumuahSlots.length}, 1fr)` }}>
               {activeJumuahSlots.map((j, i) => {
                 const jt  = jumuahDate(j.time);
                 const jiq = addMins(jt, j.iqamah);
+                // Preview: all slots styled as "later" (no active highlight,
+                // no status badge — this is just a verification block on
+                // non-Fridays).
                 return (
-                  <div key={i} className="jumuah-slot">
-                    <div className="jumuah-slot-lbl">{t(`ord.${i===0?'1st':i===1?'2nd':'3rd'}`)}</div>
-                    <div className="jumuah-slot-time">{fmt12(jt, cityTz)}</div>
-                    <div className="jumuah-slot-iqamah">↪ {fmt12(jiq, cityTz)}</div>
+                  <div key={i} className="jumuah-slot jumuah-slot-later">
+                    <span className="jumuah-slot-bg-num" aria-hidden="true">{i + 1}</span>
+                    <div className="jumuah-slot-times">
+                      <div className="jumuah-slot-col">
+                        <div className="jumuah-slot-col-lbl">{t('jumuah.adhan')}</div>
+                        <div className="jumuah-slot-col-time">{fmt12(jt, cityTz)}</div>
+                      </div>
+                      <div className="jumuah-slot-col jumuah-slot-col-right">
+                        <div className="jumuah-slot-col-lbl">{t('jumuah.iqamah')}</div>
+                        <div className="jumuah-slot-col-time">{fmt12(jiq, cityTz)}</div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}

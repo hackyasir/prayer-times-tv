@@ -1,141 +1,10 @@
-/* ── widgets.css — widget cards + footer strip ───────────────────────────
- * Styles for .icard, .weather-card, sun/weather internals, .ftr strip.
- * No layout overrides. No @media blocks (all in responsive.css).
+/* ── widgets.css — widget styles (HeaderQibla, SunArc, MoonArc,
+ *    WeatherStrip, FastBar) + footer strip
+ *
+ * Classic bottom-band widgets (WeatherCard, SunDayCycle, FastQiblaCard)
+ * and their styling have been removed. Only the chrome-embedded widget
+ * set remains. No @media blocks here — all in responsive.css.
  */
-
-/* ── Base widget card ────────────────────────────────────────────────────── */
-.icard {
-  background: var(--t-surface);
-  border: 1px solid var(--t-border);
-  border-radius: 4px;
-  padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: .35vh;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.ilbl {
-  font-size: calc(clamp(0.563rem, .95vw, 0.938rem) * var(--t-fs, 1));
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--t-text-dim);
-}
-
-.ival {
-  font-size: calc(clamp(2rem, 1.85vw, 4rem) * var(--t-fs, 1));
-  font-weight: 700;
-  color: var(--t-text);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Sun day cycle ───────────────────────────────────────────────────────── */
-.sun-item {
-  text-align: center;
-  padding: 0 .4vw;
-}
-
-.sun-lbl {
-  font-size: calc(clamp(0.5rem, .9vw, 0.875rem) * var(--t-fs, 1));
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--t-text-dim);
-}
-
-.sun-val {
-  font-size: calc(clamp(0.938rem, 1.7vw, 1.875rem) * var(--t-fs, 1));
-  font-weight: 600;
-  color: var(--t-text);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.sun-sep {
-  width: 1px;
-  background: var(--t-border);
-  align-self: stretch;
-  margin: clamp(2px, .2vh, 5px) 0;
-}
-
-/* ── Weather card ────────────────────────────────────────────────────────── */
-.weather-card {
-  background: linear-gradient(135deg, var(--t-surface) 0%, var(--t-surface2) 100%);
-  border: 1px solid rgba(var(--t-accent-rgb), .25);
-  border-radius: 4px;
-  padding: clamp(6px, .8vh, 11px) clamp(8px, .9vw, 14px);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: .45vh;
-  position: relative;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.weather-card::before {
-  content: '';
-  position: absolute;
-  top: -30%;
-  right: -10%;
-  width: 60%;
-  height: 140%;
-  background: radial-gradient(ellipse, rgba(var(--t-accent-rgb), .04) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.weather-emoji {
-  font-size: calc(clamp(1.75rem, 3.8vw, 4.25rem) * var(--t-fs, 1));
-  line-height: 1;
-}
-
-.weather-temp {
-  font-size: calc(clamp(1.75rem, 4vw, 4.5rem) * var(--t-fs, 1));
-  font-weight: 700;
-  color: var(--t-text);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.weather-desc {
-  font-size: calc(clamp(0.625rem, 1.15vw, 1.75rem) * var(--t-fs, 1));
-  color: var(--t-accent);
-  letter-spacing: .05em;
-  text-transform: capitalize;
-  margin-top: .2vh;
-}
-
-.weather-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.weather-stat-lbl {
-  font-size: calc(clamp(0.5rem, .85vw, 0.812rem) * var(--t-fs, 1));
-  letter-spacing: .15em;
-  text-transform: uppercase;
-  color: var(--t-text-dim);
-}
-
-.weather-stat-val {
-  font-size: calc(clamp(0.812rem, 1.4vw, 1.5rem) * var(--t-fs, 1));
-  font-weight: 600;
-  color: var(--t-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.weather-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-size: calc(clamp(0.562rem, 1vw, 1rem) * var(--t-fs, 1));
-  color: var(--t-text-dim);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
 
 /* ── Footer / status strip ───────────────────────────────────────────────── */
 .ftr {
@@ -173,7 +42,7 @@
 .strig {
   background: transparent;
   border: 1px solid var(--t-border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: clamp(3px, .35vh, 6px) clamp(8px, .6vw, 14px);
   color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
@@ -282,6 +151,15 @@
   opacity: .3;
 }
 
+/* Sun rays — short lines radiating from the disk at 45° intervals.
+ * Same highlight color as the lit disk so they read as part of the sun. */
+.sun-arc-sun-ray {
+  stroke: var(--t-accent-hi);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  opacity: .85;
+}
+
 /* Labels under the markers (Sunrise / Noon / Sunset) */
 .sun-arc-label {
   font-size: calc(10px * var(--t-fs, 1));
@@ -309,7 +187,7 @@
   margin-top: .6vh;
   background: rgba(var(--t-accent-rgb), .04);
   border: 1px solid rgba(var(--t-accent-rgb), .1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
   font-weight: 700;
   font-size: calc(clamp(0.825rem, 1vw, 1rem) * var(--t-fs, 1));
@@ -329,6 +207,7 @@
   color: var(--t-text-dim);
   letter-spacing: .04em;
   flex: 1;
+  text-align: center;
 }
 
 .weather-strip-hilo {
@@ -349,7 +228,7 @@
   padding: .5vh .8vw;
   background: rgba(var(--t-accent-rgb), .06);
   border: 1px solid rgba(var(--t-accent-rgb), .12);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   flex-shrink: 0;
   width: 100%;
   max-width: 520px;
@@ -380,7 +259,7 @@
   flex: 1;
   height: 4px;
   background: rgba(var(--t-accent-rgb), .12);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   overflow: hidden;
   min-width: 40px;
 }
@@ -398,4 +277,51 @@
   letter-spacing: .05em;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* ── MoonArc — night-mode variant of SunArc ──────────────────────────────
+ * Reuses .sun-arc-* class structure (same SVG geometry), but adds moon-
+ * specific classes for silver/blue tones instead of gold. The component
+ * combines BOTH class names (e.g. <path class="sun-arc-path moon-arc-path">)
+ * so it inherits the base sun-arc styling and overrides only the color
+ * properties.
+ *
+ * Color palette: silver/blue-ish for moonlight feel; full moon's halo is
+ * the brightest element. */
+
+.moon-arc-path {
+  /* Dim dotted arc — slightly cooler than sun's gold */
+  stroke: rgba(180, 200, 230, .15);
+}
+
+.moon-arc-path-active {
+  /* Bright moon-path overlay — silver gradient */
+  stroke: rgba(200, 220, 240, .5);
+  stroke-width: 1.5;
+}
+
+.moon-arc-marker {
+  fill: rgba(180, 200, 230, .5);
+}
+
+/* Moon disk components */
+.moon-arc-lit {
+  fill: #e8edf3;
+}
+
+/* lit (bright) disk */
+.moon-arc-dark {
+  fill: #1a2030;
+}
+
+/* dark side overlay */
+.moon-arc-ring {
+  /* subtle outline */
+  fill: none;
+  stroke: rgba(200, 220, 240, .35);
+  stroke-width: 0.5;
+}
+
+.moon-arc-halo {
+  fill: #c5d4e6;
 }
