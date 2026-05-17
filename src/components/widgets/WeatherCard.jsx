@@ -34,12 +34,12 @@ export default function WeatherCard({ weather, weatherState }) {
           <div style={{ display:'flex', flexDirection:'column', minWidth:0, flexShrink:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:'.5vw' }}>
               <div className="weather-temp">{weather.temp}{weather.unit}</div>
-              <div className="weather-emoji" style={{ fontSize:'clamp(1.5rem, 2.8vw, 3rem)', lineHeight:1 }}>
+              <div className="weather-emoji" style={{ fontSize:'calc(clamp(1.5rem, 2.8vw, 3rem) * var(--t-fs, 1))', lineHeight:1 }}>
                 {wmoEmoji(weather.code)}
               </div>
             </div>
             <div className="weather-desc" style={{ marginTop:'.15vh' }}>{wmoText(weather.code)}</div>
-            <div style={{ fontSize: 'clamp(0.5rem,.85vw,0.812rem)', color:'#9A8B6E', marginTop:'.1vh' }}>
+            <div style={{ fontSize: 'calc(clamp(0.5rem,.85vw,0.812rem) * var(--t-fs, 1))', color:'#9A8B6E', marginTop:'.1vh' }}>
               {t('widget.weather.feelsLike')} {weather.feelsLike}{weather.unit}
             </div>
           </div>
@@ -55,35 +55,20 @@ export default function WeatherCard({ weather, weatherState }) {
               flexShrink:0,
             }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
-                <span style={{ fontSize:'clamp(0.563rem,.9vw,0.875rem)', color:'#9A8B6E', letterSpacing:'.1em' }}>{t('widget.weather.hi')}</span>
-                <span style={{ fontSize:'clamp(1.125rem,1.85vw,2rem)', fontWeight:700, color:'var(--t-text)', lineHeight:1 }}>{weather.tempMax}°</span>
+                <span style={{ fontSize:'calc(clamp(0.563rem,.9vw,0.875rem) * var(--t-fs, 1))', color:'#9A8B6E', letterSpacing:'.1em' }}>{t('widget.weather.hi')}</span>
+                <span style={{ fontSize:'calc(clamp(1.125rem,1.85vw,2rem) * var(--t-fs, 1))', fontWeight:700, color:'var(--t-text)', lineHeight:1 }}>{weather.tempMax}°</span>
               </div>
               <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
-                <span style={{ fontSize:'clamp(0.563rem,.9vw,0.875rem)', color:'#9A8B6E', letterSpacing:'.1em' }}>{t('widget.weather.lo')}</span>
-                <span style={{ fontSize:'clamp(1.125rem,1.85vw,2rem)', fontWeight:700, color:'var(--t-text-dim)', lineHeight:1 }}>{weather.tempMin}°</span>
+                <span style={{ fontSize:'calc(clamp(0.563rem,.9vw,0.875rem) * var(--t-fs, 1))', color:'#9A8B6E', letterSpacing:'.1em' }}>{t('widget.weather.lo')}</span>
+                <span style={{ fontSize:'calc(clamp(1.125rem,1.85vw,2rem) * var(--t-fs, 1))', fontWeight:700, color:'var(--t-text-dim)', lineHeight:1 }}>{weather.tempMin}°</span>
               </div>
             </div>
           )}
 
-          {/* Humidity / Wind / Rain pushed to right edge */}
-          <div style={{
-            display:'flex', gap:'1vw', flex:1, justifyContent:'flex-end',
-            paddingLeft:'.8vw',
-            borderLeft:'1px solid rgba(var(--t-accent-rgb),.10)',
-          }}>
-            <div className="weather-stat" style={{ alignItems:'flex-start' }}>
-              <span className="weather-stat-lbl">{t('widget.weather.humidity')}</span>
-              <span className="weather-stat-val">{weather.humidity}%</span>
-            </div>
-            <div className="weather-stat" style={{ alignItems:'flex-start' }}>
-              <span className="weather-stat-lbl">{t('widget.weather.wind')}</span>
-              <span className="weather-stat-val">{weather.wind} km/h</span>
-            </div>
-            <div className="weather-stat" style={{ alignItems:'flex-start' }}>
-              <span className="weather-stat-lbl">{t('widget.weather.rain')}</span>
-              <span className="weather-stat-val">{weather.precip} mm</span>
-            </div>
-          </div>
+          {/* Humidity / Wind / Rain row removed — temp + Hi/Lo is enough info
+              for a glance widget. Kept here in case it needs to be restored
+              behind a setting in the future:
+              { humidity: NN%, wind: NN km/h, rain: NN mm } */}
         </div>
       )}
     </div>

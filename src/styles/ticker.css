@@ -25,9 +25,10 @@
   /* Slim strip with thin top/bottom dividers */
   width: 100%;
   padding: 4px 0;
-  border-top:    1px solid var(--t-border);
+  border-top: 1px solid var(--t-border);
   border-bottom: 1px solid var(--t-border);
-  overflow: hidden;          /* clip the second copy during scroll */
+  overflow: hidden;
+  /* clip the second copy during scroll */
   flex-shrink: 0;
   position: relative;
   z-index: 1;
@@ -56,12 +57,13 @@
 }
 
 .ticker-segment {
-  font-size: calc(clamp(0.625rem, 1.05vw, 1rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.8rem, 1.05vw, 1.2rem) * var(--t-fs, 1));
   color: var(--t-accent-dim);
   letter-spacing: .08em;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 500;
-  flex-shrink: 0;            /* don't compress when both segments are wide */
+  flex-shrink: 0;
+  /* don't compress when both segments are wide */
 }
 
 /* ── Marquee animations ───────────────────────────────────────────────────
@@ -69,18 +71,29 @@
  * point the second copy is exactly where the first was, so the visual is
  * continuous — no pause, no jump. */
 @keyframes ticker-scroll-ltr {
-  from { transform: translateX(0);    }
-  to   { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @keyframes ticker-scroll-rtl {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0);    }
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 
 .ticker[data-dir="ltr"] .ticker-track {
   animation: ticker-scroll-ltr 40s linear infinite;
 }
+
 .ticker[data-dir="rtl"] .ticker-track {
   animation: ticker-scroll-rtl 40s linear infinite;
 }
@@ -96,6 +109,7 @@
    the trade for accessibility, and acceptable since reduced-motion users
    typically accept some content limitations. */
 @media (prefers-reduced-motion: reduce) {
+
   .ticker[data-dir="ltr"] .ticker-track,
   .ticker[data-dir="rtl"] .ticker-track {
     animation: none;
@@ -105,7 +119,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
   /* Track has two copies for the marquee loop; in static fallback only show
      one so the centred text doesn't read as a double announcement. */
-  .ticker .ticker-segment + .ticker-segment { display: none; }
+  .ticker .ticker-segment+.ticker-segment {
+    display: none;
+  }
 }

@@ -36,6 +36,8 @@
   "widget.fast.title": "صيام اليوم",
   "widget.fast.total": "{hours}س {mins}د المجموع",
   "widget.fast.toIftar": "{hours}س {mins}د حتى الإفطار",
+  "widget.fast.toSuhoor": "{hours}س {mins}د حتى السحور",
+  "widget.qibla.label": "القبلة",
   "footer.offline": "بدون اتصال · توقيت محلي",
   "footer.updated": "تحديث كل ثانية",
   "footer.settings": "⚙ الإعدادات",
@@ -135,5 +137,7 @@
   "ord.3rd": "الثالثة",
   "unit.min": "دقيقة",
   "unit.days": "يوم",
-  "label.nextIn": "بعد {h}س {m}د"
+  "label.nextIn": "بعد {h}س {m}د",
+  "test.layout": "اختبار التخطيط",
+  "test.countdown": "اختبار العد التنازلي"
 }

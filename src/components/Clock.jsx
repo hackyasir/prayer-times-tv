@@ -34,6 +34,9 @@ export default function Clock({
   // Active prayer (for hadith rotation)
   activeKey,
   hadiths,
+  // Optional render slots for the embedded layout variant
+  topSlot,       // sits above the clock time block (e.g. SunArc)
+  bottomSlot,    // sits below the countdown label (e.g. FastBar)
 }) {
   const { t, lang } = useT();
 
@@ -54,6 +57,8 @@ export default function Clock({
 
   return (
     <div className="ccol">
+      {/* Optional embedded-variant slot above the clock — Sun arc, etc. */}
+      {topSlot}
       {/* Clock time block */}
       <div className="clock">
         <div style={{
@@ -104,11 +109,13 @@ export default function Clock({
               </div>
             </>
           )}
+          {/* Optional embedded-variant slot under the countdown — Fast bar, etc. */}
+          {bottomSlot}
         </div>
       ) : (
         <div style={{
           color: '#9A8B6E',
-          fontSize: 'clamp(0.812rem,1.4vw,1.375rem)',
+          fontSize: 'calc(clamp(0.812rem,1.4vw,1.375rem) * var(--t-fs, 1))',
           letterSpacing: '0.1em',
           textAlign: 'center',
         }}>

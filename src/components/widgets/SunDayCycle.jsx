@@ -55,7 +55,7 @@ export default function SunDayCycle({ todayTimes, now, cityTz, dayMins }) {
             </div>
             <div style={{
               display:'flex', justifyContent:'space-between',
-              fontSize:'clamp(0.375rem,.65vw,0.625rem)',
+              fontSize:'calc(clamp(0.375rem,.65vw,0.625rem) * var(--t-fs, 1))',
               color:'#9A8B6E', letterSpacing:'.08em', marginTop:'.3vh',
             }}>
               <span>{

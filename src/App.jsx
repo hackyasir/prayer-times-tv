@@ -37,6 +37,14 @@ import WeatherCard         from './components/widgets/WeatherCard.jsx';
 import SunDayCycle         from './components/widgets/SunDayCycle.jsx';
 import FastQiblaCard       from './components/widgets/FastQiblaCard.jsx';
 
+// Embedded-variant widgets — used when layoutVariant === 'embedded'.
+// Each replaces a piece of the bottom widget row by sliding into a
+// different region (header / above clock / below prayer list / under clock).
+import SunArc              from './components/embedded/SunArc.jsx';
+import WeatherStrip        from './components/embedded/WeatherStrip.jsx';
+import FastBar             from './components/embedded/FastBar.jsx';
+import HeaderQibla         from './components/embedded/HeaderQibla.jsx';
+
 // ── App-only static data ─────────────────────────────────────────────────────
 // HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS now live in lib/constants.js
 // (imported at the top of this file).
@@ -89,6 +97,7 @@ export default function App() {
     iqamah: rawIqamah, jumuah, eid, eidDaysBefore,
     iqamahAutoCalc, iqamahAutoBuffers,
     hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
+    layoutVariant,
     announcements,
     blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
   } = applied;
@@ -113,6 +122,7 @@ export default function App() {
   const setChimeIqamah  = v => updateApplied({ chimeIqamah: v });
   const setFontScale    = v => updateApplied({ fontScale: v });
   const setProgressStyle= v => updateApplied({ progressStyle: v });
+  const setLayoutVariant= v => updateApplied({ layoutVariant: v });
 
   // Draft mirror — destructure drafts. Each `setDraftX(value)` updates ONE
   // field via updateDrafts. The shims accept either a value or a function
@@ -170,6 +180,12 @@ export default function App() {
   const [testFriday,  setTestFriday]  = useState(false);
   const [testPrayer,  setTestPrayer]  = useState(null); // null = use real active prayer
   const [testBlackoutUntil, setTestBlackoutUntil] = useState(null); // Date | null
+  // Test the final-60-sec giant pulsing countdown view. When set to a Date
+  // in the future, App overrides `secsToNext` below to count toward that
+  // Date — Clock then renders the .countdown-big huge-digit view because
+  // secsToNext is <= 60. Auto-clears via the same effect that clears the
+  // blackout test (see below).
+  const [testCountdownUntil, setTestCountdownUntil] = useState(null); // Date | null
   const [showPin,    setShowPin]    = useState(false);
   const [pinInput,   setPinInput]   = useState('');
   const [pinError,   setPinError]   = useState(false);
@@ -224,7 +240,10 @@ export default function App() {
     if (testBlackoutUntil && now >= testBlackoutUntil) {
       setTestBlackoutUntil(null);
     }
-  }, [now, testBlackoutUntil]);
+    if (testCountdownUntil && now >= testCountdownUntil) {
+      setTestCountdownUntil(null);
+    }
+  }, [now, testBlackoutUntil, testCountdownUntil]);
 
   // (now-tick is owned by useCityTime hook)
   // (audio-unlock-on-first-gesture is owned by useAudioUnlock hook)
@@ -435,6 +454,21 @@ export default function App() {
       time: nextJumuah,
     };
     secsToNext = Math.max(0, Math.floor((nextJumuah - now) / 1000));
+  }
+
+  // ── Test countdown override ──────────────────────────────────────────────
+  // When the "Test Countdown" footer button is pressed, shrink secsToNext
+  // toward testCountdownUntil so Clock renders the .countdown-big huge-digit
+  // mode (auto-activates when secsToNext <= 60). The "Until X" label below
+  // the countdown keeps the actual next prayer's name + time for realism.
+  if (testCountdownUntil) {
+    const remaining = Math.max(0, Math.floor((testCountdownUntil - now) / 1000));
+    secsToNext = remaining;
+    // Fabricate `next` if absent (extremely rare — only when no prayer
+    // times are loaded yet) so Clock has something to render.
+    if (!next) {
+      next = { key: 'fajr', en: 'Fajr', ar: 'الفجر', time: testCountdownUntil };
+    }
   }
 
   // Eid helpers — same approach
@@ -698,110 +732,129 @@ export default function App() {
           method={method}
           activePrayerKey={testPrayer || active?.key || 'fajr'}
           lunarPhase={lunarPhase}
+          centerSlot={layoutVariant === 'embedded' ? <HeaderQibla qibla={qibla}/> : undefined}
         />
 
         {/* Grid */}
         <div className="grid">
 
-          {/* Left: prayer list with Adhan + Iqamah */}
-          <PrayerList
-            todayTimes={todayTimes}
-            iqamah={iqamah}
-            active={active}
-            now={now}
-            cityTz={cityTz}
-            isFriday={isFridayEffective}
-            activeJumuahSlots={activeJumuahSlots}
-            nextJumuah={nextJumuah}
-            jumuahDate={jumuahDate}
-            activeEidSlots={activeEidSlots}
-            nextEid={nextEid}
-            eidDate={eidDate}
-            showEidBanner={showEidBanner}
-          />
+          {/* Main row: prayer list + clock side-by-side (or stacked in portrait) */}
+          <div className="grid-main">
 
-          {/* Centre: clock + countdown */}
-          <Clock
-            timeStr={timeStr}
-            secStr={secStr}
-            dateStr={dateStr}
-            next={next}
-            secsToNext={secsToNext}
-            progressStyle={progressStyle}
-            ringProgress={ringProgress}
-            todayTimes={todayTimes}
-            tomorrowTimes={tomorrowTimes}
-            now={now}
-            cityTz={cityTz}
-            activeKey={active?.key}
-            hadiths={HADITHS}
-          />
-
-          {/* Bottom band: widgets + integrated status strip (replaces standalone footer) */}
-          <div className="bottom-band">
-            {(() => {
-              // Weather is hidden when fetch failed AND no cached data exists.
-              // This covers offline mode (no internet) and API outages alike.
-              // When hidden, .rcol switches to a 2-column grid so the
-              // remaining widgets re-flow tidily, left-justified.
-              const weatherAvailable = !(weatherState === 'error' && weather === null);
-              const widgetCount = weatherAvailable ? 3 : 2;
-              return (
-            <div className="rcol" data-widgets={widgetCount}>
-
-            {/* ── Weather (hidden when offline / fetch failed) ── */}
-            {weatherAvailable && (
-              <WeatherCard weather={weather} weatherState={weatherState}/>
-            )}
-
-            {/* ── Sun Day Cycle ── */}
-            <SunDayCycle
+            {/* Left: prayer list with Adhan + Iqamah */}
+            <PrayerList
               todayTimes={todayTimes}
+              iqamah={iqamah}
+              active={active}
               now={now}
               cityTz={cityTz}
-              dayMins={dayMins}
+              isFriday={isFridayEffective}
+              activeJumuahSlots={activeJumuahSlots}
+              nextJumuah={nextJumuah}
+              jumuahDate={jumuahDate}
+              activeEidSlots={activeEidSlots}
+              nextEid={nextEid}
+              eidDate={eidDate}
+              showEidBanner={showEidBanner}
+              footerSlot={layoutVariant === 'embedded'
+                ? <WeatherStrip weather={weather} weatherState={weatherState}/>
+                : undefined}
             />
 
-            {/* ── Today's Fast + Qibla merged ── */}
-            <FastQiblaCard
+            {/* Centre: clock + countdown */}
+            <Clock
+              timeStr={timeStr}
+              secStr={secStr}
+              dateStr={dateStr}
+              next={next}
+              secsToNext={secsToNext}
+              progressStyle={progressStyle}
+              ringProgress={ringProgress}
               todayTimes={todayTimes}
+              tomorrowTimes={tomorrowTimes}
               now={now}
               cityTz={cityTz}
-              qibla={qibla}
+              activeKey={active?.key}
+              hadiths={HADITHS}
+              topSlot={layoutVariant === 'embedded'
+                ? <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz}/>
+                : undefined}
+              bottomSlot={layoutVariant === 'embedded'
+                ? <FastBar todayTimes={todayTimes} tomorrowTimes={tomorrowTimes} now={now} cityTz={cityTz}/>
+                : undefined}
             />
 
-          </div>
-              );
-            })()}
-            {/* Announcement ticker — sits between widget row and status strip.
-                Renders nothing when announcements is empty (default). */}
-            <Ticker announcements={announcements}/>
+          </div>{/* end grid-main */}
 
-            {/* Status strip — inside the bottom band, sits below the widget cards */}
-            <Footer
-              showTestBtns={SHOW_TEST_BTNS}
-              testFriday={testFriday}
-              testPrayer={testPrayer}
-              testBlackoutActive={!!testBlackoutUntil}
-              activeKey={active?.key || 'fajr'}
-              onOpenSettings={openSettings}
-              onToggleFriday={() => setTestFriday(f => !f)}
-              onCyclePrayer={(curKey) => {
-                const cycle = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
-                const cur = testPrayer || curKey || 'fajr';
-                const next = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
-                setTestPrayer(next);
-              }}
-              onClearPrayer={() => setTestPrayer(null)}
-              onTestBlackout={() => {
-                // 60-second test window. Resets blackoutDismissedAt so a prior
-                // dismiss doesn't suppress the test.
-                setBlackoutDismissedAt(null);
-                setTestBlackoutUntil(new Date(Date.now() + 60 * 1000));
-              }}
-            />
-          </div>{/* end bottom-band */}
+          {/* Widgets row — hidden entirely in embedded layout variant since
+              each widget has moved to its surrounding chrome (qibla in
+              header, sun arc above clock, weather strip under prayer list,
+              fast bar under countdown). */}
+          {layoutVariant !== 'embedded' && (() => {
+            const weatherAvailable = !(weatherState === 'error' && weather === null);
+            const widgetCount = weatherAvailable ? 3 : 2;
+            return (
+              <div className="rcol" data-widgets={widgetCount}>
+                {weatherAvailable && (
+                  <WeatherCard weather={weather} weatherState={weatherState}/>
+                )}
+                <SunDayCycle
+                  todayTimes={todayTimes}
+                  now={now}
+                  cityTz={cityTz}
+                  dayMins={dayMins}
+                />
+                <FastQiblaCard
+                  todayTimes={todayTimes}
+                  now={now}
+                  cityTz={cityTz}
+                  qibla={qibla}
+                />
+              </div>
+            );
+          })()}
+
         </div>{/* end grid */}
+
+        {/* App footer — outside .grid, always at bottom of .app */}
+        <div className="app-footer">
+          <Ticker announcements={announcements}/>
+          <Footer
+            showTestBtns={SHOW_TEST_BTNS}
+            testFriday={testFriday}
+            testPrayer={testPrayer}
+            testBlackoutActive={!!testBlackoutUntil}
+            testCountdownActive={!!testCountdownUntil}
+            layoutVariantEmbedded={layoutVariant === 'embedded'}
+            activeKey={active?.key || 'fajr'}
+            onOpenSettings={openSettings}
+            onToggleFriday={() => setTestFriday(f => !f)}
+            onCyclePrayer={(curKey) => {
+              const cycle = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
+              const cur = testPrayer || curKey || 'fajr';
+              const next = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
+              setTestPrayer(next);
+            }}
+            onClearPrayer={() => setTestPrayer(null)}
+            onTestBlackout={() => {
+              setBlackoutDismissedAt(null);
+              setTestBlackoutUntil(new Date(Date.now() + 60 * 1000));
+            }}
+            onTestCountdown={() => {
+              // 60-second window in the future — Clock will render its
+              // .countdown-big mode (auto-triggered when secsToNext <= 60).
+              setTestCountdownUntil(new Date(Date.now() + 60 * 1000));
+            }}
+            onToggleLayout={() => {
+              // Persistent setting. Click in classic → switch to embedded;
+              // click in embedded → switch back to classic. Apply happens
+              // immediately (not via drafts) so the test button behaves
+              // like an instant toggle.
+              setLayoutVariant(layoutVariant === 'embedded' ? 'classic' : 'embedded');
+            }}
+          />
+        </div>
+
       </div>{/* end .app */}
 
       {/* (standalone footer removed — integrated into bottom-band above) */}
