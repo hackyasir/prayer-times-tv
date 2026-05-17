@@ -3,7 +3,8 @@
  * Base styles (layout/clock/prayer-cards/widgets) = mobile portrait (0px+).
  * Every @media block in this project lives here — nowhere else.
  *
- *   480px+                   show widget row (2-col)
+ *   max-width 480px          phone — show ONLY header + prayer cards +
+ *                            SunArc + ticker + footer
  *   768px+                   side-by-side layout, viewport lock, full gaps
  *   768px+ portrait          kiosk portrait — stack, clock first
  *   768px+ AND max-h 500px   landscape phone — compress cards, hide hadith
@@ -12,11 +13,33 @@
  *   min-height 2400px        4K portrait — font bumps
  */
 
-/* ── 480px+ — show all widgets, 2-col ───────────────────────────────────── */
-@media (min-width: 480px) {
-  .rcol { grid-template-columns: repeat(2, 1fr); gap: 1.2vh 1.2vw; }
-  .rcol > *:not(:last-child) { display: block; }
-  .rcol > * { max-height: clamp(80px, 15vh, 180px); }
+/* ── Phone (≤480px) — minimal view ────────────────────────────────────────
+ * Mosque-goers checking prayer times on a phone don't need the full
+ * dashboard chrome. Hide the clock + next-prayer block + hadith + bottom
+ * widget row + embedded-mode extras (WeatherStrip, FastBar, HeaderQibla).
+ * Keep visible:
+ *   - Header (masjid name, location, hijri — as-is)
+ *   - Prayer list (5 prayer cards — the core content)
+ *   - SunArc (only when layoutVariant='embedded'; respects user setting)
+ *   - Ticker (scrolling announcements)
+ *   - Footer (Settings + status)
+ *
+ * The hidden elements still EXIST in the DOM (so their data still updates),
+ * they just don't take any layout space. !important is needed because the
+ * affected elements have inline styles or higher-specificity rules. */
+@media (max-width: 480px) {
+  .clock,
+  .next-sec,
+  .hadith,
+  .weather-strip,
+  .fast-bar,
+  .header-qibla {
+    display: none !important;
+  }
+  /* .ccol contains [SunArc, .clock, .next-sec, .hadith].  We hide all but
+   * SunArc above.  Tighten .ccol's gap so SunArc sits snug below the prayer
+   * cards without a giant empty column. */
+  .ccol { gap: 0; min-height: 0; }
 }
 
 /* ── 768px+ — side-by-side, viewport lock ────────────────────────────────── */
@@ -30,9 +53,6 @@
   .ccol      { gap: .8vh; }
   .pcol      { align-self: stretch; }
   .pcard     { flex: 1; min-height: clamp(36px, 7vh, 80px); max-height: clamp(60px, 14vh, 160px); }
-  .rcol      { display: grid; grid-template-columns: 1.3fr 1.2fr 1.5fr; gap: .8vw; }
-  .rcol[data-widgets="2"] { grid-template-columns: 1.2fr 1.5fr; }
-  .rcol > *  { max-height: 28vh; }
 }
 
 /* ── 768px+ portrait — kiosk portrait stack ─────────────────────────────── */

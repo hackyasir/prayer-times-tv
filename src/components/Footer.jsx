@@ -11,13 +11,29 @@
 
 import { useT } from '../i18n/I18nContext.jsx';
 
+/** Short label for a moon phase test value. null = real-phase (auto from
+ * suncalc); 0..1 = forced phase. Used by the Test Phase footer button. */
+function phaseLabel(phaseValue) {
+  if (phaseValue == null)       return 'Phase: Auto';
+  if (phaseValue === 0)         return 'New';
+  if (phaseValue === .125)      return 'Wax. Cres.';
+  if (phaseValue === .25)       return '1st Qtr';
+  if (phaseValue === .375)      return 'Wax. Gibb.';
+  if (phaseValue === .5)        return 'Full';
+  if (phaseValue === .625)      return 'Wan. Gibb.';
+  if (phaseValue === .75)       return 'Last Qtr';
+  if (phaseValue === .875)      return 'Wan. Cres.';
+  return `${(phaseValue * 100).toFixed(0)}%`;
+}
+
 export default function Footer({
   showTestBtns,
   testFriday,
   testPrayer,
   testBlackoutActive,
   testCountdownActive,
-  layoutVariantEmbedded,
+  testMoonActive,
+  testMoonPhaseValue,
   activeKey,
   onOpenSettings,
   onToggleFriday,
@@ -25,7 +41,8 @@ export default function Footer({
   onClearPrayer,
   onTestBlackout,
   onTestCountdown,
-  onToggleLayout,
+  onToggleMoon,
+  onCyclePhase,
 }) {
   const { t } = useT();
   return (
@@ -115,23 +132,38 @@ export default function Footer({
                 opacity: testCountdownActive ? 0.7 : 1,
               }}
             >⏱ {testCountdownActive ? 'Active' : t('test.countdown')}</button>
-            {/* Test Layout — toggles `layoutVariant` between 'classic' (3-widget
-                bottom row) and 'embedded' (widgets pulled into header, above
-                clock, below prayer list, under countdown). Persists across
-                reloads. Gold-tinted when in embedded mode so the staff can
-                see which layout is currently active at a glance. */}
+            {/* Test Moon — forces the centre arc to render MoonArc with
+                phase visualization regardless of whether the sun is up.
+                Useful for verifying night-mode visuals during the day. */}
             <button
-              onClick={onToggleLayout}
+              onClick={onToggleMoon}
               style={{
                 background:'transparent',
-                border:`1px solid ${layoutVariantEmbedded ? 'rgba(201,168,76,.5)' : 'rgba(201,168,76,.15)'}`,
+                border:`1px solid ${testMoonActive ? 'rgba(180,200,230,.5)' : 'rgba(201,168,76,.15)'}`,
                 borderRadius:3, padding:'2px 8px',
-                color: layoutVariantEmbedded ? '#C9A84C' : '#9A8B6E',
+                color: testMoonActive ? '#c5d4e6' : '#9A8B6E',
                 fontFamily:'Rajdhani,sans-serif',
                 fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
                 letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
               }}
-            >⊞ {t('test.layout')}{layoutVariantEmbedded ? ' ✓' : ''}</button>
+            >🌙 {t('test.moon')}{testMoonActive ? ' ✓' : ''}</button>
+            {/* Test Phase — cycle through 9 phase stops (real → new →
+                waxing crescent → first quarter → ... → waning crescent
+                → real). Each click advances one stop; label shows the
+                CURRENT phase name. Only meaningful while Test Moon is
+                active so the moon arc is visible. */}
+            <button
+              onClick={onCyclePhase}
+              style={{
+                background:'transparent',
+                border:`1px solid ${testMoonPhaseValue != null ? 'rgba(180,200,230,.5)' : 'rgba(201,168,76,.15)'}`,
+                borderRadius:3, padding:'2px 8px',
+                color: testMoonPhaseValue != null ? '#c5d4e6' : '#9A8B6E',
+                fontFamily:'Rajdhani,sans-serif',
+                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
+                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
+              }}
+            >☾ {phaseLabel(testMoonPhaseValue)}</button>
           </>
         )}
         <div className="ftr-txt">{t('footer.updated')}</div>

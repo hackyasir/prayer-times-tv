@@ -1,11 +1,10 @@
-// ── SunArc — daylight progress arc, embedded above the clock ────────────────
+// ── SunArc — daylight progress arc above the clock ────────────────
 //
 // Thin curved gold line going left-to-right across the centre column, with
 // three small markers (sunrise · solar noon · sunset) and a bright dot
 // showing the sun's current position along the arc.
 //
-// Used in layoutVariant='embedded' as an alternative to the bottom-band
-// SunDayCycle widget.
+// Renders above the clock in the centre column.
 //
 // STYLING APPROACH: all colors, fonts, sizes, strokes live in CSS
 // (src/styles/widgets.css under the .sun-arc-* classes). The JSX here is

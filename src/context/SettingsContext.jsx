@@ -73,16 +73,6 @@ export const DEFAULTS = {
   chimeIqamah: true,
   fontScale: 100,  // % — 100 = default, 70..130 adjustable in settings
   progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
-  // ── Layout variant ───────────────────────────────────────────────────────
-  // 'classic' (default): traditional layout — clock+prayer list in middle,
-  //   3 widget cards (Weather, Sun Cycle, Fast/Qibla) across the bottom band
-  // 'embedded': widgets pulled into the surrounding chrome — Qibla compass
-  //   in header centre, Sun arc above the clock, Weather strip under the
-  //   prayer list, Fast bar under the clock countdown. The bottom widget
-  //   row is hidden entirely, reclaiming the vertical space for the main
-  //   regions. Toggle live with the "Test Layout" footer button (gated by
-  //   SHOW_TEST_BTNS) to compare both modes without committing.
-  layoutVariant: 'embedded',  // 'classic' | 'embedded'
   lang: 'en',   // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
   announcements: '',     // Newline-separated list shown in the bottom ticker.
   // Empty string = hide ticker entirely.

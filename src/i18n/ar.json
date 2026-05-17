@@ -29,6 +29,9 @@
   "widget.sun.sunrise": "الشروق",
   "widget.sun.noon": "الظهيرة",
   "widget.sun.sunset": "الغروب",
+  "widget.moon.moonrise": "شروق القمر",
+  "widget.moon.transit": "العبور",
+  "widget.moon.moonset": "غروب القمر",
   "widget.sun.preDawn": "قبل الفجر",
   "widget.sun.night": "ليلًا",
   "widget.sun.pctOfDay": "{pct}٪ من النهار",
@@ -114,7 +117,7 @@
   "settings.asr.hanafi": "حنفي — ظل مزدوج",
   "settings.iqamahOffset": "فرق الإقامة (دقائق بعد الأذان)",
   "settings.iqamahAuto": "حساب الإقامة تلقائياً",
-  "settings.iqamahAuto.note": "عند التفعيل، تُحسب أوقات الإقامة يومياً كأذان + دقائق المهلة، مع التقريب لأقرب ربع ساعة. مفيد للمساجد التي تفضل جداول إقامة قابلة للتنبؤ.",
+  "settings.iqamahAuto.note": "عند التفعيل، تُحسب أوقات الإقامة يوميًا كـ أذان + دقائق المهلة، مع التقريب إلى أقرب ربع ساعة (00:، 15:، 30:، 45:). إذا أدى التقريب إلى وضع الإقامة قبل الأذان، فإنه ينتقل إلى ربع الساعة التالي. مفيد للمساجد التي تفضل جداول إقامة منتظمة.",
   "settings.iqamahAuto.buffer": "المهلة بعد الأذان (دقائق)",
   "settings.jumuah": "جمعات الجمعة",
   "settings.eid": "صلوات العيد",
@@ -138,6 +141,12 @@
   "unit.min": "دقيقة",
   "unit.days": "يوم",
   "label.nextIn": "بعد {h}س {m}د",
-  "test.layout": "اختبار التخطيط",
-  "test.countdown": "اختبار العد التنازلي"
+  "test.moon": "اختبار القمر",
+  "test.countdown": "اختبار العد التنازلي",
+  "jumuah.adhan": "الأذان",
+  "jumuah.iqamah": "الإقامة",
+  "jumuah.status.done": "منتهية",
+  "jumuah.status.next": "التالية",
+  "jumuah.status.later": "لاحقاً",
+  "label.nthJamaatIn": "الجماعة {ord} · {h}س {m}د"
 }
