@@ -195,3 +195,55 @@ body {
       transition-duration: 0.01ms !important;
    }
 }
+/* ── Floating Settings button ─────────────────────────────────────────────
+ * Fixed position top-right, always reachable. Icon-only. Touch-target
+ * sized (44×44) for mobile/iPhone use. Semi-transparent dark with gold
+ * gear so it doesn't compete with dashboard content but stays visible
+ * against varying backgrounds. */
+.settings-fab {
+  position: fixed;
+  top: clamp(8px, 1.5vh, 16px);
+  right: clamp(8px, 1.5vw, 16px);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .5);
+  border: 1px solid rgba(201, 168, 76, .3);
+  border-radius: var(--radius-full);
+  color: var(--t-accent, #C9A84C);
+  cursor: pointer;
+  z-index: 50;
+  transition: all .2s ease;
+  /* Prevent iOS double-tap highlight + selection on rapid tapping */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Backdrop blur for legibility over busy backgrounds */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.settings-fab:hover,
+.settings-fab:focus-visible {
+  background: rgba(0, 0, 0, .75);
+  border-color: var(--t-accent, #C9A84C);
+  color: var(--t-accent-hi, #F0C96A);
+  transform: rotate(45deg);
+}
+
+/* ── Hide native number-input spinners ────────────────────────────────────
+ * iOS Safari overlays tiny up/down arrows on type="number" inputs that
+ * clip the visible digits inside narrow fields. NumberStepper now uses
+ * type="text" so this is mostly moot, but the rules below catch any
+ * lingering type="number" inputs elsewhere in the app. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

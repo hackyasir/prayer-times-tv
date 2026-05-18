@@ -138,6 +138,7 @@
   "ord.1st": "پہلی",
   "ord.2nd": "دوسری",
   "ord.3rd": "تیسری",
+  "ord.4th": "چوتھی",
   "unit.min": "منٹ",
   "unit.days": "دن",
   "label.nextIn": "{h} گھنٹے {m} منٹ میں",
@@ -148,5 +149,6 @@
   "jumuah.status.done": "مکمل",
   "jumuah.status.next": "اگلی",
   "jumuah.status.later": "بعد میں",
-  "label.nthJamaatIn": "{ord} جماعت · {h}گ {m}م"
+  "label.nthJamaatIn": "{ord} جماعت · {h}گ {m}م",
+  "settings.eid.note": "ہجری کیلنڈر میں آنے والی عید کا پتہ چلنے پر عید بینر خود بخود ظاہر ہوگا۔ ضرورت کے مطابق انفرادی سلاٹس کو آن/آف کریں۔"
 }

@@ -138,6 +138,7 @@
   "ord.1st": "1st",
   "ord.2nd": "2nd",
   "ord.3rd": "3rd",
+  "ord.4th": "4th",
   "unit.min": "min",
   "unit.days": "days",
   "label.nextIn": "Next in {h}h {m}m",
@@ -148,5 +149,6 @@
   "jumuah.status.done": "Done",
   "jumuah.status.next": "Next",
   "jumuah.status.later": "Later",
-  "label.nthJamaatIn": "{ord} jamaat · {h}h {m}m"
+  "label.nthJamaatIn": "{ord} jamaat · {h}h {m}m",
+  "settings.eid.note": "Eid banner appears automatically when the Hijri calendar detects an upcoming Eid. Toggle individual slots on/off as needed."
 }

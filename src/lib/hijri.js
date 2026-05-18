@@ -24,6 +24,22 @@ function julianDate(y, m, d) {
  * @returns {string} e.g. "26 Dhu al-Qi'dah 1447 AH"
  */
 export function toHijri(date) {
+  const { d, m, y } = toHijriParts(date);
+  return `${d} ${HIJRI_MONTHS[m - 1]} ${y} AH`;
+}
+
+/**
+ * Same tabular Hijri conversion as toHijri but returns the raw {d, m, y}
+ * parts instead of a formatted string. Used for date comparisons (e.g.
+ * checking whether a future Gregorian date falls on Shawwal-1 / Eid ul-Fitr).
+ *
+ * @param {Date} date
+ * @returns {{ d: number, m: number, y: number }}
+ *   d = day of Hijri month (1-30)
+ *   m = month number (1-12, where 10 = Shawwal, 12 = Dhu al-Hijjah)
+ *   y = Hijri year
+ */
+export function toHijriParts(date) {
   const jd  = Math.floor(julianDate(date.getFullYear(), date.getMonth() + 1, date.getDate()) + 0.5);
   const l   = jd - 1948440 + 10632;
   const n   = Math.floor((l - 1) / 10631);
@@ -36,5 +52,57 @@ export function toHijri(date) {
   const m = Math.floor((24 * ll2) / 709);
   const d = ll2 - Math.floor((709 * m) / 24);
   const y = 30 * n + j - 30;
-  return `${d} ${HIJRI_MONTHS[m - 1]} ${y} AH`;
+  return { d, m, y };
+}
+
+/**
+ * Look ahead `maxDays` Gregorian days from `now` and check if Eid ul-Fitr
+ * (1 Shawwal) or Eid ul-Adha (10 Dhu al-Hijjah) falls within that window.
+ *
+ * Why this matters: the dashboard's Eid banner activates X days before
+ * the actual Eid date so worshippers see the upcoming prayer schedule.
+ * Without this, staff would need to manually flip a toggle around every
+ * Eid — twice a year, easy to forget. Auto-detection means "set it up
+ * once, banner appears every Eid".
+ *
+ * Hijri month numbers used:
+ *   10 = Shawwal       → Eid ul-Fitr begins on the 1st
+ *   12 = Dhu al-Hijjah → Eid ul-Adha is on the 10th
+ *
+ * @param {Date}   now         Current Gregorian date (typically today's)
+ * @param {number} hijriOffset ±days offset for local Hijri convention
+ *                             (mirrors the user's main hijriOffset setting,
+ *                             which compensates for regional moon-sighting
+ *                             differences vs the tabular calculation)
+ * @param {number} maxDays     How far ahead to look (typically eidDaysBefore)
+ * @returns {{
+ *   kind: 'fitr' | 'adha' | null,
+ *   eidDate: Date | null,
+ *   daysUntil: number | null,
+ * }}
+ *   kind     = which Eid is approaching (or null if none in window)
+ *   eidDate  = the Gregorian date on which Eid falls
+ *   daysUntil = number of whole days from `now` to eidDate (0 = today)
+ */
+export function findUpcomingEid(now, hijriOffset = 0, maxDays = 7) {
+  // Adjust starting date by the user's hijriOffset so the Hijri date
+  // checks line up with their local mosque's convention.
+  const offsetDay = 1000 * 60 * 60 * 24;
+  for (let i = 0; i <= maxDays; i++) {
+    const probe = new Date(now.getTime() + i * offsetDay - hijriOffset * offsetDay);
+    const { d, m } = toHijriParts(probe);
+    if (m === 10 && d === 1) {
+      // Eid ul-Fitr — first day of Shawwal
+      const eidDate = new Date(now.getTime() + i * offsetDay);
+      eidDate.setHours(0, 0, 0, 0);
+      return { kind: 'fitr', eidDate, daysUntil: i };
+    }
+    if (m === 12 && d === 10) {
+      // Eid ul-Adha — 10th of Dhu al-Hijjah
+      const eidDate = new Date(now.getTime() + i * offsetDay);
+      eidDate.setHours(0, 0, 0, 0);
+      return { kind: 'adha', eidDate, daysUntil: i };
+    }
+  }
+  return { kind: null, eidDate: null, daysUntil: null };
 }

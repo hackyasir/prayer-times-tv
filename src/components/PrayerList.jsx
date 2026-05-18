@@ -28,6 +28,7 @@ export default function PrayerList({
   nextEid,            // next upcoming Eid Date | null
   eidDate,            // (timeStr) → Date helper from parent
   showEidBanner,      // boolean — show the eid block at all
+  eidLabelAuto,       // string — auto-generated Eid label ("Eid ul-Fitr" / "Eid ul-Adha")
   footerSlot,         // optional: rendered below all prayer cards (embedded
                       //   layout uses this for the compact WeatherStrip)
 }) {
@@ -79,7 +80,7 @@ export default function PrayerList({
           //   - Active "next" slot gets gold border + larger times + pulse
           // Header shows which slot's countdown it refers to ("2nd jamaat · 2h 15m").
           const nextSlotIdx = activeJumuahSlots.findIndex(j => jumuahDate(j.time) > now);
-          const ordWord = (i) => i === 0 ? '1st' : i === 1 ? '2nd' : '3rd';
+          const ordWord = (i) => ['1st','2nd','3rd','4th'][i] || `${i+1}th`;
           return (
             <div key="jumuah-friday" className="jumuah-banner">
               <div className="jumuah-banner-head">
@@ -97,7 +98,7 @@ export default function PrayerList({
                   <div className="jumuah-next jumuah-next-complete">{t('label.complete')}</div>
                 )}
               </div>
-              <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(${activeJumuahSlots.length}, 1fr)` }}>
+              <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
                 {activeJumuahSlots.map((j, i) => {
                   const jt  = jumuahDate(j.time);
                   const jiq = addMins(jt, j.iqamah);
@@ -152,11 +153,11 @@ export default function PrayerList({
       {/* Eid prayer banner — shown all day until last iqamah ends.
        * Unified design — same banner used for 1, 2, or 3 slots. */}
       {showEidBanner && (() => {
-        const eidLabel = activeEidSlots[0]?.label || t('prayer.eid');
+        const eidLabel = eidLabelAuto || t('prayer.eid');
         // Multi-slot Eid banner — mirrors Jumu'ah design: big background
         // numeral, Adhan/Iqamah side-by-side, status badges, active highlight.
         const nextEidSlotIdx = activeEidSlots.findIndex(e => eidDate(e.time) > now);
-        const eidOrdWord = (i) => i === 0 ? '1st' : i === 1 ? '2nd' : '3rd';
+        const eidOrdWord = (i) => ['1st','2nd','3rd','4th'][i] || `${i+1}th`;
         return (
           <div className="eid-banner">
             <div className="eid-banner-head">
@@ -179,7 +180,7 @@ export default function PrayerList({
                 return <div className="eid-next eid-next-complete">{t('label.complete')}</div>;
               })()}
             </div>
-            <div className="eid-slots" style={{ gridTemplateColumns: `repeat(${activeEidSlots.length}, 1fr)` }}>
+            <div className="eid-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
               {activeEidSlots.map((e, i) => {
                 const et  = eidDate(e.time);
                 const eiq = addMins(et, e.iqamah);
@@ -219,7 +220,7 @@ export default function PrayerList({
             <div className="jumuah-banner-head">
               <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">الجمعة</span></div>
             </div>
-            <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(${activeJumuahSlots.length}, 1fr)` }}>
+            <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
               {activeJumuahSlots.map((j, i) => {
                 const jt  = jumuahDate(j.time);
                 const jiq = addMins(jt, j.iqamah);

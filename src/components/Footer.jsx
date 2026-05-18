@@ -34,8 +34,8 @@ export default function Footer({
   testCountdownActive,
   testMoonActive,
   testMoonPhaseValue,
+  testEidKind,
   activeKey,
-  onOpenSettings,
   onToggleFriday,
   onCyclePrayer,
   onClearPrayer,
@@ -43,12 +43,16 @@ export default function Footer({
   onTestCountdown,
   onToggleMoon,
   onCyclePhase,
+  onToggleTestFitr,
+  onToggleTestAdha,
 }) {
   const { t } = useT();
   return (
     <div className="ftr">
       <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
-        <button className="strig" onClick={onOpenSettings}>{t('footer.settings')}</button>
+        {/* Settings button moved to floating top-right corner of the app
+            (rendered in App.jsx). Footer left section now shows only the
+            status text. */}
         <div className="ftr-txt">{t('footer.offline')}</div>
       </div>
       <div className="ftr-dots">{[0,1,2,3,4].map(i => <div key={i} className="ftr-dot"/>)}</div>
@@ -164,6 +168,33 @@ export default function Footer({
                 letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
               }}
             >☾ {phaseLabel(testMoonPhaseValue)}</button>
+            {/* Test Fitr — force-show Eid ul-Fitr banner regardless of
+                whether the Hijri calendar has detected an upcoming Eid. */}
+            <button
+              onClick={onToggleTestFitr}
+              style={{
+                background:'transparent',
+                border:`1px solid ${testEidKind === 'fitr' ? 'rgba(196,158,255,.5)' : 'rgba(201,168,76,.15)'}`,
+                borderRadius:3, padding:'2px 8px',
+                color: testEidKind === 'fitr' ? '#c49eff' : '#9A8B6E',
+                fontFamily:'Rajdhani,sans-serif',
+                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
+                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
+              }}
+            >🕌 Fitr{testEidKind === 'fitr' ? ' ✓' : ''}</button>
+            {/* Test Adha — force-show Eid ul-Adha banner. */}
+            <button
+              onClick={onToggleTestAdha}
+              style={{
+                background:'transparent',
+                border:`1px solid ${testEidKind === 'adha' ? 'rgba(196,158,255,.5)' : 'rgba(201,168,76,.15)'}`,
+                borderRadius:3, padding:'2px 8px',
+                color: testEidKind === 'adha' ? '#c49eff' : '#9A8B6E',
+                fontFamily:'Rajdhani,sans-serif',
+                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
+                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
+              }}
+            >🕋 Adha{testEidKind === 'adha' ? ' ✓' : ''}</button>
           </>
         )}
         <div className="ftr-txt">{t('footer.updated')}</div>
