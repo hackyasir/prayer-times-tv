@@ -10,6 +10,7 @@
   "prayer.isha": "العشاء",
   "prayer.jumuah": "الجمعة",
   "prayer.eid": "صلاة العيد",
+  "label.prayer": "الصلاة",
   "label.adhan": "الأذان",
   "label.iqamah": "الإقامة",
   "label.next": "الصلاة القادمة",
@@ -38,8 +39,8 @@
   "widget.sun.daylight": "{hours}س {mins}د نهار",
   "widget.fast.title": "صيام اليوم",
   "widget.fast.total": "{hours}س {mins}د المجموع",
-  "widget.fast.toIftar": "{hours}س {mins}د حتى الإفطار",
-  "widget.fast.toSuhoor": "{hours}س {mins}د حتى السحور",
+  "widget.fast.toIftar": "الإفطار خلال {hours}س {mins}د",
+  "widget.fast.toSuhoor": "السحور خلال {hours}س {mins}د",
   "widget.qibla.label": "القبلة",
   "footer.offline": "بدون اتصال · توقيت محلي",
   "footer.updated": "تحديث كل ثانية",
@@ -150,5 +151,8 @@
   "jumuah.status.next": "التالية",
   "jumuah.status.later": "لاحقاً",
   "label.nthJamaatIn": "الجماعة {ord} · {h}س {m}د",
-  "settings.eid.note": "يظهر شعار العيد تلقائيًا عندما يكتشف التقويم الهجري عيدًا قادمًا. قم بتشغيل/إيقاف الخانات الفردية حسب الحاجة."
+  "settings.eid.note": "يظهر شعار العيد تلقائيًا عندما يكتشف التقويم الهجري عيدًا قادمًا. قم بتشغيل/إيقاف الخانات الفردية حسب الحاجة.",
+  "widget.fast.label": "الصيام",
+  "widget.fast.suhoor": "السحور",
+  "widget.fast.iftar": "الإفطار"
 }

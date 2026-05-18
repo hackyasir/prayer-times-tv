@@ -18,7 +18,7 @@ import { useT } from '../../i18n/I18nContext.jsx';
 
 // Compact viewBox: width 400, height tight to arc + 2 lines of labels.
 const ARC_W  = 400;
-const ARC_H  = 74;
+const ARC_H  = 84;   // increased from 74 to give labels (13px) + times (14px) breathing room
 const PAD_X  = 22;
 const ARC_Y0 = 46;   // arc endpoints (low)
 const ARC_Y1 = 8;    // arc apex (high — solar noon)
@@ -111,14 +111,14 @@ export default function SunArc({ todayTimes, now, cityTz }) {
         )}
 
         {/* Labels — sit immediately below the dotted arc dots */}
-        <text x={startPos.x} y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.sun.sunrise')}</text>
-        <text x={noonPos.x}  y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.sun.noon')}</text>
-        <text x={endPos.x}   y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.sun.sunset')}</text>
+        <text x={startPos.x} y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.sun.sunrise')}</text>
+        <text x={noonPos.x}  y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.sun.noon')}</text>
+        <text x={endPos.x}   y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.sun.sunset')}</text>
 
         {/* Times — tight under labels */}
-        <text x={startPos.x} y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(sunrise,  cityTz)}</text>
-        <text x={noonPos.x}  y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(solarNoon, cityTz)}</text>
-        <text x={endPos.x}   y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(sunset,   cityTz)}</text>
+        <text x={startPos.x} y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(sunrise,  cityTz)}</text>
+        <text x={noonPos.x}  y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(solarNoon, cityTz)}</text>
+        <text x={endPos.x}   y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(sunset,   cityTz)}</text>
       </svg>
     </div>
   );

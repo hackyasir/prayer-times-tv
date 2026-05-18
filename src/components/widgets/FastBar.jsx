@@ -67,10 +67,22 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
 
   return (
     <div className="fast-bar" aria-label="Fasting window">
+      {/* Left: "FAST" label — anchors the widget so users immediately know
+       * what the bar represents, without having to infer from times alone. */}
+      <span className="fast-bar-label">{t('widget.fast.label')}</span>
+      {/* Endpoints — labeled "Suhoor X:XX" / "Iftar X:XX" so the meaning
+       * is self-evident. Replaces the unlabeled "5:00 AM → 8:40 PM" which
+       * was ambiguous to anyone who didn't already know the convention. */}
       <div className="fast-bar-times">
-        <span className="fast-bar-time">{fmt12(fajr, cityTz)}</span>
-        <span className="fast-bar-arrow">→</span>
-        <span className="fast-bar-time">{fmt12(maghrib, cityTz)}</span>
+        <span className="fast-bar-endpoint">
+          <span className="fast-bar-endpoint-lbl">{t('widget.fast.suhoor')}</span>
+          <span className="fast-bar-time">{fmt12(fajr, cityTz)}</span>
+        </span>
+        <span className="fast-bar-arrow" aria-hidden="true">→</span>
+        <span className="fast-bar-endpoint">
+          <span className="fast-bar-endpoint-lbl">{t('widget.fast.iftar')}</span>
+          <span className="fast-bar-time">{fmt12(maghrib, cityTz)}</span>
+        </span>
       </div>
       <div className="fast-bar-track">
         <div
@@ -78,6 +90,9 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
           style={{ width: `${pct}%` }}
         />
       </div>
+      {/* Right: actionable countdown — what most users actually look at.
+       * Reworded from "to Iftar 6h 20m" → "Iftar in 6h 20m" for natural
+       * English phrasing. */}
       <div className="fast-bar-remaining">
         {fmtStr(t(labelKey), { hours: remH, mins: remM })}
       </div>

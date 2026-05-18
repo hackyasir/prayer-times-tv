@@ -40,11 +40,7 @@ export default function MosqueIcon({ activePrayer = 'dhuhr', lunarPhase = 0.5 })
 
   return (
     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
-      style={{
-        width:  'clamp(40px, 4vw, 80px)',
-        height: 'clamp(40px, 4vw, 80px)',
-        flexShrink: 0,
-      }}>
+      className="mosque-icon-svg">
       <defs>
         {/* Radial backdrop — prayer-context colour */}
         <radialGradient id={bgId} cx="50%" cy="50%" r="60%">

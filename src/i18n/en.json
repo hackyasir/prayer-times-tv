@@ -10,6 +10,7 @@
   "prayer.isha": "Isha",
   "prayer.jumuah": "Jumu'ah",
   "prayer.eid": "Eid Prayer",
+  "label.prayer": "Prayer",
   "label.adhan": "Adhan",
   "label.iqamah": "Iqamah",
   "label.next": "Next Prayer",
@@ -38,8 +39,8 @@
   "widget.sun.daylight": "{hours}h {mins}m daylight",
   "widget.fast.title": "Today's Fast",
   "widget.fast.total": "{hours}h {mins}m total",
-  "widget.fast.toIftar": "{hours}h {mins}m to iftar",
-  "widget.fast.toSuhoor": "{hours}h {mins}m to Suhoor",
+  "widget.fast.toIftar": "Iftar in {hours}h {mins}m",
+  "widget.fast.toSuhoor": "Suhoor in {hours}h {mins}m",
   "widget.qibla.label": "Qibla",
   "footer.offline": "Offline · All times local",
   "footer.updated": "Updated every second",
@@ -150,5 +151,8 @@
   "jumuah.status.next": "Next",
   "jumuah.status.later": "Later",
   "label.nthJamaatIn": "{ord} jamaat · {h}h {m}m",
-  "settings.eid.note": "Eid banner appears automatically when the Hijri calendar detects an upcoming Eid. Toggle individual slots on/off as needed."
+  "settings.eid.note": "Eid banner appears automatically when the Hijri calendar detects an upcoming Eid. Toggle individual slots on/off as needed.",
+  "widget.fast.label": "Fast",
+  "widget.fast.suhoor": "Suhoor",
+  "widget.fast.iftar": "Iftar"
 }

@@ -61,11 +61,8 @@ export default function Clock({
       {topSlot}
       {/* Clock time block */}
       <div className="clock">
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'center',
-          gap: '0.35em', whiteSpace: 'nowrap',
-        }}>
-          <span className="clock-main" style={{ paddingRight: '0.04em' }}>{timeStr}</span>
+        <div className="clock-time-row">
+          <span className="clock-main">{timeStr}</span>
           <span className="clock-sec">{secStr}</span>
         </div>
         <div className="clock-date">{dateStr}</div>
@@ -113,12 +110,7 @@ export default function Clock({
           {bottomSlot}
         </div>
       ) : (
-        <div style={{
-          color: '#9A8B6E',
-          fontSize: 'calc(clamp(0.812rem,1.4vw,1.375rem) * var(--t-fs, 1))',
-          letterSpacing: '0.1em',
-          textAlign: 'center',
-        }}>
+        <div className="clock-complete">
           {t('label.allComplete')}
         </div>
       )}

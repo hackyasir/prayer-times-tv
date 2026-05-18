@@ -85,23 +85,54 @@ export function toHijriParts(date) {
  *   daysUntil = number of whole days from `now` to eidDate (0 = today)
  */
 export function findUpcomingEid(now, hijriOffset = 0, maxDays = 7) {
-  // Adjust starting date by the user's hijriOffset so the Hijri date
-  // checks line up with their local mosque's convention.
+  // The user's `hijriOffset` setting says "my local mosque considers today
+  // to be N days AHEAD of (or behind) the tabular Hijri calculation".
+  // For example, +2 means tabular says 1 Dhu al-Hijjah but the user's
+  // mosque considers it 3 Dhu al-Hijjah (offset commonly compensates for
+  // moon-sighting differences between regions).
+  //
+  // To detect Eid, we want to find the date when the USER'S calendar reads
+  // 1 Shawwal (Fitr) or 10 Dhu al-Hijjah (Adha). So we ADD the offset to
+  // the tabular result before comparing.
+  //
+  // Care needed at month boundaries: if tabular says day 28 + offset 3 = 31,
+  // that's out-of-range (Hijri months are 29 or 30 days). For Eid detection
+  // we only check exact target days (1 or 10), and those are early in the
+  // month so we won't wrap past month-end with reasonable offsets.
   const offsetDay = 1000 * 60 * 60 * 24;
   for (let i = 0; i <= maxDays; i++) {
-    const probe = new Date(now.getTime() + i * offsetDay - hijriOffset * offsetDay);
+    const probe = new Date(now.getTime() + i * offsetDay);
     const { d, m } = toHijriParts(probe);
-    if (m === 10 && d === 1) {
-      // Eid ul-Fitr — first day of Shawwal
-      const eidDate = new Date(now.getTime() + i * offsetDay);
-      eidDate.setHours(0, 0, 0, 0);
+    const userDay = d + hijriOffset;  // what THIS date reads on the user's calendar
+
+    // Eid ul-Fitr — 1 Shawwal (month 10)
+    if (m === 10 && userDay === 1) {
+      const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
       return { kind: 'fitr', eidDate, daysUntil: i };
     }
-    if (m === 12 && d === 10) {
-      // Eid ul-Adha — 10th of Dhu al-Hijjah
-      const eidDate = new Date(now.getTime() + i * offsetDay);
-      eidDate.setHours(0, 0, 0, 0);
+    // Eid ul-Adha — 10 Dhu al-Hijjah (month 12)
+    if (m === 12 && userDay === 10) {
+      const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
       return { kind: 'adha', eidDate, daysUntil: i };
+    }
+    // Handle negative-offset wrap into PREVIOUS month: if hijriOffset is
+    // negative and userDay becomes ≤ 0, we may be on the LAST day of the
+    // previous tabular month but the FIRST day of the user's Shawwal /
+    // Dhu al-Hijjah. We accept either reading.
+    // (Positive offset wrap to next month is rare for d=1 or d=10 with
+    // reasonable offsets so we don't handle it here.)
+    if (hijriOffset < 0) {
+      // tabular says we're still in month (m-1), but user considers it month m
+      const userMonth = userDay <= 0 ? (m === 1 ? 12 : m - 1) : m;
+      const userDayAdj = userDay <= 0 ? userDay + 30 : userDay;  // approximate
+      if (userMonth === 10 && userDayAdj === 1) {
+        const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+        return { kind: 'fitr', eidDate, daysUntil: i };
+      }
+      if (userMonth === 12 && userDayAdj === 10) {
+        const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+        return { kind: 'adha', eidDate, daysUntil: i };
+      }
     }
   }
   return { kind: null, eidDate: null, daysUntil: null };
