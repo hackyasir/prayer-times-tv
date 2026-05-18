@@ -37,12 +37,23 @@ import {
 // object each call, so it's safe to call per-render without sharing state.
 
 const METHOD_FACTORIES = {
-  MWL:       CalculationMethod.MuslimWorldLeague,
-  ISNA:      CalculationMethod.NorthAmerica,
-  Egypt:     CalculationMethod.Egyptian,
-  Makkah:    CalculationMethod.UmmAlQura,
-  Karachi:   CalculationMethod.Karachi,
-  Singapore: CalculationMethod.Singapore,
+  // Global / multi-regional
+  MWL:           CalculationMethod.MuslimWorldLeague,
+  // North America
+  ISNA:          CalculationMethod.NorthAmerica,
+  Moonsighting:  CalculationMethod.MoonsightingCommittee,
+  // Middle East / North Africa
+  Egypt:         CalculationMethod.Egyptian,
+  Makkah:        CalculationMethod.UmmAlQura,
+  Dubai:         CalculationMethod.Dubai,
+  Qatar:         CalculationMethod.Qatar,
+  Kuwait:        CalculationMethod.Kuwait,
+  // South / Southeast Asia
+  Karachi:       CalculationMethod.Karachi,
+  Singapore:     CalculationMethod.Singapore,
+  // Other regional
+  Turkey:        CalculationMethod.Turkey,
+  Tehran:        CalculationMethod.Tehran,
 };
 
 // ── High-latitude rule mapping ──────────────────────────────────────────────

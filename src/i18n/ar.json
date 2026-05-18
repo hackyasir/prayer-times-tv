@@ -138,6 +138,7 @@
   "ord.1st": "الأولى",
   "ord.2nd": "الثانية",
   "ord.3rd": "الثالثة",
+  "ord.4th": "الرابعة",
   "unit.min": "دقيقة",
   "unit.days": "يوم",
   "label.nextIn": "بعد {h}س {m}د",
@@ -148,5 +149,6 @@
   "jumuah.status.done": "منتهية",
   "jumuah.status.next": "التالية",
   "jumuah.status.later": "لاحقاً",
-  "label.nthJamaatIn": "الجماعة {ord} · {h}س {m}د"
+  "label.nthJamaatIn": "الجماعة {ord} · {h}س {m}د",
+  "settings.eid.note": "يظهر شعار العيد تلقائيًا عندما يكتشف التقويم الهجري عيدًا قادمًا. قم بتشغيل/إيقاف الخانات الفردية حسب الحاجة."
 }

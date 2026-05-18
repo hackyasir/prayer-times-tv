@@ -31,6 +31,7 @@ import { toHijri }       from '../../lib/hijri.js';
 import { playBeep }      from '../../lib/audio.js';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import { LANGUAGE_LABELS } from '../../i18n/I18nContext.jsx';
+import NumberStepper      from '../NumberStepper.jsx';
 
 export default function SettingsPanel({
   visible,
@@ -44,7 +45,8 @@ export default function SettingsPanel({
   draftIqamahAutoCalc,    setDraftIqamahAutoCalc,
   draftIqamahAutoBuffers, setDraftIqamahAutoBuffers,
   draftJumuah,    setDraftJumuah,
-  draftEid,       setDraftEid,
+  draftEidFitr,   setDraftEidFitr,
+  draftEidAdha,   setDraftEidAdha,
   draftEidDays,   setDraftEidDays,
   draftHijri,     setDraftHijri,
   draftHighLat,   setDraftHighLat,
@@ -301,11 +303,10 @@ export default function SettingsPanel({
                       <span style={{ width:62, fontSize:13, color:'#9A8B6E', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0 }}>
                         {t(`prayer.${key}`)}
                       </span>
-                      <input
-                        type="number" min="0" max="60"
+                      <NumberStepper
                         value={draftBlackoutDurations[key]}
-                        onChange={e => setDraftBlackoutDurations(prev => ({ ...prev, [key]: e.target.value }))}
-                        style={{ width:60, background:'#0A0A0A', border:'1px solid rgba(201,168,76,.3)', borderRadius:3, padding:'4px 6px', color:'#F0C96A', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, textAlign:'center', outline:'none' }}
+                        onChange={v => setDraftBlackoutDurations(prev => ({ ...prev, [key]: v }))}
+                        min={0} max={60} step={5} width={56}
                       />
                       <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
                     </div>
@@ -745,11 +746,10 @@ export default function SettingsPanel({
                           {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
                         </span>
                         <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>+</span>
-                        <input
-                          type="number" min="0" max="60" step="15"
+                        <NumberStepper
                           value={buffers[key] ?? 0}
-                          onChange={e => setDraftIqamahAutoBuffers(prev => ({ ...(prev || {}), [key]: e.target.value }))}
-                          style={{ width:44, background:'#0A0A0A', border:'1px solid rgba(201,168,76,.3)', borderRadius:3, padding:'4px 6px', color:'#F0C96A', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, textAlign:'center', outline:'none' }}
+                          onChange={v => setDraftIqamahAutoBuffers(prev => ({ ...(prev || {}), [key]: v }))}
+                          min={0} max={60} step={5} width={40}
                         />
                         <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
                         <span style={{ fontSize:13, color:'rgba(201,168,76,.3)', flexShrink:0 }}>→</span>
@@ -784,13 +784,15 @@ export default function SettingsPanel({
                     <span style={{ width:72, fontSize:14, color:'#F5EDD8', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>
                       {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
                     </span>
-                    {/* Offset input */}
+                    {/* Offset input — step=1 so admins can dial in exact
+                        minutes (e.g. 18 to go from 4:12 → 4:30). Auto mode
+                        uses larger steps + rounding; manual mode is for
+                        precision. */}
                     <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>+</span>
-                    <input
-                      type="number" min="0" max="60"
+                    <NumberStepper
                       value={draftIqamah[key]}
-                      onChange={e => setDraftIqamah(prev => ({ ...prev, [key]: e.target.value }))}
-                      style={{ width:44, background:'#0A0A0A', border:'1px solid rgba(201,168,76,.3)', borderRadius:3, padding:'4px 6px', color:'#F0C96A', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, textAlign:'center', outline:'none' }}
+                      onChange={v => setDraftIqamah(prev => ({ ...prev, [key]: v }))}
+                      min={0} max={60} step={1} width={40}
                     />
                     <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
                     {/* Arrow + resulting iqamah time */}
@@ -820,7 +822,7 @@ export default function SettingsPanel({
                     <span style={{ position:'absolute', top:2, left: j.enabled ? 14 : 2, width:12, height:12, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
                   </button>
                   <span style={{ fontSize:12, color: j.enabled ? '#3DC878' : '#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', width:28 }}>
-                    {i===0?'1st':i===1?'2nd':'3rd'}
+                    {['1st','2nd','3rd','4th'][i] || (i+1)+'th'}
                   </span>
                   {/* Time picker */}
                   <input
@@ -832,12 +834,11 @@ export default function SettingsPanel({
                   />
                   {/* Iqamah offset */}
                   <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('label.iqamah')}</span>
-                  <input
-                    type="number" min="0" max="60"
+                  <NumberStepper
                     value={j.iqamah}
+                    onChange={v => setDraftJumuah(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:v} : x))}
+                    min={0} max={60} step={5} width={40}
                     disabled={!j.enabled}
-                    onChange={e => setDraftJumuah(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:e.target.value} : x))}
-                    style={{ width:44, background:'#0A0A0A', border:'1px solid rgba(201,168,76,.25)', borderRadius:3, padding:'4px 6px', color: j.enabled ? '#F0C96A' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:14, fontWeight:700, textAlign:'center', outline:'none', opacity: j.enabled ? 1 : .4 }}
                   />
                   <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.min')}</span>
                 </div>
@@ -847,55 +848,73 @@ export default function SettingsPanel({
           </>)}
 
           {activeTab === 'iqamah' && (<>
-          {/* Eid prayers */}
+          {/* Eid prayers — separate Fitr / Adha schedules.
+              Auto-detection via Hijri calendar picks which one's active
+              when Eid approaches; no manual toggle needed. Each schedule
+              has 3 slot rows — leave `time` blank to skip that slot. */}
           <div className="sgrp">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-              <label className="slbl" style={{ margin:0 }}>{t('settings.eid')}</label>
-            </div>
-            {/* Days before to show banner */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, background:'#111', border:'1px solid rgba(201,168,76,.12)', borderRadius:4, padding:'8px 12px' }}>
+            <label className="slbl">{t('settings.eid')}</label>
+
+            {/* Days-before-Eid banner setting */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, background:'#111', border:'1px solid rgba(201,168,76,.12)', borderRadius:4, padding:'8px 12px' }}>
               <span style={{ flex:1, fontSize:13, color:'#9A8B6E', letterSpacing:'.06em' }}>{t('settings.eid.banner')}</span>
-              <input type="number" min="0" max="30" value={draftEidDays}
-                onChange={e => setDraftEidDays(e.target.value)}
-                style={{ width:48, background:'#0A0A0A', border:'1px solid rgba(180,120,255,.25)', borderRadius:3, padding:'4px 6px', color:'#c49eff', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, textAlign:'center', outline:'none' }}
+              <NumberStepper
+                value={draftEidDays}
+                onChange={v => setDraftEidDays(v)}
+                min={0} max={30} step={1} width={44}
               />
-              <span style={{ fontSize:11, color:'#9A8B6E' }}>{t('unit.days')}</span>
+              <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.days')}</span>
             </div>
-            {/* Eid name selector */}
-            <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-              {["Eid ul-Fitr","Eid ul-Adha"].map(name => (
-                <button key={name}
-                  onClick={() => setDraftEid(prev => prev.map(e => ({...e, label:name})))}
-                  style={{ flex:1, padding:'6px 0', background: draftEid[0]?.label===name ? 'rgba(180,120,255,.2)' : '#111', border:`1px solid ${draftEid[0]?.label===name ? 'rgba(180,120,255,.5)' : 'rgba(201,168,76,.15)'}`, borderRadius:4, color: draftEid[0]?.label===name ? '#c49eff' : '#9A8B6E', fontFamily:'Rajdhani,sans-serif', fontSize:13, letterSpacing:'.06em', cursor:'pointer' }}
-                >{name}</button>
-              ))}
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {draftEid.map((e, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:`1px solid ${e.enabled ? 'rgba(180,120,255,.3)' : 'rgba(201,168,76,.1)'}`, borderRadius:4, padding:'8px 10px' }}>
-                  {/* Toggle */}
-                  <button
-                    onClick={() => setDraftEid(prev => prev.map((x,xi) => xi===i ? {...x, enabled:!x.enabled} : x))}
-                    style={{ width:28, height:16, borderRadius:8, border:'none', cursor:'pointer', background: e.enabled ? '#b47cff' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
-                  >
-                    <span style={{ position:'absolute', top:2, left: e.enabled ? 14 : 2, width:12, height:12, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
-                  </button>
-                  <span style={{ fontSize:12, color: e.enabled ? '#c49eff' : '#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', width:28 }}>
-                    {i===0?'1st':i===1?'2nd':'3rd'}
-                  </span>
-                  <input type="time" value={e.time} disabled={!e.enabled}
-                    onChange={ev => setDraftEid(prev => prev.map((x,xi) => xi===i ? {...x, time:ev.target.value} : x))}
-                    style={{ background:'#0A0A0A', border:'1px solid rgba(180,120,255,.25)', borderRadius:3, padding:'4px 8px', color: e.enabled ? '#c49eff' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, outline:'none', flex:1, opacity: e.enabled ? 1 : .4, colorScheme:'dark' }}
-                  />
-                  <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('label.iqamah')}</span>
-                  <input type="number" min="0" max="60" value={e.iqamah} disabled={!e.enabled}
-                    onChange={ev => setDraftEid(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:ev.target.value} : x))}
-                    style={{ width:44, background:'#0A0A0A', border:'1px solid rgba(180,120,255,.25)', borderRadius:3, padding:'4px 6px', color: e.enabled ? '#c49eff' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:14, fontWeight:700, textAlign:'center', outline:'none', opacity: e.enabled ? 1 : .4 }}
-                  />
-                  <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.min')}</span>
+
+            {/* Two side-by-side schedule sections — Fitr on the left,
+                Adha on the right. Renders a compact 3-row table per Eid.
+                Each row: ordinal label, time input, iqamah NumberStepper. */}
+            {[
+              { key:'fitr', label:'Eid ul-Fitr', draft:draftEidFitr, setter:setDraftEidFitr },
+              { key:'adha', label:'Eid ul-Adha', draft:draftEidAdha, setter:setDraftEidAdha },
+            ].map(({ key, label, draft, setter }) => (
+              <div key={key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, color:'#c49eff', letterSpacing:'.12em', textTransform:'uppercase', fontWeight:600, marginBottom:6 }}>
+                  {label}
                 </div>
-              ))}
-            </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  {draft.map((slot, i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:`1px solid ${slot.enabled ? 'rgba(180,120,255,.3)' : 'rgba(201,168,76,.08)'}`, borderRadius:4, padding:'7px 10px' }}>
+                      {/* Enable toggle — matches Jumu'ah pattern. Disabled
+                          slots are hidden in the banner regardless of time. */}
+                      <button
+                        onClick={() => setter(prev => prev.map((x,xi) => xi===i ? {...x, enabled:!x.enabled} : x))}
+                        style={{ width:28, height:16, borderRadius:8, border:'none', cursor:'pointer', background: slot.enabled ? '#b47cff' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
+                        aria-label={slot.enabled ? 'Disable slot' : 'Enable slot'}
+                      >
+                        <span style={{ position:'absolute', top:2, left: slot.enabled ? 14 : 2, width:12, height:12, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
+                      </button>
+                      <span style={{ fontSize:12, color: slot.enabled ? '#c49eff' : '#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', width:28, flexShrink:0 }}>
+                        {['1st','2nd','3rd','4th'][i] || (i+1)+'th'}
+                      </span>
+                      <input
+                        type="time"
+                        value={slot.time}
+                        disabled={!slot.enabled}
+                        onChange={ev => setter(prev => prev.map((x,xi) => xi===i ? {...x, time:ev.target.value} : x))}
+                        style={{ background:'#0A0A0A', border:'1px solid rgba(180,120,255,.25)', borderRadius:3, padding:'4px 8px', color: slot.enabled ? '#c49eff' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:14, fontWeight:700, outline:'none', flex:1, opacity: slot.enabled ? 1 : .4, colorScheme:'dark' }}
+                      />
+                      <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('label.iqamah')}</span>
+                      <NumberStepper
+                        value={slot.iqamah}
+                        onChange={v => setter(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:v} : x))}
+                        min={0} max={60} step={5} width={40}
+                        disabled={!slot.enabled}
+                      />
+                      <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.min')}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <p style={{ fontSize:11, color:'#9A8B6E', marginTop:6, lineHeight:1.4 }}>
+              {t('settings.eid.note')}
+            </p>
           </div>
           </>)}
 

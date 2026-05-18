@@ -49,16 +49,39 @@ export const DEFAULTS = {
   iqamahAutoCalc: false,
   iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 },
   jumuah: [
-    { time: '13:00', iqamah: 20, enabled: true },
+    { time: '13:00', iqamah: 20, enabled: true  },
     { time: '13:45', iqamah: 20, enabled: false },
     { time: '14:30', iqamah: 20, enabled: false },
+    { time: '15:15', iqamah: 20, enabled: false },
   ],
-  eid: [
-    { time: '08:00', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
-    { time: '08:45', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
-    { time: '09:30', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
+  // Eid prayer schedules. Two SEPARATE arrays for Fitr and Adha because
+  // many mosques run different schedules for the two Eids (different times,
+  // different slot counts, etc.). Auto-detection (via Hijri calendar) picks
+  // which set is active when Eid approaches — no manual on/off toggle needed
+  // for the whole banner.
+  //
+  // Each slot: { time, iqamah, enabled }
+  //   - `enabled`: per-slot toggle (matches the Jumu'ah pattern). Disabled
+  //     slots are hidden in the banner. Default: only 1st slot enabled
+  //     (most mosques have 1 Eid jamaat; staff toggles more on if needed).
+  //   - `time`: 'HH:MM' (24h). Greyed out when disabled.
+  //   - `iqamah`: minutes after adhan.
+  //
+  // No `label` field — banner label is auto-set from the upcoming Eid kind
+  // (Fitr or Adha) via Hijri calendar detection.
+  eidFitr: [
+    { time: '08:00', iqamah: 20, enabled: true  },
+    { time: '09:00', iqamah: 20, enabled: false },
+    { time: '10:00', iqamah: 20, enabled: false },
+    { time: '11:00', iqamah: 20, enabled: false },
   ],
-  eidDaysBefore: 3,    // show Eid banner this many days before the prayer
+  eidAdha: [
+    { time: '07:30', iqamah: 20, enabled: true  },
+    { time: '08:30', iqamah: 20, enabled: false },
+    { time: '09:30', iqamah: 20, enabled: false },
+    { time: '10:30', iqamah: 20, enabled: false },
+  ],
+  eidDaysBefore: 5,    // show Eid banner this many days before the actual Eid
   hijriOffset: 0,    // ±days adjustment for Hijri date display
   highLatRule: 'middleOfNight', // for cities above ~48° latitude
   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
@@ -108,6 +131,35 @@ function loadSettings() {
     if ('chimeEnabled' in stored && !('chimeAdhan' in stored) && !('chimeIqamah' in stored)) {
       stored.chimeAdhan = !!stored.chimeEnabled;
       stored.chimeIqamah = !!stored.chimeEnabled;
+    }
+
+    // ── Legacy migration: single `eid` array → eidFitr + eidAdha ──────────
+    // Pre-Hijri-auto-detection builds had ONE `eid` array with `enabled` and
+    // `label` per slot. The label distinguished Fitr vs Adha; staff toggled
+    // `enabled` manually around each Eid.
+    //
+    // The new system has TWO separate arrays (eidFitr + eidAdha) and uses
+    // the Hijri calendar to auto-detect which Eid is approaching. So we
+    // migrate the old `eid` array by:
+    //   - Looking at the FIRST slot's label to guess which Eid the user
+    //     was configuring most recently
+    //   - Putting all slots (stripped of `enabled` + `label`) into that
+    //     Eid's new array
+    //   - Leaving the OTHER Eid at DEFAULTS values
+    if ('eid' in stored && Array.isArray(stored.eid) && !('eidFitr' in stored) && !('eidAdha' in stored)) {
+      const cleanedSlots = stored.eid.map(e => ({
+        time: e.time || '',
+        iqamah: Number(e.iqamah) || 20,
+        enabled: e.enabled !== false,  // preserve original enabled flag
+      }));
+      const guessedKind = stored.eid[0]?.label?.toLowerCase().includes('adha') ? 'adha' : 'fitr';
+      if (guessedKind === 'adha') {
+        stored.eidAdha = cleanedSlots;
+        stored.eidFitr = DEFAULTS.eidFitr;
+      } else {
+        stored.eidFitr = cleanedSlots;
+        stored.eidAdha = DEFAULTS.eidAdha;
+      }
     }
 
     return { ...DEFAULTS, ...stored };

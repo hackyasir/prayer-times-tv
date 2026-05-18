@@ -7,7 +7,7 @@ import {
   SHOW_TEST_BTNS,
 } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
-import { toHijri } from './lib/hijri.js';
+import { toHijri, findUpcomingEid } from './lib/hijri.js';
 import { addMins } from './lib/formatters.js';
 import { buildThemeVars } from './lib/themes.js';
 
@@ -91,7 +91,7 @@ export default function App() {
   const {
     lat, lng, locName, masjidName, cityTz,
     method, shadow, highLatRule,
-    iqamah: rawIqamah, jumuah, eid, eidDaysBefore,
+    iqamah: rawIqamah, jumuah, eidFitr, eidAdha, eidDaysBefore,
     iqamahAutoCalc, iqamahAutoBuffers,
     hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
     announcements,
@@ -129,7 +129,8 @@ export default function App() {
   const draftIqamahAutoCalc    = drafts.iqamahAutoCalc;
   const draftIqamahAutoBuffers = drafts.iqamahAutoBuffers;
   const draftJumuah   = drafts.jumuah;
-  const draftEid      = drafts.eid;
+  const draftEidFitr  = drafts.eidFitr;
+  const draftEidAdha  = drafts.eidAdha;
   const draftEidDays  = drafts.eidDaysBefore;
   const draftHijri    = drafts.hijriOffset;
   const draftHighLat  = drafts.highLatRule;
@@ -149,7 +150,8 @@ export default function App() {
   const setDraftIqamahAutoCalc    = v => updateDrafts(prev => ({ ...prev, iqamahAutoCalc:    typeof v === 'function' ? v(prev.iqamahAutoCalc)    : v }));
   const setDraftIqamahAutoBuffers = v => updateDrafts(prev => ({ ...prev, iqamahAutoBuffers: typeof v === 'function' ? v(prev.iqamahAutoBuffers) : v }));
   const setDraftJumuah    = v => updateDrafts(prev => ({ ...prev, jumuah:        typeof v === 'function' ? v(prev.jumuah)        : v }));
-  const setDraftEid       = v => updateDrafts(prev => ({ ...prev, eid:           typeof v === 'function' ? v(prev.eid)           : v }));
+  const setDraftEidFitr   = v => updateDrafts(prev => ({ ...prev, eidFitr:       typeof v === 'function' ? v(prev.eidFitr)       : v }));
+  const setDraftEidAdha   = v => updateDrafts(prev => ({ ...prev, eidAdha:       typeof v === 'function' ? v(prev.eidAdha)       : v }));
   const setDraftEidDays   = v => updateDrafts(prev => ({ ...prev, eidDaysBefore: typeof v === 'function' ? v(prev.eidDaysBefore) : v }));
   const setDraftHijri     = v => updateDrafts(prev => ({ ...prev, hijriOffset:   typeof v === 'function' ? v(prev.hijriOffset)   : v }));
   const setDraftHighLat   = v => updateDrafts(prev => ({ ...prev, highLatRule:   typeof v === 'function' ? v(prev.highLatRule)   : v }));
@@ -185,6 +187,10 @@ export default function App() {
   // MoonArc regardless of whether the sun is currently up. Useful for
   // verifying the night-mode visual without waiting for sunset.
   const [testMoonActive, setTestMoonActive] = useState(false);
+  // Test Eid — when set, forces the Eid banner to appear with the given
+  // Eid kind regardless of Hijri date. Lets staff preview the Eid banner
+  // without waiting for the actual day. null = use real Hijri detection.
+  const [testEidKind, setTestEidKind] = useState(null);  // null | 'fitr' | 'adha'
   // Test moon phase — when null, MoonArc uses real lunar illumination from
   // suncalc. When set to 0..1, it overrides the phase value (Test Phase
   // footer button cycles through 8 preset phases for visual verification).
@@ -495,11 +501,47 @@ export default function App() {
     }
   }
 
-  // Eid helpers — same approach
-  const activeEidSlots = eid.filter(e => e.enabled);
+  // ── Eid auto-detection ───────────────────────────────────────────────────
+  // Uses Hijri calendar to figure out which Eid (if any) is approaching
+  // within the next `eidDaysBefore` days. When detected, picks the matching
+  // schedule (eidFitr or eidAdha) and sets the banner label accordingly.
+  //
+  // No manual toggle needed — the banner appears N days before Eid, stays
+  // through the day, and auto-hides after the last iqamah + 30 min.
+  const upcomingEidReal = useMemo(
+    () => findUpcomingEid(now, hijriOffset, eidDaysBefore),
+    // Re-evaluate when the day changes (cheap — runs at most once per minute
+    // but result only changes once per day in practice).
+    [now.toDateString(), hijriOffset, eidDaysBefore]
+  );
+  // Apply test override: if `testEidKind` is set, force-show that Eid's
+  // banner with eidDate = today and daysUntil = 0. Lets the dev/admin
+  // preview the banner via footer Test Fitr / Test Adha buttons without
+  // waiting for actual Eid.
+  const upcomingEid = testEidKind
+    ? { kind: testEidKind, eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()), daysUntil: 0 }
+    : upcomingEidReal;
+
+  // Pick the right schedule (eidFitr or eidAdha) and filter out disabled or
+  // empty-time slots. Slot is active when enabled=true AND time is set.
+  const activeEidSlots = upcomingEid.kind
+    ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha)
+        .filter(e => e.enabled && e.time && e.time.length > 0)
+    : [];
+  // Auto-generated label based on detected Eid kind
+  const eidLabelAuto = upcomingEid.kind === 'fitr' ? 'Eid ul-Fitr'
+                     : upcomingEid.kind === 'adha' ? 'Eid ul-Adha'
+                     : '';
+
+  // Eid time helper — anchors HH:MM to the actual upcoming Eid Gregorian date
+  // (not "today" — that was the bug). If upcomingEid has no date yet (no Eid
+  // in window), falls back to today's date (banner won't render anyway).
   function eidDate(timeStr) {
     const [hh, mm] = timeStr.split(':').map(Number);
-    return makeCityDateAt(hh, mm);
+    const base = upcomingEid.eidDate || cityNow;
+    const d = new Date(base);
+    d.setHours(hh, mm, 0, 0);
+    return d;
   }
   const lastEidTime  = activeEidSlots.length
     ? eidDate(activeEidSlots[activeEidSlots.length - 1].time)
@@ -507,15 +549,19 @@ export default function App() {
   const eidIqamahEnd = lastEidTime
     ? addMins(lastEidTime, activeEidSlots[activeEidSlots.length - 1]?.iqamah ?? 20)
     : null;
-  // Banner — all comparisons against absolute `now`
-  const showEidBanner = activeEidSlots.length > 0 && (() => {
+  // Banner shows when:
+  //   - An upcoming Eid was detected (kind !== null) AND
+  //   - We have at least one configured slot for that Eid AND
+  //   - We're on the Eid date itself: banner stays until last iqamah + 30 min
+  //     OR we're in the lead-up window (daysUntil > 0 && daysUntil ≤ eidDaysBefore)
+  //   - EXCEPTION: when testEidKind is active, always show the banner so
+  //     staff can preview it at any time of day, regardless of whether the
+  //     configured Eid prayer time has already passed for "today".
+  const showEidBanner = upcomingEid.kind !== null && activeEidSlots.length > 0 && (() => {
+    if (testEidKind) return true;                  // test mode — always show
     if (!eidIqamahEnd) return false;
-    const firstEidTime = eidDate(activeEidSlots[0].time);
-    const msBefore = firstEidTime - now;
-    const daysUntil = msBefore / (1000 * 60 * 60 * 24);
-    if (daysUntil > 0 && daysUntil <= eidDaysBefore) return true;
-    if (daysUntil <= 0) return addMins(eidIqamahEnd, 30) > now;
-    return false;
+    if (upcomingEid.daysUntil > 0) return true;    // real Eid in lead-up
+    return addMins(eidIqamahEnd, 30) > now;        // real Eid on its day
   })();
   const nextEid = showEidBanner
     ? activeEidSlots.map(e => eidDate(e.time)).find(t => t > now) ?? null
@@ -669,7 +715,10 @@ export default function App() {
     const sanitizedJumuah = drafts.jumuah.map(j => ({
       ...j, iqamah: Math.min(60, Math.max(0, Number(j.iqamah) || 0)),
     }));
-    const sanitizedEid = drafts.eid.map(e => ({
+    const sanitizedEidFitr = drafts.eidFitr.map(e => ({
+      ...e, iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
+    }));
+    const sanitizedEidAdha = drafts.eidAdha.map(e => ({
       ...e, iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
     }));
     const sanitizedDays  = Math.min(30, Math.max(0, Number(drafts.eidDaysBefore) || 0));
@@ -694,7 +743,8 @@ export default function App() {
       ...drafts,
       iqamah:            sanitizedIqamah,
       jumuah:            sanitizedJumuah,
-      eid:               sanitizedEid,
+      eidFitr:           sanitizedEidFitr,
+      eidAdha:           sanitizedEidAdha,
       eidDaysBefore:     sanitizedDays,
       hijriOffset:       sanitizedHijri,
       fontScale:         sanitizedFont,
@@ -748,6 +798,26 @@ export default function App() {
         <div className="corner tl"/><div className="corner tr"/>
         <div className="corner bl"/><div className="corner br"/>
 
+        {/* Floating Settings button — top-right corner, icon-only.
+            Replaces the old text "⚙ Settings" button in the footer.
+            Floating placement keeps it always-reachable without
+            consuming layout space. Touch-target sized (44×44) for
+            mobile/iPhone admin use. */}
+        <button
+          onClick={openSettings}
+          aria-label="Settings"
+          title="Settings"
+          className="settings-fab"
+        >
+          {/* Gear icon — pure SVG, inherits currentColor for theming */}
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
+               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+               strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+
         {/* Header */}
         <Header
           masjidName={masjidName}
@@ -780,6 +850,7 @@ export default function App() {
               nextEid={nextEid}
               eidDate={eidDate}
               showEidBanner={showEidBanner}
+              eidLabelAuto={eidLabelAuto}
               footerSlot={<WeatherStrip weather={weather} weatherState={weatherState}/>}
             />
 
@@ -832,8 +903,8 @@ export default function App() {
             testCountdownActive={!!testCountdownUntil}
             testMoonActive={testMoonActive}
             testMoonPhaseValue={testMoonPhase}
+            testEidKind={testEidKind}
             activeKey={active?.key || 'fajr'}
-            onOpenSettings={openSettings}
             onToggleFriday={() => setTestFriday(f => !f)}
             onCyclePrayer={(curKey) => {
               const cycle = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
@@ -870,6 +941,16 @@ export default function App() {
               setTestMoonPhase(stops[nextIdx]);
               if (stops[nextIdx] != null) setTestMoonActive(true);
             }}
+            onToggleTestFitr={() => {
+              // Force-show Eid ul-Fitr banner. Toggles off on second click,
+              // or switches from Adha to Fitr if Adha test was active.
+              setTestEidKind(k => k === 'fitr' ? null : 'fitr');
+            }}
+            onToggleTestAdha={() => {
+              // Force-show Eid ul-Adha banner. Toggles off on second click,
+              // or switches from Fitr to Adha if Fitr test was active.
+              setTestEidKind(k => k === 'adha' ? null : 'adha');
+            }}
           />
         </div>
 
@@ -903,7 +984,8 @@ export default function App() {
         draftIqamahAutoCalc={draftIqamahAutoCalc}        setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
         draftIqamahAutoBuffers={draftIqamahAutoBuffers}  setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
         draftJumuah={draftJumuah}    setDraftJumuah={setDraftJumuah}
-        draftEid={draftEid}          setDraftEid={setDraftEid}
+        draftEidFitr={draftEidFitr}  setDraftEidFitr={setDraftEidFitr}
+        draftEidAdha={draftEidAdha}  setDraftEidAdha={setDraftEidAdha}
         draftEidDays={draftEidDays}  setDraftEidDays={setDraftEidDays}
         draftHijri={draftHijri}      setDraftHijri={setDraftHijri}
         draftHighLat={draftHighLat}  setDraftHighLat={setDraftHighLat}

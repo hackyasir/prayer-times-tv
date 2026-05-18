@@ -33,24 +33,40 @@ export const PRAYERS = [
 // Each value is { fajr: <angle>, isha: <angle | minutesAfterMaghrib> }.
 // If isha is > 30, it's interpreted as fixed minutes after Maghrib (used by
 // Umm al-Qura/Makkah where Isha = Maghrib + 90 min); otherwise it's an angle.
+// Note: this map is informational/display-only — the actual calculation
+// parameters come from adhan-js's CalculationMethod factories (see
+// src/lib/prayerCalc.js).
 export const METHODS = {
-  MWL:       { fajr: 18,   isha: 17   }, // Muslim World League
-  ISNA:      { fajr: 15,   isha: 15   }, // Islamic Society of North America
-  Egypt:     { fajr: 19.5, isha: 17.5 }, // Egyptian General Authority
-  Makkah:    { fajr: 18.5, isha: 90   }, // Umm al-Qura — Isha = 90 min after Maghrib
-  Karachi:   { fajr: 18,   isha: 18   }, // University of Islamic Sciences, Karachi
-  Singapore: { fajr: 20,   isha: 18   }, // MUIS Singapore
+  MWL:          { fajr: 18,   isha: 17   }, // Muslim World League
+  ISNA:         { fajr: 15,   isha: 15   }, // Islamic Society of North America
+  Moonsighting: { fajr: 18,   isha: 18   }, // Moonsighting Committee Worldwide
+  Egypt:        { fajr: 19.5, isha: 17.5 }, // Egyptian General Authority
+  Makkah:       { fajr: 18.5, isha: 90   }, // Umm al-Qura — Isha = 90 min after Maghrib
+  Dubai:        { fajr: 18.2, isha: 18.2 }, // UAE (with +3 min adjustments built into adhan-js)
+  Qatar:        { fajr: 18,   isha: 90   }, // Qatar — Isha = 90 min after Maghrib
+  Kuwait:       { fajr: 18,   isha: 17.5 }, // Kuwait
+  Karachi:      { fajr: 18,   isha: 18   }, // University of Islamic Sciences, Karachi
+  Singapore:    { fajr: 20,   isha: 18   }, // MUIS Singapore
+  Turkey:       { fajr: 18,   isha: 17   }, // Diyanet approximation
+  Tehran:       { fajr: 17.7, isha: 14   }, // University of Tehran (Shia common)
 };
 
-// Friendly display names for the methods above. These match the original
-// strings used in the dashboard's footer + Settings panel.
+// Friendly display names for the methods above. Ordered roughly by region/
+// popularity for sensible dropdown ordering: global → North America → MENA →
+// South Asia → other regional.
 export const METHOD_LABELS = {
-  MWL:       'Muslim World League',
-  ISNA:      'ISNA – North America',
-  Egypt:     'Egyptian Authority',
-  Makkah:    'Umm al-Qura (Makkah)',
-  Karachi:   'University of Karachi',
-  Singapore: 'MUIS Singapore',
+  MWL:          'Muslim World League',
+  ISNA:         'ISNA – North America',
+  Moonsighting: 'Moonsighting Committee',
+  Egypt:        'Egyptian Authority',
+  Dubai:        'Dubai (UAE)',
+  Makkah:       'Umm al-Qura (Makkah)',
+  Qatar:        'Qatar',
+  Kuwait:       'Kuwait',
+  Karachi:      'University of Karachi',
+  Singapore:    'MUIS Singapore',
+  Turkey:       'Diyanet (Turkey)',
+  Tehran:       'University of Tehran',
 };
 
 // Open-Meteo API base URL — no API key required, free for civilian use
