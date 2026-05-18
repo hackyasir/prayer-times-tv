@@ -49,52 +49,28 @@ export default function Footer({
   const { t } = useT();
   return (
     <div className="ftr">
-      <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
+      <div className="ftr-section">
         {/* Settings button moved to floating top-right corner of the app
             (rendered in App.jsx). Footer left section now shows only the
             status text. */}
         <div className="ftr-txt">{t('footer.offline')}</div>
       </div>
       <div className="ftr-dots">{[0,1,2,3,4].map(i => <div key={i} className="ftr-dot"/>)}</div>
-      <div style={{ display:'flex', alignItems:'center', gap:'1vw' }}>
+      <div className="ftr-section">
         {showTestBtns && (
           <>
             <button
               onClick={onToggleFriday}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testFriday ? 'rgba(61,200,120,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testFriday ? '#3DC878' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--jumuah${testFriday ? ' is-active' : ''}`}
             >{testFriday ? t('footer.jumuahOn') : t('footer.testJumuah')}</button>
             <button
               onClick={() => onCyclePrayer(activeKey)}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testPrayer ? 'rgba(180,120,255,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testPrayer ? '#c49eff' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--eid${testPrayer ? ' is-active' : ''}`}
             >🎨 {testPrayer ? testPrayer.toUpperCase() : t('footer.testPattern')}</button>
             {testPrayer && (
               <button
                 onClick={onClearPrayer}
-                style={{
-                  background:'transparent',
-                  border:'1px solid rgba(201,168,76,.15)',
-                  borderRadius:3, padding:'2px 6px',
-                  color:'#9A8B6E',
-                  fontFamily:'Rajdhani,sans-serif',
-                  fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                  cursor:'pointer',
-                }}
+                className="test-btn test-btn--compact"
               >✕</button>
             )}
             {/* Test Blackout — fires a 60-second blackout overlay right now,
@@ -105,17 +81,7 @@ export default function Footer({
             <button
               onClick={onTestBlackout}
               disabled={testBlackoutActive}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testBlackoutActive ? 'rgba(255,255,255,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testBlackoutActive ? '#fff' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase',
-                cursor: testBlackoutActive ? 'default' : 'pointer',
-                opacity: testBlackoutActive ? 0.7 : 1,
-              }}
+              className={`test-btn test-btn--neutral${testBlackoutActive ? ' is-active is-disabled' : ''}`}
             >⬛ {testBlackoutActive ? 'Active' : 'Test Blackout'}</button>
             {/* Test Countdown — forces a 60-second window so Clock renders
                 the giant pulsing seconds digit (.countdown-big mode auto-
@@ -124,32 +90,14 @@ export default function Footer({
             <button
               onClick={onTestCountdown}
               disabled={testCountdownActive}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testCountdownActive ? 'rgba(255,255,255,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testCountdownActive ? '#fff' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase',
-                cursor: testCountdownActive ? 'default' : 'pointer',
-                opacity: testCountdownActive ? 0.7 : 1,
-              }}
+              className={`test-btn test-btn--neutral${testCountdownActive ? ' is-active is-disabled' : ''}`}
             >⏱ {testCountdownActive ? 'Active' : t('test.countdown')}</button>
             {/* Test Moon — forces the centre arc to render MoonArc with
                 phase visualization regardless of whether the sun is up.
                 Useful for verifying night-mode visuals during the day. */}
             <button
               onClick={onToggleMoon}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testMoonActive ? 'rgba(180,200,230,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testMoonActive ? '#c5d4e6' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--moon${testMoonActive ? ' is-active' : ''}`}
             >🌙 {t('test.moon')}{testMoonActive ? ' ✓' : ''}</button>
             {/* Test Phase — cycle through 9 phase stops (real → new →
                 waxing crescent → first quarter → ... → waning crescent
@@ -158,42 +106,18 @@ export default function Footer({
                 active so the moon arc is visible. */}
             <button
               onClick={onCyclePhase}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testMoonPhaseValue != null ? 'rgba(180,200,230,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testMoonPhaseValue != null ? '#c5d4e6' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--moon${testMoonPhaseValue != null ? ' is-active' : ''}`}
             >☾ {phaseLabel(testMoonPhaseValue)}</button>
             {/* Test Fitr — force-show Eid ul-Fitr banner regardless of
                 whether the Hijri calendar has detected an upcoming Eid. */}
             <button
               onClick={onToggleTestFitr}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testEidKind === 'fitr' ? 'rgba(196,158,255,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testEidKind === 'fitr' ? '#c49eff' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--eid${testEidKind === 'fitr' ? ' is-active' : ''}`}
             >🕌 Fitr{testEidKind === 'fitr' ? ' ✓' : ''}</button>
             {/* Test Adha — force-show Eid ul-Adha banner. */}
             <button
               onClick={onToggleTestAdha}
-              style={{
-                background:'transparent',
-                border:`1px solid ${testEidKind === 'adha' ? 'rgba(196,158,255,.5)' : 'rgba(201,168,76,.15)'}`,
-                borderRadius:3, padding:'2px 8px',
-                color: testEidKind === 'adha' ? '#c49eff' : '#9A8B6E',
-                fontFamily:'Rajdhani,sans-serif',
-                fontSize: 'calc(clamp(0.438rem,.72vw,0.688rem) * var(--t-fs, 1))',
-                letterSpacing:'.1em', textTransform:'uppercase', cursor:'pointer',
-              }}
+              className={`test-btn test-btn--eid${testEidKind === 'adha' ? ' is-active' : ''}`}
             >🕋 Adha{testEidKind === 'adha' ? ' ✓' : ''}</button>
           </>
         )}

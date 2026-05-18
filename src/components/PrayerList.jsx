@@ -55,7 +55,7 @@ export default function PrayerList({
     <div className="pcol">
       {/* Column headers */}
       <div className="pheader">
-        <div className="pheader-name"/>
+        <div className="pheader-name">{t('label.prayer')}</div>
         <div className="pheader-col">{t('label.adhan')}</div>
         <div className="pheader-col">{t('label.iqamah')}</div>
       </div>
@@ -98,7 +98,7 @@ export default function PrayerList({
                   <div className="jumuah-next jumuah-next-complete">{t('label.complete')}</div>
                 )}
               </div>
-              <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
+              <div className="jumuah-slots" data-slots={activeJumuahSlots.length}>
                 {activeJumuahSlots.map((j, i) => {
                   const jt  = jumuahDate(j.time);
                   const jiq = addMins(jt, j.iqamah);
@@ -180,7 +180,7 @@ export default function PrayerList({
                 return <div className="eid-next eid-next-complete">{t('label.complete')}</div>;
               })()}
             </div>
-            <div className="eid-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
+            <div className="eid-slots" data-slots={activeEidSlots.length}>
               {activeEidSlots.map((e, i) => {
                 const et  = eidDate(e.time);
                 const eiq = addMins(et, e.iqamah);
@@ -220,7 +220,7 @@ export default function PrayerList({
             <div className="jumuah-banner-head">
               <div className="jumuah-title">{t('prayer.jumuah')} <span className="jumuah-arabic">الجمعة</span></div>
             </div>
-            <div className="jumuah-slots" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(180px, 100%), 1fr))` }}>
+            <div className="jumuah-slots" data-slots={activeJumuahSlots.length}>
               {activeJumuahSlots.map((j, i) => {
                 const jt  = jumuahDate(j.time);
                 const jiq = addMins(jt, j.iqamah);

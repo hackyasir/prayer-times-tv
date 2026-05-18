@@ -19,26 +19,38 @@
 }
 
 /* ── Column header (Adhan / Iqamah labels) ───────────────────────────────── */
+/* Sits above the prayer-card rows. Mirrors the column widths of .ptime /
+ * .ptime-iqamah so the labels align over their respective time columns.
+ * Visible, gold, padded so they read as "table headers" at a glance. */
 .pheader {
   display: flex;
   align-items: center;
-  padding: 0 clamp(8px, 1.1vw, 18px);
+  padding: clamp(6px, .9vh, 12px) clamp(8px, 1.1vw, 18px) clamp(4px, .6vh, 8px);
+  margin-bottom: clamp(2px, .4vh, 6px);
+  border-bottom: 1px solid rgba(var(--t-accent-rgb), .15);
   flex-shrink: 0;
 }
 
 .pheader-name {
   flex: 1;
+  font-size: calc(clamp(0.75rem, 2.4cqi, 1.125rem) * var(--t-fs, 1));
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--t-accent);
+  font-weight: 700;
+  opacity: .95;
 }
 
 .pheader-col {
   width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
-  text-align: center;
+  text-align: right;
   white-space: nowrap;
-  font-size: calc(clamp(0.775rem, 2.2cqi, 1.025rem) * var(--t-fs, 1));
-  letter-spacing: .2em;
+  font-size: calc(clamp(0.75rem, 2.4cqi, 1.125rem) * var(--t-fs, 1));
+  letter-spacing: .22em;
   text-transform: uppercase;
-  color: rgba(var(--t-accent-rgb), .7);
+  color: var(--t-accent);
   font-weight: 700;
+  opacity: .95;
 }
 
 /* ── Prayer row ──────────────────────────────────────────────────────────── */
@@ -259,13 +271,23 @@
 }
 
 /* ── Slots grid ──────────────────────────────────────────────────────────── */
-/* Inline style sets grid-template-columns based on slot count (2 or 3).
- * Falls back to 3-col here. Gap scales with viewport. */
-.jumuah-slots {
+/* Force N-column grid where N = number of active slots. Driven by the
+ * data-slots="N" attribute set on the JSX <div>, which keeps the JSX
+ * inline-style-free and lets all layout logic live in CSS.
+ *
+ * Cards stay on a single row regardless of viewport width (they compress
+ * proportionally rather than wrapping to a new line — which would look
+ * broken in the banner context). N is bounded 1..4 by the slot defaults. */
+.jumuah-slots,
+.eid-slots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr);  /* fallback — overridden by [data-slots] below */
   gap: clamp(4px, .8vw, 12px);
 }
+.jumuah-slots[data-slots="1"], .eid-slots[data-slots="1"] { grid-template-columns: 1fr; }
+.jumuah-slots[data-slots="2"], .eid-slots[data-slots="2"] { grid-template-columns: repeat(2, 1fr); }
+.jumuah-slots[data-slots="3"], .eid-slots[data-slots="3"] { grid-template-columns: repeat(3, 1fr); }
+.jumuah-slots[data-slots="4"], .eid-slots[data-slots="4"] { grid-template-columns: repeat(4, 1fr); }
 
 /* ── Individual slot card ────────────────────────────────────────────────── */
 .jumuah-slot {
@@ -462,12 +484,6 @@
 
 .eid-next-complete {
   color: rgba(196, 158, 255, .35);
-}
-
-.eid-slots {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(4px, .8vw, 12px);
 }
 
 .eid-slot {

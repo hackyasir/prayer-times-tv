@@ -14,19 +14,8 @@ export default function PinOverlay({ visible, input, error, onChange, onSubmit, 
   if (!visible) return null;
   return (
     <div className="overlay">
-      <div style={{
-        background:'#0A0A0A',
-        border:'1px solid rgba(201,168,76,.45)',
-        borderRadius:8,
-        padding:36,
-        width:'min(340px,90vw)',
-        textAlign:'center',
-      }}>
-        <div style={{
-          fontFamily:"'Amiri',serif", fontSize:20,
-          color:'#C9A84C', letterSpacing:'.1em', textTransform:'uppercase',
-          marginBottom:20,
-        }}>{t('pin.title')}</div>
+      <div className="pin-box">
+        <div className="pin-title">{t('pin.title')}</div>
         <input
           type="password"
           value={input}
@@ -34,20 +23,10 @@ export default function PinOverlay({ visible, input, error, onChange, onSubmit, 
           onKeyDown={e => e.key === 'Enter' && onSubmit()}
           placeholder={t('pin.placeholder')}
           autoFocus
-          style={{
-            width:'100%',
-            background:'#111',
-            border:`1px solid ${error ? '#c0392b' : 'rgba(201,168,76,.3)'}`,
-            borderRadius:4, padding:'10px 14px',
-            fontFamily:'Rajdhani,sans-serif', fontSize:22,
-            color:'#F5EDD8', outline:'none',
-            textAlign:'center', letterSpacing:'.3em', marginBottom:8,
-          }}
+          className={`pin-input${error ? ' pin-input--error' : ''}`}
         />
-        {error && <div style={{
-          fontSize:13, color:'#c0392b', marginBottom:8, letterSpacing:'.05em',
-        }}>{t('pin.error')}</div>}
-        <div style={{ display:'flex', gap:10, justifyContent:'center', marginTop:16 }}>
+        {error && <div className="pin-error">{t('pin.error')}</div>}
+        <div className="pin-actions">
           <button className="sbtn" onClick={onCancel}>{t('pin.cancel')}</button>
           <button className="sbtn pri" onClick={onSubmit}>{t('pin.unlock')}</button>
         </div>

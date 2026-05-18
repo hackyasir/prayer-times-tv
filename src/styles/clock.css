@@ -154,3 +154,164 @@
   margin-top: .3vh;
   font-weight: 700;
 }
+/* ── Ring progress animation ─────────────────────────────────────────────── */
+/* Used by ProgressVisual's <ProgressRing/>. Smooth dashoffset transition
+ * so the progress ring sweeps gradually instead of jumping each second. */
+.ring-progress-anim {
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* ── DayBar progress visual ──────────────────────────────────────────────── */
+/* 24-hour bar from today's Fajr to tomorrow's Fajr with prayer markers.
+ * Used by ProgressVisual's <ProgressDayBar/>. */
+.daybar-wrap {
+  width: min(92%, 700px);
+  margin: 0.4vh 0;
+}
+
+.daybar-track {
+  position: relative;
+  height: clamp(8px, 1.3vw, 14px);
+  background: rgba(var(--t-accent-rgb), .08);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(var(--t-accent-rgb), .18);
+}
+
+.daybar-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+    var(--t-accent-dim) 0%,
+    var(--t-accent) 50%,
+    var(--t-accent-hi) 100%);
+  border-radius: var(--radius-full);
+  transition: width 60s linear;
+}
+
+/* Prayer time markers — thin vertical bars on the track. Default = upcoming;
+ * the --past modifier dims them once that prayer has happened. Inline `left`
+ * carries the runtime fractional position; everything else lives here. */
+.daybar-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 180%;
+  background: var(--t-accent);
+  opacity: 0.9;
+}
+.daybar-marker--past {
+  background: var(--t-accent-dim);
+  opacity: 0.4;
+}
+
+/* Glowing dot at "now". Inline `left` is the only runtime value. */
+.daybar-now-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(14px, 2vw, 22px);
+  height: clamp(14px, 2vw, 22px);
+  border-radius: var(--radius-full);
+  background: var(--t-accent-hi);
+  box-shadow:
+    0 0 12px var(--t-accent-hi),
+    0 0 24px var(--t-accent);
+  border: 2px solid var(--t-bg);
+  transition: left 60s linear;
+}
+
+.daybar-labels {
+  position: relative;
+  height: clamp(14px, 1.8vw, 22px);
+  margin-top: 0.4vh;
+}
+
+.daybar-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: calc(clamp(0.45rem, .75vw, 0.812rem) * var(--t-fs, 1));
+  color: var(--t-accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.daybar-label--past {
+  color: var(--t-text-dim);
+}
+
+/* ── Moon progress visual ────────────────────────────────────────────────── */
+/* Crescent that fills/empties based on time to next prayer.
+ * Used by ProgressVisual's <ProgressMoon/>. */
+.moon-prog-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.3vh 0;
+}
+
+.moon-prog-svg {
+  width: clamp(64px, 8vw, 130px);
+  height: clamp(64px, 8vw, 130px);
+  overflow: visible;
+}
+
+/* ── Line progress visual ────────────────────────────────────────────────── */
+/* Thin horizontal progress line with "X% elapsed" caption.
+ * Used by ProgressVisual's <ProgressLine/>. */
+.line-prog-wrap {
+  width: min(60%, 360px);
+  margin: 0.5vh 0;
+}
+
+.line-prog-track {
+  height: 3px;
+  background: rgba(var(--t-accent-rgb), .1);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  position: relative;
+}
+
+.line-prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--t-accent-dim), var(--t-accent-hi));
+  transition: width 60s linear;
+}
+
+.line-prog-text {
+  font-size: calc(clamp(0.4rem, .65vw, 0.625rem) * var(--t-fs, 1));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
+  margin-top: 2px;
+  text-align: center;
+}
+
+/* ── Clock time row + complete message ────────────────────────────────────
+ * .clock-time-row aligns the main time (HH:MM) and seconds digits at the
+ * baseline with a small gap, centred. Whitespace nowrap so wide digits
+ * never wrap to a second line. */
+.clock-time-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35em;
+  white-space: nowrap;
+}
+
+/* Tiny right padding on the main time text — keeps a hair of space between
+ * the last main digit and the seconds-digits column. */
+.clock-main {
+  padding-right: 0.04em;
+}
+
+/* Shown when ALL of today's prayers have passed — no "next prayer" exists.
+ * Dim, centred fallback text. */
+.clock-complete {
+  color: #9A8B6E;
+  font-size: calc(clamp(0.812rem, 1.4vw, 1.375rem) * var(--t-fs, 1));
+  letter-spacing: 0.1em;
+  text-align: center;
+}

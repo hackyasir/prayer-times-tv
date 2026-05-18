@@ -124,12 +124,6 @@
   .hadith-ar     { font-size: calc(clamp(1.2rem, 1.6vw, 2.6rem) * var(--t-fs, 1)); }
   .hadith-en     { font-size: calc(clamp(0.7rem, 0.95vw, 1.5rem) * var(--t-fs, 1)); }
 
-  .sun-val       { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
-  .sun-lbl       { font-size: calc(clamp(0.7rem, 1vw, 1.8rem) * var(--t-fs, 1)); }
-  .ival          { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
-  .ilbl          { font-size: calc(clamp(0.7rem, 1vw, 1.8rem) * var(--t-fs, 1)); }
-  .weather-temp  { font-size: calc(clamp(3rem, 5vw, 9rem) * var(--t-fs, 1)); }
-
   .pcol  { align-self: stretch; justify-content: stretch; }
   .pcard { flex: 1; max-height: 20vh; }
   .ccol  { justify-content: space-between; gap: 0; }

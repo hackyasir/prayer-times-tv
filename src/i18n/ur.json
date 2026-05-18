@@ -10,6 +10,7 @@
   "prayer.isha": "عشاء",
   "prayer.jumuah": "جمعہ",
   "prayer.eid": "نمازِ عید",
+  "label.prayer": "نماز",
   "label.adhan": "اذان",
   "label.iqamah": "اقامت",
   "label.next": "اگلی نماز",
@@ -38,8 +39,8 @@
   "widget.sun.daylight": "{hours} گھنٹے {mins} منٹ روشنی",
   "widget.fast.title": "آج کا روزہ",
   "widget.fast.total": "{hours} گھنٹے {mins} منٹ کل",
-  "widget.fast.toIftar": "{hours} گھنٹے {mins} منٹ افطار تک",
-  "widget.fast.toSuhoor": "سحری تک {hours} گھنٹے {mins} منٹ",
+  "widget.fast.toIftar": "افطار میں {hours}گ {mins}م",
+  "widget.fast.toSuhoor": "سحری میں {hours}گ {mins}م",
   "widget.qibla.label": "قبلہ",
   "footer.offline": "آف لائن · مقامی وقت",
   "footer.updated": "ہر سیکنڈ اپ ڈیٹ",
@@ -150,5 +151,8 @@
   "jumuah.status.next": "اگلی",
   "jumuah.status.later": "بعد میں",
   "label.nthJamaatIn": "{ord} جماعت · {h}گ {m}م",
-  "settings.eid.note": "ہجری کیلنڈر میں آنے والی عید کا پتہ چلنے پر عید بینر خود بخود ظاہر ہوگا۔ ضرورت کے مطابق انفرادی سلاٹس کو آن/آف کریں۔"
+  "settings.eid.note": "ہجری کیلنڈر میں آنے والی عید کا پتہ چلنے پر عید بینر خود بخود ظاہر ہوگا۔ ضرورت کے مطابق انفرادی سلاٹس کو آن/آف کریں۔",
+  "widget.fast.label": "روزہ",
+  "widget.fast.suhoor": "سحری",
+  "widget.fast.iftar": "افطار"
 }

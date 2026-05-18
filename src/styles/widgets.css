@@ -25,6 +25,16 @@
   color: var(--t-text-dim);
 }
 
+/* Left + right groupings inside the footer — used for the offline status
+ * text (left) and the test-button cluster (right). Same layout for both
+ * so the footer reads as 3 evenly-balanced sections (left · centre dots
+ * · right). */
+.ftr-section {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+}
+
 .ftr-dots {
   display: flex;
   gap: clamp(4px, .4vw, 8px);
@@ -37,6 +47,49 @@
   border-radius: 50%;
   background: var(--t-border);
 }
+
+/* ── Test buttons (footer dev row) ────────────────────────────────────────
+ * Shared base for all .test-btn variants (Test Friday, Test Pattern, Test
+ * Blackout, Test Countdown, Test Moon, Test Phase, Test Fitr, Test Adha,
+ * Clear-prayer ✕). Compact, uppercase, gold-dim by default. When `.is-active`
+ * is added, the button takes on a colored tint via the modifier classes
+ * (--jumuah, --eid, --moon, --neutral). The clear (✕) button uses .test-btn
+ * alone — it never has an active state.
+ *
+ * Naming: BEM-ish — .test-btn is the block, --kind sets the active palette,
+ * .is-active is the state toggle. */
+.test-btn {
+  background: transparent;
+  border: 1px solid rgba(201, 168, 76, .15);
+  border-radius: var(--radius-xs);
+  padding: 2px 8px;
+  color: #9A8B6E;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.438rem, .72vw, 0.688rem) * var(--t-fs, 1));
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.test-btn.is-disabled {
+  cursor: default;
+  opacity: .7;
+}
+/* Compact variant — used by the ✕ clear button (no letter-spacing/text-transform
+ * needed, less horizontal padding). */
+.test-btn--compact {
+  padding: 2px 6px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Active-state tints. Each variant changes border + text color when the
+ * `.is-active` class is also present. Keep these in lock-step with the
+ * JSX class composition in Footer.jsx. */
+.test-btn--jumuah.is-active  { border-color: rgba( 61, 200, 120, .5); color: #3DC878; }
+.test-btn--eid.is-active     { border-color: rgba(196, 158, 255, .5); color: #c49eff; }
+.test-btn--neutral.is-active { border-color: rgba(255, 255, 255, .5); color: #FFFFFF; }
+.test-btn--moon.is-active    { border-color: rgba(180, 200, 230, .5); color: #c5d4e6; }
 
 /* Settings trigger button */
 .strig {
@@ -160,20 +213,25 @@
   opacity: .85;
 }
 
-/* Labels under the markers (Sunrise / Noon / Sunset) */
+/* Labels under the markers (Sunrise / Noon / Sunset).
+ * Note: these are SVG <text> elements inside a 400×74 viewBox, so font-size
+ * is in user-units relative to that viewBox — not the page CSS pixel scale.
+ * 10px was too small inside the SVG; 13px reads clearly while still fitting
+ * three labels horizontally without overflow. */
 .sun-arc-label {
-  font-size: calc(10px * var(--t-fs, 1));
-  fill: rgba(var(--t-accent-rgb), .6);
-  letter-spacing: 0.5px;
+  font-size: calc(13px * var(--t-fs, 1));
+  fill: rgba(var(--t-accent-rgb), .65);
+  letter-spacing: 0.6px;
   text-anchor: middle;
   font-weight: 700;
 }
 
-/* Times under each label (5:54 AM, 1:16 PM, 8:37 PM) */
+/* Times under each label (5:54 AM, 1:16 PM, 8:37 PM).
+ * Slightly bigger than labels and brighter so the actual times stand out. */
 .sun-arc-time {
-  font-size: calc(10px * var(--t-fs, 1));
+  font-size: calc(14px * var(--t-fs, 1));
   font-weight: 700;
-  fill: var(--t-text-dim);
+  fill: var(--t-text);
   text-anchor: middle;
 }
 
@@ -234,11 +292,41 @@
   max-width: 520px;
 }
 
+/* "FAST" label — anchors the bar so users know what it represents.
+ * Uppercase + bold + dim gold for a quiet but readable hint. */
+.fast-bar-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.625rem, .8vw, 1rem) * var(--t-fs, 1));
+  font-weight: 700;
+  color: var(--t-accent);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  opacity: .8;
+}
+
 .fast-bar-times {
   display: flex;
   align-items: center;
   gap: .4vw;
   flex-shrink: 0;
+}
+
+/* Each endpoint = "Suhoor 5:00" / "Iftar 8:40".  Label sits above the time
+ * for a compact two-line look, OR inline beside it — we use inline since
+ * the bar is slim. */
+.fast-bar-endpoint {
+  display: flex;
+  align-items: baseline;
+  gap: .3vw;
+}
+
+.fast-bar-endpoint-lbl {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(clamp(0.563rem, .7vw, 0.875rem) * var(--t-fs, 1));
+  color: var(--t-text-dim);
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .fast-bar-time {

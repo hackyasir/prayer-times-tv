@@ -247,3 +247,19 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* ── QiblaCompass + MosqueIcon SVG sizing ─────────────────────────────────
+ * Both render small SVG marks (Qibla compass in HeaderQibla widget,
+ * Mosque silhouette in header). Both follow the same viewport-aware
+ * size pattern. */
+.qibla-compass-svg {
+  width: clamp(34px, 3.8vw, 66px);
+  height: clamp(34px, 3.8vw, 66px);
+  flex-shrink: 0;
+}
+
+.mosque-icon-svg {
+  width: clamp(40px, 4vw, 80px);
+  height: clamp(40px, 4vw, 80px);
+  flex-shrink: 0;
+}

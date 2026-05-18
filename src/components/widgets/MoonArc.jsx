@@ -24,7 +24,7 @@ import { useT } from '../../i18n/I18nContext.jsx';
 // Same viewBox as SunArc so the two components render at identical size
 // when swapped. See SunArc.jsx for full geometry explanation.
 const ARC_W  = 400;
-const ARC_H  = 74;
+const ARC_H  = 84;   // matches SunArc — accommodates larger labels
 const PAD_X  = 22;
 const ARC_Y0 = 46;
 const ARC_Y1 = 8;
@@ -200,14 +200,14 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
         )}
 
         {/* Labels — moonrise / transit / moonset */}
-        <text x={startPos.x}   y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.moon.moonrise')}</text>
-        <text x={transitPos.x} y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.moon.transit')}</text>
-        <text x={endPos.x}     y={ARC_Y0 + 9} className="sun-arc-label">{t('widget.moon.moonset')}</text>
+        <text x={startPos.x}   y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.moonrise')}</text>
+        <text x={transitPos.x} y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.transit')}</text>
+        <text x={endPos.x}     y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.moonset')}</text>
 
         {/* Times — tight under labels */}
-        <text x={startPos.x}   y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(moonrise,    cityTz)}</text>
-        <text x={transitPos.x} y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(moonTransit, cityTz)}</text>
-        <text x={endPos.x}     y={ARC_Y0 + 17} className="sun-arc-time">{fmt12(moonset,     cityTz)}</text>
+        <text x={startPos.x}   y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonrise,    cityTz)}</text>
+        <text x={transitPos.x} y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonTransit, cityTz)}</text>
+        <text x={endPos.x}     y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonset,     cityTz)}</text>
       </svg>
     </div>
   );

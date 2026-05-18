@@ -11,11 +11,7 @@ export default function QiblaCompass({ bearing }) {
   return (
     <svg
       viewBox="0 0 50 50"
-      style={{
-        width: 'clamp(34px,3.8vw,66px)',
-        height: 'clamp(34px,3.8vw,66px)',
-        flexShrink: 0,
-      }}
+      className="qibla-compass-svg"
     >
       {/* Outer ring */}
       <circle cx="25" cy="25" r="23"

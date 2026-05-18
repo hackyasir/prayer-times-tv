@@ -8,6 +8,12 @@
 //
 // All styles are pure presentational components — they don't read any state
 // directly; the parent passes whatever they need as props.
+//
+// STYLING APPROACH: visuals are styled in src/styles/clock.css under the
+// `.daybar-*`, `.moon-prog-*`, `.line-prog-*`, `.ring-*` class groups.
+// Inline `style={...}` is reserved for values that are COMPUTED from
+// runtime state — positions like `left: <fraction>%`, widths like
+// `width: <fraction>%`. Conditional modifiers handled by class names.
 
 import { useId } from 'react';
 
@@ -24,7 +30,7 @@ function ProgressRing({ ringProgress }) {
           strokeLinecap="round"
           strokeDasharray={circ.toFixed(1)}
           strokeDashoffset={offset.toFixed(1)}
-          style={{ transition: 'stroke-dashoffset 1s linear' }}
+          className="ring-progress-anim"
         />
       </svg>
       <div className="ring-inner">
@@ -56,55 +62,28 @@ function ProgressDayBar({ prayers, todayTimes, tomorrowTimes, now }) {
     .filter(Boolean);
 
   return (
-    <div style={{ width:'min(92%, 700px)', margin:'.4vh 0' }}>
+    <div className="daybar-wrap">
       {/* The bar itself */}
-      <div style={{
-        position:'relative', height:'clamp(8px, 1.3vw, 14px)',
-        background:'rgba(var(--t-accent-rgb),.08)',
-        borderRadius:999,
-        border:'1px solid rgba(var(--t-accent-rgb),.18)',
-      }}>
-        {/* Progress fill: from start to now */}
-        <div style={{
-          position:'absolute', left:0, top:0, bottom:0,
-          width:`${pos * 100}%`,
-          background:'linear-gradient(90deg, var(--t-accent-dim) 0%, var(--t-accent) 50%, var(--t-accent-hi) 100%)',
-          borderRadius:999,
-          transition:'width 60s linear',
-        }}/>
-        {/* Prayer markers — vertical bars at each prayer's fractional position */}
+      <div className="daybar-track">
+        {/* Progress fill: from start to now. Width is the only inline value
+         * since it's computed from runtime "pos". */}
+        <div className="daybar-fill" style={{ width: `${pos * 100}%` }}/>
+        {/* Prayer markers — vertical bars at each prayer's fractional position.
+         * Left position is dynamic; past/upcoming styling via modifier class. */}
         {markers.map(m => (
-          <div key={m.key} style={{
-            position:'absolute', top:'50%', left:`${m.frac * 100}%`,
-            transform:'translate(-50%, -50%)',
-            width:2, height:'180%',
-            background: m.time <= now ? 'var(--t-accent-dim)' : 'var(--t-accent)',
-            opacity: m.time <= now ? .4 : .9,
-          }}/>
+          <div key={m.key}
+               className={`daybar-marker${m.time <= now ? ' daybar-marker--past' : ''}`}
+               style={{ left: `${m.frac * 100}%` }}/>
         ))}
-        {/* NOW dot — glowing indicator at current time */}
-        <div style={{
-          position:'absolute', top:'50%', left:`${pos * 100}%`,
-          transform:'translate(-50%, -50%)',
-          width:'clamp(14px,2vw,22px)', height:'clamp(14px,2vw,22px)',
-          borderRadius:'50%',
-          background:'var(--t-accent-hi)',
-          boxShadow:'0 0 12px var(--t-accent-hi), 0 0 24px var(--t-accent)',
-          border:'2px solid var(--t-bg)',
-          transition:'left 60s linear',
-        }}/>
+        {/* NOW dot — glowing indicator at current time. Position computed. */}
+        <div className="daybar-now-dot" style={{ left: `${pos * 100}%` }}/>
       </div>
       {/* Labels under bar */}
-      <div style={{ position:'relative', height:'clamp(14px, 1.8vw, 22px)', marginTop:'.4vh' }}>
+      <div className="daybar-labels">
         {markers.map(m => (
-          <div key={m.key} style={{
-            position:'absolute', left:`${m.frac * 100}%`,
-            transform:'translateX(-50%)',
-            fontSize:'calc(clamp(0.45rem,.75vw,0.812rem) * var(--t-fs, 1))',
-            color: m.time <= now ? 'var(--t-text-dim)' : 'var(--t-accent)',
-            letterSpacing:'.08em', textTransform:'uppercase',
-            whiteSpace:'nowrap',
-          }}>
+          <div key={m.key}
+               className={`daybar-label${m.time <= now ? ' daybar-label--past' : ''}`}
+               style={{ left: `${m.frac * 100}%` }}>
             {m.en}
           </div>
         ))}
@@ -119,14 +98,13 @@ function ProgressMoon({ ringProgress }) {
   // ringProgress 0 = full moon (just prayed), 1 = thin crescent (prayer imminent).
   // Visually, the moon's bright portion shrinks as ringProgress grows.
   const phase = 1 - ringProgress; // 1 = full, 0 = new
-  const size = 'clamp(64px, 8vw, 130px)';
   const offsetX = 40 * (1 - phase);
   // Unique mask ID per instance — useId ensures multiple Moon components
   // on a page don't share masks and collide.
   const maskId = useId();
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', margin:'.3vh 0' }}>
-      <svg viewBox="0 0 100 100" style={{ width:size, height:size, overflow:'visible' }}>
+    <div className="moon-prog-wrap">
+      <svg viewBox="0 0 100 100" className="moon-prog-svg" preserveAspectRatio="xMidYMid meet">
         <defs>
           <radialGradient id={`moon-glow-${maskId}`} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="var(--t-accent-hi, #F5D27A)" stopOpacity="0.4"/>
@@ -161,30 +139,12 @@ function ProgressHero() {
 function ProgressLine({ ringProgress }) {
   const pct = Math.round(ringProgress * 100);
   return (
-    <div style={{ width:'min(60%, 360px)', margin:'.5vh 0' }}>
-      <div style={{
-        height: 3,
-        background:'rgba(var(--t-accent-rgb),.1)',
-        borderRadius: 2,
-        overflow:'hidden',
-        position:'relative',
-      }}>
-        <div style={{
-          width: `${pct}%`, height: '100%',
-          background: 'linear-gradient(90deg, var(--t-accent-dim), var(--t-accent-hi))',
-          transition: 'width 60s linear',
-        }}/>
+    <div className="line-prog-wrap">
+      <div className="line-prog-track">
+        {/* Width is the only inline value — computed from ringProgress. */}
+        <div className="line-prog-fill" style={{ width: `${pct}%` }}/>
       </div>
-      <div style={{
-        fontSize: 'calc(clamp(0.4rem,.65vw,0.625rem) * var(--t-fs, 1))',
-        letterSpacing: '.18em',
-        textTransform: 'uppercase',
-        color: 'var(--t-text-dim)',
-        marginTop: 2,
-        textAlign: 'center',
-      }}>
-        {pct}% elapsed
-      </div>
+      <div className="line-prog-text">{pct}% elapsed</div>
     </div>
   );
 }
