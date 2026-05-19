@@ -291,14 +291,6 @@ The app uses:
 
 ---
 
-## Roadmap
-
-- [ ] Cloud sync backend (admin from phone)
-- [ ] Printable monthly prayer-time PDF
-- [ ] Real adhan audio (multiple reciters)
-- [ ] Pre-prayer notification beeps (5/10 min warnings)
-- [ ] Day-of-Arafah / Ashura special markers
-
 See [issues](../../issues) for the active list.
 
 ---
