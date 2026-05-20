@@ -51,10 +51,12 @@ coverage/
 .cache/
 
 # Local dev sync — see sync.bat (apply Claude zips) and upload.bat
-# (package your code for Claude review) for the workflow. These are
-# personal-machine helpers, not project artifacts.
+# (package your code for Claude review) for the workflow. precheck.bat
+# is the pre-push quality gate. All three are personal-machine helpers,
+# not project artifacts.
 sync.bat
 upload.bat
+precheck.bat
 _unzip_temp/
 
 # Defensive — if someone accidentally extracts an upload/sync zip
