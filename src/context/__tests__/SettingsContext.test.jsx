@@ -43,9 +43,9 @@ describe('SettingsProvider — default state', () => {
     expect(result.current.applied.eidFitr[2].enabled).toBe(false);
   });
 
-  it('default eidDaysBefore is 5 (per latest decision)', () => {
+  it('default eidDaysBefore is 7 days (one week of pre-Eid banner)', () => {
     const { result } = renderHook(() => useSettings(), { wrapper });
-    expect(result.current.applied.eidDaysBefore).toBe(5);
+    expect(result.current.applied.eidDaysBefore).toBe(7);
   });
 });
 
