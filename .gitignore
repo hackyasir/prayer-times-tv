@@ -50,10 +50,21 @@ coverage/
 .yarn/
 .cache/
 
-# Local dev sync — see sync.bat (Windows) for the workflow.
-# These are personal-machine helpers, not project artifacts.
+# Local dev sync — see sync.bat (apply Claude zips) and upload.bat
+# (package your code for Claude review) for the workflow. These are
+# personal-machine helpers, not project artifacts.
 sync.bat
+upload.bat
 _unzip_temp/
+
+# Defensive — if someone accidentally extracts an upload/sync zip
+# INTO the project root via Right-click → Extract All, these folders
+# would otherwise duplicate the project contents and break the next
+# upload/sync cycle.
+prayer-times-tv-upload/
+prayer-times-tv/
+prayer-times-tv-upload.zip
+prayer-times-tv.zip
 
 # Optional: keep package-lock.json but NOT yarn/pnpm lockfiles if mixing
 # tools is undesirable. Uncomment if relevant.
