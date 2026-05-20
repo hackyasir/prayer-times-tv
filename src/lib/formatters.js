@@ -23,7 +23,11 @@ export function fmt12(date, tz) {
         hour: '2-digit', minute: '2-digit',
       }).formatToParts(date);
       const get = (t) => parts.find(p => p.type === t)?.value ?? '';
-      const h = parseInt(get('hour'), 10);
+      // Intl.DateTimeFormat with hour12:false can return "24" for midnight
+      // on some platforms (Node 18+ / V8 newer than ~10.x) instead of "00".
+      // Normalize: 24 → 0 so the AM/PM check below picks AM, not PM.
+      let h = parseInt(get('hour'), 10);
+      if (h === 24) h = 0;
       const m = parseInt(get('minute'), 10);
       return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
     }
