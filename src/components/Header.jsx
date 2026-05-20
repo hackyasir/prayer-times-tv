@@ -17,6 +17,7 @@ import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Header({
   masjidName,
+  logoDataUrl,           // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
   locName,
   hijri,
   method,
@@ -28,7 +29,19 @@ export default function Header({
   return (
     <div className="hdr">
       <div className="hdr-left">
-        <MosqueIcon activePrayer={activePrayerKey} lunarPhase={lunarPhase}/>
+        {logoDataUrl ? (
+          // Custom mosque logo uploaded via Settings. Sized to match the
+          // MosqueIcon footprint so layout doesn't shift between modes.
+          // object-fit: contain (set in CSS) keeps the user's logo aspect
+          // ratio intact regardless of source dimensions.
+          <img
+            src={logoDataUrl}
+            alt={masjidName || 'Mosque logo'}
+            className="mosque-logo-custom"
+          />
+        ) : (
+          <MosqueIcon activePrayer={activePrayerKey} lunarPhase={lunarPhase}/>
+        )}
         <div>
           {masjidName ? (
             <>

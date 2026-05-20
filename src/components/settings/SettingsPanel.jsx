@@ -32,6 +32,7 @@ import { playBeep }      from '../../lib/audio.js';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import { LANGUAGE_LABELS } from '../../i18n/I18nContext.jsx';
 import NumberStepper      from '../NumberStepper.jsx';
+import LogoUploader       from './LogoUploader.jsx';
 
 export default function SettingsPanel({
   visible,
@@ -56,6 +57,7 @@ export default function SettingsPanel({
   draftFontScale, setDraftFontScale,
   draftProgress,  setDraftProgress,
   draftMasjid,    setDraftMasjid,
+  draftLogo,      setDraftLogo,
   draftLang,      setDraftLang,
   draftAnnouncements, setDraftAnnouncements,
   draftBlackoutEnabled,   setDraftBlackoutEnabled,
@@ -72,13 +74,18 @@ export default function SettingsPanel({
   onExportSettings,
   onImportSettings,
   onResetSettings,
+  onPrintSchedule,
   // City-time context — used for Hijri preview + Jumu'ah time displays
   cityNow, cityTz,
   currentLocName, currentLat, currentLng,
   // Today's prayer times — used by the iqamah offset preview ("Fajr 4:19 → 4:39")
   todayTimes,
 }) {
-  if (!visible) return null;
+  // NOTE: hooks must run unconditionally on every render. The early
+  // `if (!visible) return null` previously sat above these hook calls,
+  // which violates react-hooks/rules-of-hooks: skipping the hooks on
+  // some renders desyncs React's hook order and can corrupt state.
+  // The hooks run on every render now; visibility is checked AFTER.
   const { t } = useT();
 
   // Active tab — local component state. Resets to 'display' each time the
@@ -98,6 +105,9 @@ export default function SettingsPanel({
   // commits. Timeout returns to safe state.
   const [resetConfirming, setResetConfirming] = useState(false);
   const resetTimeoutRef = useRef(null);
+
+  // Now that hooks are done, we can safely short-circuit when hidden.
+  if (!visible) return null;
 
   function handleResetClick() {
     if (!resetConfirming) {
@@ -426,6 +436,28 @@ export default function SettingsPanel({
           </div>
           </>)}
 
+          {activeTab === 'display' && (<>
+          {/* Print Monthly Schedule — opens a separate full-page view with
+           * the whole month's prayer times formatted for paper. Clicking
+           * this closes Settings and swaps the live dashboard for the
+           * printable view. The printable view has its own back button. */}
+          <div className="sgrp">
+            <label className="slbl">Monthly Schedule</label>
+            <button
+              type="button"
+              className="sbtn pri"
+              onClick={() => onPrintSchedule?.()}
+              style={{ width: '100%' }}
+            >
+              🖨 Open Printable Monthly Schedule
+            </button>
+            <div style={{ marginTop:5, fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em' }}>
+              Generates a printable table of the entire month's prayer times,
+              suitable for posting on the wall or distributing to visitors.
+            </div>
+          </div>
+          </>)}
+
           {activeTab === 'behaviour' && (<>
           {/* Prayer beeps — split into adhan + iqamah, each independently
               toggleable. A test button at the top plays the sound once so
@@ -495,6 +527,19 @@ export default function SettingsPanel({
                 Shown in header · leave blank to show "Prayer Times"
               </div>
             )}
+          </div>
+
+          {/* Mosque logo upload — optional branding.
+           * Reads the picked file via FileReader → base64 string, then
+           * stores it in `draftLogo`. The handler enforces a 100 KB cap to
+           * keep localStorage usage modest; larger files are rejected with
+           * a small inline warning rather than silently truncated. */}
+          <div className="sgrp">
+            <label className="slbl">Mosque Logo (optional)</label>
+            <LogoUploader
+              value={draftLogo}
+              onChange={setDraftLogo}
+            />
           </div>
           </>)}
 

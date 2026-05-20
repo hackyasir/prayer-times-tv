@@ -37,5 +37,9 @@ export function wmoEmoji(code) {
  */
 export function wmoText(code) {
   const s = WMO[code] ?? 'Unknown';
+  // Strip any non-ASCII characters (e.g. icons embedded in dictionary
+  // entries by older code). The \x00 in the regex range is intentional
+  // — we mean "everything outside ASCII printable".
+  // eslint-disable-next-line no-control-regex
   return s.replace(/[^\x00-\x7F]+/g, '').trim();
 }

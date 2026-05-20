@@ -37,8 +37,16 @@ import { STORAGE_KEY } from '../lib/constants.js';
 export const DEFAULTS = {
   lat: 43.6532, lng: -79.3832, locName: 'Toronto, Ontario, Canada',
   cityTz: 'America/Toronto', masjidName: '',
+  // ── Mosque branding ──────────────────────────────────────────────────
+  // Optional logo uploaded by the admin. Stored as a base64 data URL so
+  // it survives in localStorage with no backend or file system access.
+  // - Empty string = no logo; UI falls back to the built-in MosqueIcon SVG.
+  // - When set, the header replaces the default icon with this image.
+  // - Size capped at ~100 KB in the upload handler to prevent storage bloat
+  //   (localStorage has a ~5 MB total budget on most browsers).
+  logoDataUrl: '',
   method: 'MWL', shadow: 1,
-  iqamah: { fajr: 20, dhuhr: 20, asr: 20, maghrib: 10, isha: 20 },
+  iqamah: { fajr: 30, dhuhr: 30, asr: 30, maghrib: 0, isha: 20 },
   // ── Auto-iqamah (Smart Mode) ─────────────────────────────────────────────
   // When iqamahAutoCalc is true, the iqamah offsets above are IGNORED at
   // runtime. Instead, iqamah is computed daily as:
@@ -46,10 +54,10 @@ export const DEFAULTS = {
   //   :00 / :15 / :30 / :45.
   // Maghrib's default buffer is 0 (immediate iqamah is common at sunset).
   // OPT-IN: default OFF so existing setups behave identically.
-  iqamahAutoCalc: false,
+  iqamahAutoCalc: true,
   iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 },
   jumuah: [
-    { time: '13:00', iqamah: 20, enabled: true  },
+    { time: '13:00', iqamah: 20, enabled: true },
     { time: '13:45', iqamah: 20, enabled: false },
     { time: '14:30', iqamah: 20, enabled: false },
     { time: '15:15', iqamah: 20, enabled: false },
@@ -70,18 +78,18 @@ export const DEFAULTS = {
   // No `label` field — banner label is auto-set from the upcoming Eid kind
   // (Fitr or Adha) via Hijri calendar detection.
   eidFitr: [
-    { time: '08:00', iqamah: 20, enabled: true  },
-    { time: '09:00', iqamah: 20, enabled: false },
-    { time: '10:00', iqamah: 20, enabled: false },
-    { time: '11:00', iqamah: 20, enabled: false },
+    { time: '08:00', iqamah: 10, enabled: true },
+    { time: '09:00', iqamah: 10, enabled: false },
+    { time: '10:00', iqamah: 10, enabled: false },
+    { time: '11:00', iqamah: 10, enabled: false },
   ],
   eidAdha: [
-    { time: '07:30', iqamah: 20, enabled: true  },
-    { time: '08:30', iqamah: 20, enabled: false },
-    { time: '09:30', iqamah: 20, enabled: false },
-    { time: '10:30', iqamah: 20, enabled: false },
+    { time: '07:30', iqamah: 10, enabled: true },
+    { time: '08:30', iqamah: 10, enabled: false },
+    { time: '09:30', iqamah: 10, enabled: false },
+    { time: '10:30', iqamah: 10, enabled: false },
   ],
-  eidDaysBefore: 5,    // show Eid banner this many days before the actual Eid
+  eidDaysBefore: 7,    // show Eid banner this many days before the actual Eid
   hijriOffset: 0,    // ±days adjustment for Hijri date display
   highLatRule: 'middleOfNight', // for cities above ~48° latitude
   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
@@ -166,7 +174,13 @@ function loadSettings() {
   } catch { return DEFAULTS; }
 }
 function saveSettings(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch { }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch {
+    // Quota exceeded or storage unavailable (e.g. Safari private mode).
+    // Silently ignore — settings won't persist this session but the app
+    // continues working with in-memory state. Logging would spam console.
+  }
 }
 
 // ── Context ──────────────────────────────────────────────────────────────────
