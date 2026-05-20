@@ -67,6 +67,29 @@ src/
 
 ---
 
+## When to write tests for new code
+
+Not every new feature needs tests. The rule used in this project:
+
+**Write tests for:**
+- New `lib/*` functions — pure logic with edge cases is the highest test-ROI
+- Data migrations or settings persistence — silent failures are dangerous
+- Logic that's **duplicated across multiple files** — drift risk
+- Bug fixes — add a regression test that fails BEFORE the fix and passes after
+- Code with subtle edge cases (boundary values, null inputs, rounding, time math)
+
+**Skip tests for:**
+- Pure visual layout / CSS — verify by looking at the screen
+- Trivial prop drilling and state passthroughs
+- Component wiring without computation (e.g. button → callback)
+- Conditional rendering with no logic (e.g. "show this when prop is set")
+
+**Example of a borderline call:** The `LogoUploader` component has file-size and file-type checks. We didn't add tests because broken validation surfaces immediately as a visible error message on upload — silent failure is unlikely.
+
+**Counter-example:** The `computeIqamah` helper has tests because the same logic was inlined in two files (App.jsx and PrintableSchedule.jsx). We extracted it to `lib/iqamah.js`, then added tests to prevent the two callsites drifting.
+
+---
+
 ## What's covered
 
 | File | Tests | Type | Focus |
@@ -74,10 +97,11 @@ src/
 | `lib/__tests__/hijri.test.js` | 25 | Unit | Gregorian↔Hijri conversion; Eid auto-detection; **Hijri offset bug regression** |
 | `lib/__tests__/formatters.test.js` | 30 | Unit | Time formatting, countdown, compass bearings, edge cases |
 | `lib/__tests__/prayerCalc.test.js` | 20 | Unit | All 12 calculation methods, prayer ordering invariants, madhab, high-latitude |
+| `lib/__tests__/iqamah.test.js` | 25 | Unit | Manual / auto-rounding modes; **safety floor (iqamah never before adhan)**; Maghrib buf=0 convention |
 | `components/__tests__/NumberStepper.test.jsx` | 20 | Component | iOS spinner replacement, clamping, disabled states, digit-only input |
 | `context/__tests__/SettingsContext.test.jsx` | 20 | Component | **Legacy migrations** (eid array → eidFitr/eidAdha, chimeEnabled → split), draft/applied separation, persistence |
 
-**~115 tests total.**
+**~140 tests total.**
 
 ### Regression tests
 

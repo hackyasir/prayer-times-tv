@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  METHOD_LABELS,
   HADITHS,
   GEO_API,
   SETTINGS_PIN,
@@ -33,6 +32,7 @@ import Clock               from './components/Clock.jsx';
 import PrayerList          from './components/PrayerList.jsx';
 import PinOverlay          from './components/PinOverlay.jsx';
 import SettingsPanel       from './components/settings/SettingsPanel.jsx';
+import PrintableSchedule   from './components/PrintableSchedule.jsx';
 // Layout widgets — pulled into the surrounding chrome (header / above
 // clock / below prayer list / under countdown). These are the dashboard's
 // only widget set after removing the classic bottom-band cards.
@@ -89,7 +89,7 @@ export default function App() {
 
   // Destructure applied → individual reactive values used throughout App.jsx
   const {
-    lat, lng, locName, masjidName, cityTz,
+    lat, lng, locName, masjidName, logoDataUrl, cityTz,
     method, shadow, highLatRule,
     iqamah: rawIqamah, jumuah, eidFitr, eidAdha, eidDaysBefore,
     iqamahAutoCalc, iqamahAutoBuffers,
@@ -98,26 +98,9 @@ export default function App() {
     blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
   } = applied;
 
-  // Setter shims — preserve the existing setLat/setMethod/etc API so the
-  // rest of App.jsx (still using direct-style mutations) keeps working.
-  // Each shim spreads {key:value} into updateApplied which merges + persists.
-  const setLat          = v => updateApplied({ lat: v });
-  const setLng          = v => updateApplied({ lng: v });
-  const setLocName      = v => updateApplied({ locName: v });
-  const setMasjidName   = v => updateApplied({ masjidName: v });
-  const setCityTz       = v => updateApplied({ cityTz: v });
-  const setMethod       = v => updateApplied({ method: v });
-  const setShadow       = v => updateApplied({ shadow: v });
-  const setIqamah       = v => updateApplied({ iqamah: v });
-  const setJumuah       = v => updateApplied({ jumuah: v });
-  const setEid          = v => updateApplied({ eid: v });
-  const setEidDaysBefore= v => updateApplied({ eidDaysBefore: v });
-  const setHijriOffset  = v => updateApplied({ hijriOffset: v });
-  const setTheme        = v => updateApplied({ theme: v });
-  const setChimeAdhan   = v => updateApplied({ chimeAdhan: v });
-  const setChimeIqamah  = v => updateApplied({ chimeIqamah: v });
-  const setFontScale    = v => updateApplied({ fontScale: v });
-  const setProgressStyle= v => updateApplied({ progressStyle: v });
+  // (Setter shims for setLat/setMethod/etc. were removed — App.jsx now
+  // uses updateApplied({...}) directly. The shims were dead code from an
+  // earlier refactor.)
 
   // Draft mirror — destructure drafts. Each `setDraftX(value)` updates ONE
   // field via updateDrafts. The shims accept either a value or a function
@@ -174,6 +157,7 @@ export default function App() {
 
   // ── Non-persistent UI state (stays local — not part of settings) ────────
   const [draftMasjid, setDraftMasjid] = useState('');
+  const [draftLogo,   setDraftLogo]   = useState('');
   const [testFriday,  setTestFriday]  = useState(false);
   const [testPrayer,  setTestPrayer]  = useState(null); // null = use real active prayer
   const [testBlackoutUntil, setTestBlackoutUntil] = useState(null); // Date | null
@@ -199,6 +183,13 @@ export default function App() {
   const [pinInput,   setPinInput]   = useState('');
   const [pinError,   setPinError]   = useState(false);
   const [showSett,   setShowSett]   = useState(false);
+  // ── Printable monthly schedule view ─────────────────────────────────
+  // When true, App swaps out the live dashboard for the static printable
+  // schedule. Triggered from Settings → Display tab. Plain boolean state
+  // (no URL routing) — kiosk usage is single-page; we don't need history
+  // navigation. Returns false (back to dashboard) via the schedule's own
+  // close button.
+  const [showPrint,  setShowPrint]  = useState(false);
   // City search state
   const [searchQuery,   setSearchQuery]   = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -276,7 +267,13 @@ export default function App() {
         // Batch all geolocation fields into one updateApplied — saves to
         // localStorage exactly once and triggers a single re-render.
         let tz = null;
-        try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+        try {
+          tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        } catch {
+          // Some browsers (very old Safari, locked-down kiosks) throw on
+          // Intl.DateTimeFormat with no args. tz stays null; downstream
+          // code falls back to the device's UTC offset.
+        }
         updateApplied({
           lat:     pos.coords.latitude,
           lng:     pos.coords.longitude,
@@ -302,7 +299,6 @@ export default function App() {
     tomorrowTimes,
     yesterdayTimes,
     active: rawActive,
-    activeStart,
     next: rawNext,
     secsToNext: rawSecsToNext,
     ringProgress,
@@ -392,10 +388,6 @@ export default function App() {
   }, [cityNow.toDateString(), hijriOffset]);
   const qibla   = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
 
-  const dayMins = todayTimes.sunrise && todayTimes.maghrib
-    ? Math.round((todayTimes.maghrib - todayTimes.sunrise) / 60000)
-    : null;
-
   // ── Parametric inputs for IslamicGeometryEngine ──────────────────────────
   // Sun elevation: 0° = horizon, +90° = zenith, negative = below horizon
   // Approximated from current time relative to sunrise/solar-noon/sunset
@@ -411,8 +403,6 @@ export default function App() {
         : -18 * Math.min(1, (nowMs - ssMs) / 3600000);
     }
     // Day — sine arc peaking at solar noon
-    const noon   = (srMs + ssMs) / 2;
-    const half   = (ssMs - srMs) / 2;
     const maxEl  = 90 - Math.abs(lat - 23.5); // approximate max elevation
     return maxEl * Math.sin(Math.PI * (nowMs - srMs) / (ssMs - srMs));
   }, [now, todayTimes, lat]);
@@ -596,6 +586,7 @@ export default function App() {
     beginEditing();
     // Also reset the non-persistent UI state (search, masjid name preview)
     setDraftMasjid(masjidName);
+    setDraftLogo(logoDataUrl);
     setSearchQuery('');
     setSearchResults([]);
     setSearchStatus('idle');
@@ -752,6 +743,7 @@ export default function App() {
       blackoutOpacity:   sanitizedBlackoutOpacity,
       iqamahAutoBuffers: sanitizedAutoBuf,
       masjidName:        newMasjid,
+      logoDataUrl:       draftLogo || '',
     };
     if (selectedCity) {
       newApplied.lat     = selectedCity.lat;
@@ -781,6 +773,35 @@ export default function App() {
         setShowSett(false);
       },
       () => alert(t('alert.geoFailed'))
+    );
+  }
+
+  // ── Early return: printable monthly schedule view ──────────────────
+  // When the user clicks "Print Monthly Schedule" in Settings, we render
+  // ONLY the schedule (no header, no footer, no widgets) so it occupies
+  // the full viewport and prints cleanly. The schedule's own close
+  // button flips the flag back to show the live dashboard.
+  if (showPrint) {
+    return (
+      <PrintableSchedule
+        lat={lat}
+        lng={lng}
+        cityTz={cityTz}
+        method={method}
+        shadow={shadow}
+        highLatRule={highLatRule}
+        iqamah={rawIqamah}
+        iqamahAutoCalc={iqamahAutoCalc}
+        iqamahAutoBuffers={iqamahAutoBuffers}
+        hijriOffset={hijriOffset}
+        masjidName={masjidName}
+        locName={locName}
+        logoDataUrl={logoDataUrl}
+        jumuah={jumuah}
+        eidFitr={eidFitr}
+        eidAdha={eidAdha}
+        onClose={() => setShowPrint(false)}
+      />
     );
   }
 
@@ -821,6 +842,7 @@ export default function App() {
         {/* Header */}
         <Header
           masjidName={masjidName}
+          logoDataUrl={logoDataUrl}
           locName={locName}
           hijri={hijri}
           method={method}
@@ -995,6 +1017,7 @@ export default function App() {
         draftFontScale={draftFontScale}  setDraftFontScale={setDraftFontScale}
         draftProgress={draftProgress}    setDraftProgress={setDraftProgress}
         draftMasjid={draftMasjid}    setDraftMasjid={setDraftMasjid}
+        draftLogo={draftLogo}        setDraftLogo={setDraftLogo}
         draftLang={draftLang}        setDraftLang={setDraftLang}
         draftAnnouncements={draftAnnouncements}  setDraftAnnouncements={setDraftAnnouncements}
         draftBlackoutEnabled={draftBlackoutEnabled}      setDraftBlackoutEnabled={setDraftBlackoutEnabled}
@@ -1011,6 +1034,7 @@ export default function App() {
         onExportSettings={exportSettings}
         onImportSettings={importSettings}
         onResetSettings={resetSettings}
+        onPrintSchedule={() => { setShowSett(false); setShowPrint(true); }}
         cityNow={cityNow}
         cityTz={cityTz}
         currentLocName={locName}

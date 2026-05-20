@@ -97,7 +97,7 @@ export default [
   // ── Vitest config + setup file context ──────────────────────────────
   // These run in Node environment, not the browser.
   {
-    files: ['vitest.config.js', 'src/tests/setup.js'],
+    files: ['vitest.config.js', 'vite.config.js', 'src/tests/setup.js'],
     languageOptions: {
       globals: {
         ...globals.node,

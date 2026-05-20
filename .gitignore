@@ -50,6 +50,11 @@ coverage/
 .yarn/
 .cache/
 
+# Local dev sync — see sync.bat (Windows) for the workflow.
+# These are personal-machine helpers, not project artifacts.
+sync.bat
+_unzip_temp/
+
 # Optional: keep package-lock.json but NOT yarn/pnpm lockfiles if mixing
 # tools is undesirable. Uncomment if relevant.
 # yarn.lock

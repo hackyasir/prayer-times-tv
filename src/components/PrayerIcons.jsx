@@ -25,7 +25,9 @@
 // pair (filled half-suns) frames daylight. Dhuhr and Asr are the unique
 // daylight states between.
 
-import React from 'react';
+// (No React default-import needed — Vite's @vitejs/plugin-react handles
+// the JSX transform automatically. Was a leftover from React 16-style.)
+
 
 const COMMON = {
   width: '1em',

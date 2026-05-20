@@ -1,0 +1,539 @@
+/* ── PrintableSchedule styles ────────────────────────────────────────────
+ *
+ * Two layout modes:
+ *   - On-screen: dark theme to match the rest of the app, controls visible.
+ *   - Print:     black-on-white, ink-conserving, controls hidden, table
+ *                fits an A4 / Letter page in portrait.
+ *
+ * Print rules use `@media print` so they only activate when the user
+ * triggers File → Print or window.print(). The `.no-print` helper class
+ * hides any element from the print output (used on the back/month-nav/print
+ * buttons at the top of the page).
+ */
+
+/* ── Container ───────────────────────────────────────────────────────── */
+/* The printable view occupies the full viewport. Because `body` and `#root`
+ * have `overflow:hidden` (correct for the kiosk dashboard — no scrolling
+ * on a TV), the print view needs its OWN scroll context. Without this,
+ * content beyond the viewport (table tail end, footer) gets clipped and
+ * the user can't reach it.
+ *
+ * `height: 100vh` + `overflow-y: auto` = the view fills the screen and
+ * scrolls internally when content exceeds it. Body stays unscrollable.
+ *
+ * In print, `@media print` rules override these (auto height, no scroll). */
+.printable-schedule {
+  background: var(--t-bg);
+  color: var(--t-text);
+  height: 100vh;
+  overflow-y: auto;
+  padding: 24px;
+  font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+}
+
+/* ── On-screen control row ──────────────────────────────────────────── */
+/* Sticks to the top of the printable view so the back/print/month-nav
+ * controls stay reachable while scrolling through the table. Hidden in
+ * print (covered by the no-print rule below). */
+.ps-controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--t-bg);
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ps-back-btn,
+.ps-print-btn {
+  background: rgba(var(--t-accent-rgb), .12);
+  border: 1px solid rgba(var(--t-accent-rgb), .35);
+  color: var(--t-accent);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background .2s;
+}
+.ps-back-btn:hover,
+.ps-print-btn:hover {
+  background: rgba(var(--t-accent-rgb), .22);
+}
+
+.ps-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ps-month-nav button {
+  background: transparent;
+  border: 1px solid var(--t-border);
+  color: var(--t-accent);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  font-size: 20px;
+  cursor: pointer;
+}
+.ps-month-nav button:hover {
+  background: rgba(var(--t-accent-rgb), .12);
+}
+
+.ps-month-label {
+  font-size: 18px;
+  color: var(--t-text);
+  font-weight: 600;
+  letter-spacing: .05em;
+  min-width: 180px;
+  text-align: center;
+}
+
+/* ── Printable page (the actual content) ────────────────────────────── */
+.ps-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  color: #111111;
+  padding: 36px 32px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
+}
+
+/* ── Header (mosque branding) ───────────────────────────────────────── */
+.ps-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #C9A84C;
+  margin-bottom: 18px;
+}
+
+.ps-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.ps-header-text {
+  flex: 1;
+}
+
+.ps-title {
+  margin: 0;
+  font-family: 'Amiri', 'Times New Roman', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: .02em;
+}
+
+.ps-subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-top: 3px;
+  letter-spacing: .05em;
+}
+
+.ps-month {
+  font-size: 16px;
+  color: #C9A84C;
+  font-weight: 600;
+  margin-top: 6px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.ps-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+/* Sticky thead — column headers stay visible while scrolling the table
+ * on-screen. position:sticky on <th> works on every modern browser; the
+ * `top` value matches the height the controls bar reserves so headers
+ * sit immediately under the controls. Print mode resets to static. */
+.ps-table thead th {
+  position: sticky;
+  top: 60px;
+  z-index: 5;
+}
+
+.ps-table th {
+  text-align: center;
+  padding: 8px 4px;
+  background: #F4EFE2;
+  color: #444;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  border-bottom: 2px solid #C9A84C;
+}
+
+/* Stacked column labels — primary name on top (Fajr, Maghrib), and an
+ * alias on the line below in smaller italic text (Suhoor, Iftaar).
+ * Keeps the column width unchanged. */
+.ps-col-primary {
+  display: block;
+}
+.ps-col-alias {
+  display: block;
+  margin-top: 1px;
+  font-size: 9px;
+  font-weight: 500;
+  font-style: italic;
+  color: #777;
+  letter-spacing: .04em;
+  text-transform: none;
+}
+
+.ps-table td {
+  padding: 6px 4px;
+  text-align: center;
+  border-bottom: 1px solid #E8E0CC;
+  vertical-align: middle;
+}
+
+.ps-table tr:nth-child(even) td {
+  background: #FAF7EE;
+}
+
+/* Friday rows — subtle highlight since Jumu'ah replaces Dhuhr */
+.ps-table tr.ps-friday td {
+  background: #FFF8E1 !important;
+}
+.ps-table tr.ps-friday .ps-day {
+  color: #C9A84C;
+  font-weight: 700;
+}
+
+/* Monday and Thursday — sunnah-fasting day highlight (pale green).
+ * Distinct from Friday yellow so a viewer can see at a glance which
+ * recommendation each row falls under. Lower visual weight than Friday
+ * (Friday is mandatory Jumu'ah; Mon/Thu is voluntary fasting). */
+.ps-table tr.ps-sunnah td {
+  background: #F0F7E8 !important;
+}
+.ps-table tr.ps-sunnah .ps-day {
+  color: #4F7A2E;
+  font-weight: 700;
+}
+/* Friday wins when both apply (Friday CAN'T overlap with Mon/Thu, but the
+ * rule order keeps Friday styling stable for the edge case). */
+.ps-table tr.ps-friday.ps-sunnah td {
+  background: #FFF8E1 !important;
+}
+
+/* White-day marker (✦) — Hijri 13/14/15 next to the Hijri date column.
+ * Small gold sparkle that stays visible regardless of row background.
+ * Used because background colors are reserved for weekly markers
+ * (Friday, Mon/Thu); the monthly white-day marker rides separately. */
+.ps-white-day {
+  color: #C9A84C;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.ps-day-cell {
+  width: 64px;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.ps-weekday {
+  display: inline-block;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: .06em;
+  margin-right: 5px;
+}
+
+.ps-date {
+  display: inline-block;
+  font-weight: 700;
+  color: #111;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-hijri {
+  width: 110px;
+  color: #777;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.ps-time-cell {
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.ps-adhan {
+  font-weight: 600;
+  color: #111;
+  font-size: 12px;
+}
+
+.ps-iqamah {
+  font-size: 10.5px;
+  color: #888;
+  margin-top: 1px;
+}
+
+/* Sunrise column is informational only (no iqamah) — gentle tint to
+ * visually separate it from prayer columns. */
+.ps-prayer-col.ps-sunrise {
+  background: #F4EFE2;
+}
+.ps-table td:nth-child(5) {  /* Sunrise time column — keep tinted in body too */
+  color: #888;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+/* Two-column grid: configuration on the left, recurring info / legend
+ * on the right. Saves vertical space — what was 4 stacked lines becomes
+ * 2 lines × 2 columns. Falls back to a single column on narrow viewports
+ * via auto-fit so the printable view stays usable when previewed on a
+ * phone. */
+.ps-footer {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #E8E0CC;
+  font-size: 11px;
+  color: #555;
+  line-height: 1.6;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 36px;
+}
+
+.ps-footer-col {
+  min-width: 0;  /* lets long content wrap inside the grid cell */
+}
+
+.ps-footer-row {
+  margin-bottom: 4px;
+}
+
+.ps-footer-row strong {
+  color: #111;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.ps-footer-note {
+  color: #999;
+  font-style: italic;
+}
+
+.ps-footer-jumuah {
+  white-space: nowrap;
+}
+
+/* Legend block — explains the row background colors + white-day icon.
+ * Items wrap onto multiple lines on narrow widths via flex-wrap. */
+.ps-footer-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: center;
+  font-size: 10.5px;
+  color: #666;
+}
+
+.ps-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+/* Small color swatch matching the row background — gives the reader an
+ * immediate visual key. Border keeps it visible against white. */
+.ps-legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border: 1px solid #C9A84C;
+  border-radius: 2px;
+}
+.ps-legend-friday { background: #FFF8E1; }
+.ps-legend-sunnah { background: #F0F7E8; border-color: #8FB36A; }
+
+.ps-legend-icon {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: #C9A84C;
+  font-weight: 700;
+}
+
+/* ── Print media query ──────────────────────────────────────────────── */
+/* When the user triggers File → Print (Cmd/Ctrl+P), browser CSS prints
+ * exactly what's on screen. We strip the dark theme and any UI chrome
+ * so the printed page looks like a clean document. */
+@media print {
+  /* Hide the on-screen controls — back button, month nav, print button */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Sticky positioning is on-screen only. In print, sticky elements
+   * would otherwise repeat awkwardly across pages or interact badly
+   * with the table layout. Reset everything to static. */
+  .ps-controls,
+  .ps-table thead th {
+    position: static !important;
+    background: #EFEFEF !important;
+  }
+
+  /* Use the entire page — no card framing.
+   * Tight margins because we need every vertical pixel to fit 31 rows
+   * AND the footer on a single A4/Letter page. */
+  @page {
+    size: portrait;
+    margin: 8mm 10mm;
+  }
+
+  .printable-schedule {
+    background: #FFFFFF !important;
+    color: #000 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
+  .ps-page {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  /* Even tighter header — saves vertical space for the footer. */
+  .ps-header {
+    padding-bottom: 5px !important;
+    margin-bottom: 6px !important;
+    gap: 10px !important;
+  }
+  .ps-title { font-size: 16px !important; }
+  .ps-subtitle { font-size: 10px !important; margin-top: 1px !important; }
+  .ps-month { font-size: 10px !important; margin-top: 2px !important; }
+  .ps-logo { width: 36px !important; height: 36px !important; }
+
+  /* Table — compressed cell padding + smaller text so all 31 rows fit
+   * on a single A4/Letter page WITH the footer below it. */
+  .ps-table {
+    font-size: 9.5px;
+  }
+  .ps-table th {
+    padding: 3px 3px !important;
+    font-size: 9px !important;
+  }
+  .ps-table td {
+    padding: 2px 3px !important;
+  }
+  .ps-adhan {
+    font-size: 10px !important;
+    line-height: 1.05 !important;
+  }
+  .ps-iqamah {
+    font-size: 8.5px !important;
+    line-height: 1.05 !important;
+    margin-top: 0 !important;
+  }
+  .ps-weekday { font-size: 8.5px !important; }
+  .ps-date    { font-size: 10px !important; }
+  .ps-hijri   { font-size: 8.5px !important; }
+
+  /* Tighter footer — still readable but compact. The 2-column grid stays
+   * (saves vertical space); we just shrink fonts and tighten gaps. */
+  .ps-footer {
+    margin-top: 5px !important;
+    padding-top: 4px !important;
+    font-size: 8.5px !important;
+    line-height: 1.3 !important;
+    gap: 4px 24px !important;
+  }
+  .ps-footer-row {
+    margin-bottom: 2px !important;
+  }
+  .ps-footer-legend {
+    font-size: 8px !important;
+    gap: 2px 10px !important;
+  }
+  .ps-legend-swatch {
+    width: 10px !important;
+    height: 7px !important;
+  }
+  .ps-col-alias {
+    font-size: 7.5px !important;
+  }
+  /* Print-safe sunnah row tint */
+  .ps-table tr.ps-sunnah td {
+    background: #F0F7E8 !important;
+  }
+
+  /* Print-safe colors — some browsers/printers may otherwise drop
+   * background tints to save ink. */
+  .ps-table th {
+    background: #EFEFEF !important;
+    color: #000 !important;
+  }
+  .ps-table tr:nth-child(even) td {
+    background: #F7F7F7 !important;
+  }
+  .ps-table tr.ps-friday td {
+    background: #FFF4D6 !important;
+  }
+
+  /* Force backgrounds to print (Chrome default is to strip them) */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Avoid splitting the table awkwardly across pages */
+  .ps-table { page-break-inside: avoid; }
+  .ps-table tr { page-break-inside: avoid; }
+}
+
+/* ── Jumu'ah cell on Friday rows ──────────────────────────────────────────
+ * The Dhuhr column shows Jumu'ah time on Fridays. The small "JUMU'AH"
+ * caption above the times makes the substitution obvious so readers
+ * don't mistake it for a typo in the Dhuhr column. */
+.ps-jumuah-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #C9A84C;
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+@media print {
+  /* Tighter label in print to keep row heights consistent. */
+  .ps-jumuah-label {
+    font-size: 7px !important;
+  }
+}

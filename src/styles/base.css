@@ -263,3 +263,17 @@ input[type="number"] {
   height: clamp(40px, 4vw, 80px);
   flex-shrink: 0;
 }
+
+/* ── Custom mosque logo (uploaded via Settings) ───────────────────────────
+ * Matches the MosqueIcon SVG footprint so swapping between the built-in
+ * icon and a user-uploaded logo doesn't shift adjacent layout (the masjid
+ * name + subtitle column to its right). object-fit:contain keeps user
+ * logos at their natural aspect ratio inside the square slot — wide logos
+ * are letterboxed top/bottom rather than stretched. */
+.mosque-logo-custom {
+  width: clamp(40px, 4vw, 80px);
+  height: clamp(40px, 4vw, 80px);
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
