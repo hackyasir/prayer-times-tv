@@ -55,7 +55,7 @@ jobs:
           VITE_SETTINGS_PIN: ${{ secrets.VITE_SETTINGS_PIN }}
           VITE_SHOW_TEST_BUTTONS: ${{ vars.VITE_SHOW_TEST_BUTTONS || 'true' }}
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
