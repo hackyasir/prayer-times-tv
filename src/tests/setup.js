@@ -31,7 +31,9 @@ if (typeof globalThis.localStorage === 'undefined') {
     removeItem: (k) => store.delete(k),
     clear: () => store.clear(),
     key: (i) => Array.from(store.keys())[i] ?? null,
-    get length() { return store.size; },
+    get length() {
+      return store.size;
+    },
   };
 }
 

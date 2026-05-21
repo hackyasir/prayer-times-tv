@@ -30,12 +30,12 @@ export default function BlackoutOverlay({ active, endsAt, now, opacity = 100, on
   // bottom so the user sees feedback while holding.
   const [holdProgress, setHoldProgress] = useState(0);
   const holdStartRef = useRef(null);
-  const rafRef       = useRef(null);
+  const rafRef = useRef(null);
 
   // Tick the hold progress while the user is holding. Driven by
   // requestAnimationFrame for smooth visual feedback.
   function startHold() {
-    if (holdStartRef.current !== null) return;  // already holding
+    if (holdStartRef.current !== null) return; // already holding
     holdStartRef.current = performance.now();
     const tick = () => {
       const elapsed = performance.now() - holdStartRef.current;
@@ -62,7 +62,9 @@ export default function BlackoutOverlay({ active, endsAt, now, opacity = 100, on
   // Clean up RAF on unmount or when overlay becomes inactive
   useEffect(() => {
     if (!active && rafRef.current) cancelHold();
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [active]);
 
   if (!active) return null;
@@ -104,7 +106,7 @@ export default function BlackoutOverlay({ active, endsAt, now, opacity = 100, on
         <>
           <div className="blackout-hold-hint">{t('blackout.holdToDismiss')}</div>
           <div className="blackout-hold-bar">
-            <div className="blackout-hold-bar-fill" style={{ width: `${holdProgress * 100}%` }}/>
+            <div className="blackout-hold-bar-fill" style={{ width: `${holdProgress * 100}%` }} />
           </div>
         </>
       )}

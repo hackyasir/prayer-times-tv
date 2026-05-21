@@ -18,14 +18,14 @@ import { useT } from '../i18n/I18nContext.jsx';
 
 // Bullet separator used between items AND between the two track copies.
 // Em-spaces give a wide gap so each announcement reads as standalone.
-const SEP = '\u2003\u2003·\u2003\u2003';   // em-space × 2 + bullet + em-space × 2
+const SEP = '\u2003\u2003·\u2003\u2003'; // em-space × 2 + bullet + em-space × 2
 
 export default function Ticker({ announcements }) {
   const { isRTL } = useT();
 
   const items = (announcements || '')
     .split('\n')
-    .map(s => s.trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 
   if (items.length === 0) return null;
@@ -38,7 +38,9 @@ export default function Ticker({ announcements }) {
     <div className="ticker" data-dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="ticker-track">
         <span className="ticker-segment">{segment}</span>
-        <span className="ticker-segment" aria-hidden="true">{segment}</span>
+        <span className="ticker-segment" aria-hidden="true">
+          {segment}
+        </span>
       </div>
     </div>
   );

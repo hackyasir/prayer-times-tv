@@ -1,46 +1,41 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import {
-  HADITHS,
-  GEO_API,
-  SETTINGS_PIN,
-  SHOW_TEST_BTNS,
-} from './lib/constants.js';
+import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, findUpcomingEid } from './lib/hijri.js';
 import { addMins } from './lib/formatters.js';
 import { buildThemeVars } from './lib/themes.js';
 
 // Custom hooks — pure logic extracted to their own files
-import useCityTime     from './hooks/useCityTime.js';
-import usePrayerTimes  from './hooks/usePrayerTimes.js';
-import useWeather      from './hooks/useWeather.js';
-import useAudioUnlock  from './hooks/useAudioUnlock.js';
-import useChime        from './hooks/useChime.js';
-import useLunarPhase   from './hooks/useLunarPhase.js';
+import useCityTime from './hooks/useCityTime.js';
+import usePrayerTimes from './hooks/usePrayerTimes.js';
+import useWeather from './hooks/useWeather.js';
+import useAudioUnlock from './hooks/useAudioUnlock.js';
+import useChime from './hooks/useChime.js';
+import useLunarPhase from './hooks/useLunarPhase.js';
 import useBlackoutMode from './hooks/useBlackoutMode.js';
 
 // Settings context — wraps applied + draft state, persists to localStorage
 import { useSettings, DEFAULTS } from './context/SettingsContext.jsx';
-import { useT }        from './i18n/I18nContext.jsx';
+import { useT } from './i18n/I18nContext.jsx';
 
 // Visual components — extracted to their own files
-import Header              from './components/Header.jsx';
-import Footer              from './components/Footer.jsx';
-import Ticker              from './components/Ticker.jsx';
-import BlackoutOverlay     from './components/BlackoutOverlay.jsx';
-import Clock               from './components/Clock.jsx';
-import PrayerList          from './components/PrayerList.jsx';
-import PinOverlay          from './components/PinOverlay.jsx';
-import SettingsPanel       from './components/settings/SettingsPanel.jsx';
-import PrintableSchedule   from './components/PrintableSchedule.jsx';
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
+import Ticker from './components/Ticker.jsx';
+import BlackoutOverlay from './components/BlackoutOverlay.jsx';
+import Clock from './components/Clock.jsx';
+import PrayerList from './components/PrayerList.jsx';
+import PinOverlay from './components/PinOverlay.jsx';
+import SettingsPanel from './components/settings/SettingsPanel.jsx';
+import PrintableSchedule from './components/PrintableSchedule.jsx';
 // Layout widgets — pulled into the surrounding chrome (header / above
 // clock / below prayer list / under countdown). These are the dashboard's
 // only widget set after removing the classic bottom-band cards.
-import SunArc              from './components/widgets/SunArc.jsx';
-import MoonArc             from './components/widgets/MoonArc.jsx';
-import WeatherStrip        from './components/widgets/WeatherStrip.jsx';
-import FastBar             from './components/widgets/FastBar.jsx';
-import HeaderQibla         from './components/widgets/HeaderQibla.jsx';
+import SunArc from './components/widgets/SunArc.jsx';
+import MoonArc from './components/widgets/MoonArc.jsx';
+import WeatherStrip from './components/widgets/WeatherStrip.jsx';
+import FastBar from './components/widgets/FastBar.jsx';
+import HeaderQibla from './components/widgets/HeaderQibla.jsx';
 
 // ── App-only static data ─────────────────────────────────────────────────────
 // HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS now live in lib/constants.js
@@ -55,7 +50,6 @@ import HeaderQibla         from './components/widgets/HeaderQibla.jsx';
 // Theme CSS variables (--t-*) are still injected dynamically below since
 // they change when the user picks a different theme in Settings.
 
-
 // ── Audio: prayer beep ─────────────────────────────────────────────────────
 // _getBeep + primeAudio + playBeep now live in src/lib/audio.js
 // (imported at top of file)
@@ -66,7 +60,6 @@ import HeaderQibla         from './components/widgets/HeaderQibla.jsx';
 // DEFAULTS + loadSettings + saveSettings now live in src/context/SettingsContext.jsx
 // (the SettingsProvider in main.jsx wraps the app and provides them via useSettings).
 
-
 import IslamicGeometryEngine from './IslamicGeometryEngine';
 
 export default function App() {
@@ -74,13 +67,7 @@ export default function App() {
   // applied = currently in effect; drafts = what the Settings panel edits.
   // localStorage is owned by the SettingsProvider — direct setters here
   // (e.g. setLat from geolocation) call updateApplied which persists.
-  const {
-    applied,
-    drafts,
-    updateApplied,
-    updateDrafts,
-    beginEditing,
-  } = useSettings();
+  const { applied, drafts, updateApplied, updateDrafts, beginEditing } = useSettings();
 
   // Translation hook — used for alerts and any inline strings rendered
   // directly from App.jsx. Most translated text lives in child components
@@ -89,13 +76,33 @@ export default function App() {
 
   // Destructure applied → individual reactive values used throughout App.jsx
   const {
-    lat, lng, locName, masjidName, logoDataUrl, cityTz,
-    method, shadow, highLatRule,
-    iqamah: rawIqamah, jumuah, eidFitr, eidAdha, eidDaysBefore,
-    iqamahAutoCalc, iqamahAutoBuffers,
-    hijriOffset, theme, chimeAdhan, chimeIqamah, fontScale, progressStyle,
+    lat,
+    lng,
+    locName,
+    masjidName,
+    logoDataUrl,
+    cityTz,
+    method,
+    shadow,
+    highLatRule,
+    iqamah: rawIqamah,
+    jumuah,
+    eidFitr,
+    eidAdha,
+    eidDaysBefore,
+    iqamahAutoCalc,
+    iqamahAutoBuffers,
+    hijriOffset,
+    theme,
+    chimeAdhan,
+    chimeIqamah,
+    fontScale,
+    progressStyle,
     announcements,
-    blackoutEnabled, blackoutLeadSeconds, blackoutDurations, blackoutOpacity,
+    blackoutEnabled,
+    blackoutLeadSeconds,
+    blackoutDurations,
+    blackoutOpacity,
   } = applied;
 
   // (Setter shims for setLat/setMethod/etc. were removed — App.jsx now
@@ -106,60 +113,120 @@ export default function App() {
   // field via updateDrafts. The shims accept either a value or a function
   // (prev → next). Using updateDrafts's functional form keeps multiple
   // sequential updates within the same tick race-safe.
-  const draftMethod   = drafts.method;
-  const draftAsr      = drafts.shadow === 2 ? 'Hanafi' : 'Standard';
-  const draftIqamah   = drafts.iqamah;
-  const draftIqamahAutoCalc    = drafts.iqamahAutoCalc;
+  const draftMethod = drafts.method;
+  const draftAsr = drafts.shadow === 2 ? 'Hanafi' : 'Standard';
+  const draftIqamah = drafts.iqamah;
+  const draftIqamahAutoCalc = drafts.iqamahAutoCalc;
   const draftIqamahAutoBuffers = drafts.iqamahAutoBuffers;
-  const draftJumuah   = drafts.jumuah;
-  const draftEidFitr  = drafts.eidFitr;
-  const draftEidAdha  = drafts.eidAdha;
-  const draftEidDays  = drafts.eidDaysBefore;
-  const draftHijri    = drafts.hijriOffset;
-  const draftHighLat  = drafts.highLatRule;
-  const draftTheme    = drafts.theme;
-  const draftChimeAdhan  = drafts.chimeAdhan;
+  const draftJumuah = drafts.jumuah;
+  const draftEidFitr = drafts.eidFitr;
+  const draftEidAdha = drafts.eidAdha;
+  const draftEidDays = drafts.eidDaysBefore;
+  const draftHijri = drafts.hijriOffset;
+  const draftHighLat = drafts.highLatRule;
+  const draftTheme = drafts.theme;
+  const draftChimeAdhan = drafts.chimeAdhan;
   const draftChimeIqamah = drafts.chimeIqamah;
-  const draftFontScale= drafts.fontScale;
+  const draftFontScale = drafts.fontScale;
   const draftProgress = drafts.progressStyle;
-  const draftLang     = drafts.lang;
+  const draftLang = drafts.lang;
   const draftAnnouncements = drafts.announcements;
-  const draftBlackoutEnabled   = drafts.blackoutEnabled;
+  const draftBlackoutEnabled = drafts.blackoutEnabled;
   const draftBlackoutDurations = drafts.blackoutDurations;
-  const draftBlackoutOpacity   = drafts.blackoutOpacity;
+  const draftBlackoutOpacity = drafts.blackoutOpacity;
   // Simple shims — each updates a single field with race-safe functional form
-  const setDraftMethod    = v => updateDrafts(prev => ({ ...prev, method:        typeof v === 'function' ? v(prev.method)        : v }));
-  const setDraftIqamah    = v => updateDrafts(prev => ({ ...prev, iqamah:        typeof v === 'function' ? v(prev.iqamah)        : v }));
-  const setDraftIqamahAutoCalc    = v => updateDrafts(prev => ({ ...prev, iqamahAutoCalc:    typeof v === 'function' ? v(prev.iqamahAutoCalc)    : v }));
-  const setDraftIqamahAutoBuffers = v => updateDrafts(prev => ({ ...prev, iqamahAutoBuffers: typeof v === 'function' ? v(prev.iqamahAutoBuffers) : v }));
-  const setDraftJumuah    = v => updateDrafts(prev => ({ ...prev, jumuah:        typeof v === 'function' ? v(prev.jumuah)        : v }));
-  const setDraftEidFitr   = v => updateDrafts(prev => ({ ...prev, eidFitr:       typeof v === 'function' ? v(prev.eidFitr)       : v }));
-  const setDraftEidAdha   = v => updateDrafts(prev => ({ ...prev, eidAdha:       typeof v === 'function' ? v(prev.eidAdha)       : v }));
-  const setDraftEidDays   = v => updateDrafts(prev => ({ ...prev, eidDaysBefore: typeof v === 'function' ? v(prev.eidDaysBefore) : v }));
-  const setDraftHijri     = v => updateDrafts(prev => ({ ...prev, hijriOffset:   typeof v === 'function' ? v(prev.hijriOffset)   : v }));
-  const setDraftHighLat   = v => updateDrafts(prev => ({ ...prev, highLatRule:   typeof v === 'function' ? v(prev.highLatRule)   : v }));
-  const setDraftTheme     = v => updateDrafts(prev => ({ ...prev, theme:         typeof v === 'function' ? v(prev.theme)         : v }));
-  const setDraftChimeAdhan  = v => updateDrafts(prev => ({ ...prev, chimeAdhan:  typeof v === 'function' ? v(prev.chimeAdhan)  : v }));
-  const setDraftChimeIqamah = v => updateDrafts(prev => ({ ...prev, chimeIqamah: typeof v === 'function' ? v(prev.chimeIqamah) : v }));
-  const setDraftFontScale = v => updateDrafts(prev => ({ ...prev, fontScale:     typeof v === 'function' ? v(prev.fontScale)     : v }));
-  const setDraftProgress  = v => updateDrafts(prev => ({ ...prev, progressStyle: typeof v === 'function' ? v(prev.progressStyle) : v }));
-  const setDraftLang      = v => updateDrafts(prev => ({ ...prev, lang:          typeof v === 'function' ? v(prev.lang)          : v }));
-  const setDraftAnnouncements = v => updateDrafts(prev => ({ ...prev, announcements: typeof v === 'function' ? v(prev.announcements) : v }));
-  const setDraftBlackoutEnabled   = v => updateDrafts(prev => ({ ...prev, blackoutEnabled:   typeof v === 'function' ? v(prev.blackoutEnabled)   : v }));
-  const setDraftBlackoutDurations = v => updateDrafts(prev => ({ ...prev, blackoutDurations: typeof v === 'function' ? v(prev.blackoutDurations) : v }));
-  const setDraftBlackoutOpacity   = v => updateDrafts(prev => ({ ...prev, blackoutOpacity:   typeof v === 'function' ? v(prev.blackoutOpacity)   : v }));
+  const setDraftMethod = (v) =>
+    updateDrafts((prev) => ({ ...prev, method: typeof v === 'function' ? v(prev.method) : v }));
+  const setDraftIqamah = (v) =>
+    updateDrafts((prev) => ({ ...prev, iqamah: typeof v === 'function' ? v(prev.iqamah) : v }));
+  const setDraftIqamahAutoCalc = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      iqamahAutoCalc: typeof v === 'function' ? v(prev.iqamahAutoCalc) : v,
+    }));
+  const setDraftIqamahAutoBuffers = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      iqamahAutoBuffers: typeof v === 'function' ? v(prev.iqamahAutoBuffers) : v,
+    }));
+  const setDraftJumuah = (v) =>
+    updateDrafts((prev) => ({ ...prev, jumuah: typeof v === 'function' ? v(prev.jumuah) : v }));
+  const setDraftEidFitr = (v) =>
+    updateDrafts((prev) => ({ ...prev, eidFitr: typeof v === 'function' ? v(prev.eidFitr) : v }));
+  const setDraftEidAdha = (v) =>
+    updateDrafts((prev) => ({ ...prev, eidAdha: typeof v === 'function' ? v(prev.eidAdha) : v }));
+  const setDraftEidDays = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      eidDaysBefore: typeof v === 'function' ? v(prev.eidDaysBefore) : v,
+    }));
+  const setDraftHijri = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      hijriOffset: typeof v === 'function' ? v(prev.hijriOffset) : v,
+    }));
+  const setDraftHighLat = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      highLatRule: typeof v === 'function' ? v(prev.highLatRule) : v,
+    }));
+  const setDraftTheme = (v) =>
+    updateDrafts((prev) => ({ ...prev, theme: typeof v === 'function' ? v(prev.theme) : v }));
+  const setDraftChimeAdhan = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      chimeAdhan: typeof v === 'function' ? v(prev.chimeAdhan) : v,
+    }));
+  const setDraftChimeIqamah = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      chimeIqamah: typeof v === 'function' ? v(prev.chimeIqamah) : v,
+    }));
+  const setDraftFontScale = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      fontScale: typeof v === 'function' ? v(prev.fontScale) : v,
+    }));
+  const setDraftProgress = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      progressStyle: typeof v === 'function' ? v(prev.progressStyle) : v,
+    }));
+  const setDraftLang = (v) =>
+    updateDrafts((prev) => ({ ...prev, lang: typeof v === 'function' ? v(prev.lang) : v }));
+  const setDraftAnnouncements = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      announcements: typeof v === 'function' ? v(prev.announcements) : v,
+    }));
+  const setDraftBlackoutEnabled = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      blackoutEnabled: typeof v === 'function' ? v(prev.blackoutEnabled) : v,
+    }));
+  const setDraftBlackoutDurations = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      blackoutDurations: typeof v === 'function' ? v(prev.blackoutDurations) : v,
+    }));
+  const setDraftBlackoutOpacity = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      blackoutOpacity: typeof v === 'function' ? v(prev.blackoutOpacity) : v,
+    }));
   // Asr translates Hanafi/Standard ↔ shadow 1/2
-  const setDraftAsr = v => updateDrafts(prev => {
-    const prevLabel = prev.shadow === 2 ? 'Hanafi' : 'Standard';
-    const nextLabel = typeof v === 'function' ? v(prevLabel) : v;
-    return { ...prev, shadow: nextLabel === 'Hanafi' ? 2 : 1 };
-  });
+  const setDraftAsr = (v) =>
+    updateDrafts((prev) => {
+      const prevLabel = prev.shadow === 2 ? 'Hanafi' : 'Standard';
+      const nextLabel = typeof v === 'function' ? v(prevLabel) : v;
+      return { ...prev, shadow: nextLabel === 'Hanafi' ? 2 : 1 };
+    });
 
   // ── Non-persistent UI state (stays local — not part of settings) ────────
   const [draftMasjid, setDraftMasjid] = useState('');
-  const [draftLogo,   setDraftLogo]   = useState('');
-  const [testFriday,  setTestFriday]  = useState(false);
-  const [testPrayer,  setTestPrayer]  = useState(null); // null = use real active prayer
+  const [draftLogo, setDraftLogo] = useState('');
+  const [testFriday, setTestFriday] = useState(false);
+  const [testPrayer, setTestPrayer] = useState(null); // null = use real active prayer
   const [testBlackoutUntil, setTestBlackoutUntil] = useState(null); // Date | null
   // Test the final-60-sec giant pulsing countdown view. When set to a Date
   // in the future, App overrides `secsToNext` below to count toward that
@@ -174,27 +241,27 @@ export default function App() {
   // Test Eid — when set, forces the Eid banner to appear with the given
   // Eid kind regardless of Hijri date. Lets staff preview the Eid banner
   // without waiting for the actual day. null = use real Hijri detection.
-  const [testEidKind, setTestEidKind] = useState(null);  // null | 'fitr' | 'adha'
+  const [testEidKind, setTestEidKind] = useState(null); // null | 'fitr' | 'adha'
   // Test moon phase — when null, MoonArc uses real lunar illumination from
   // suncalc. When set to 0..1, it overrides the phase value (Test Phase
   // footer button cycles through 8 preset phases for visual verification).
   const [testMoonPhase, setTestMoonPhase] = useState(null);
-  const [showPin,    setShowPin]    = useState(false);
-  const [pinInput,   setPinInput]   = useState('');
-  const [pinError,   setPinError]   = useState(false);
-  const [showSett,   setShowSett]   = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [showSett, setShowSett] = useState(false);
   // ── Printable monthly schedule view ─────────────────────────────────
   // When true, App swaps out the live dashboard for the static printable
   // schedule. Triggered from Settings → Display tab. Plain boolean state
   // (no URL routing) — kiosk usage is single-page; we don't need history
   // navigation. Returns false (back to dashboard) via the schedule's own
   // close button.
-  const [showPrint,  setShowPrint]  = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
   // City search state
-  const [searchQuery,   setSearchQuery]   = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [searchStatus,  setSearchStatus]  = useState('idle'); // idle|searching|done|error
-  const [selectedCity,  setSelectedCity]  = useState(null);  // { name, country, lat, lng }
+  const [searchStatus, setSearchStatus] = useState('idle'); // idle|searching|done|error
+  const [selectedCity, setSelectedCity] = useState(null); // { name, country, lat, lng }
   const searchTimer = useRef(null);
 
   // Blackout dismiss state — when the user holds-to-dismiss during a
@@ -263,7 +330,7 @@ export default function App() {
     didAutoGeoRef.current = true;
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      (pos) => {
         // Batch all geolocation fields into one updateApplied — saves to
         // localStorage exactly once and triggers a single re-render.
         let tz = null;
@@ -275,8 +342,8 @@ export default function App() {
           // code falls back to the device's UTC offset.
         }
         updateApplied({
-          lat:     pos.coords.latitude,
-          lng:     pos.coords.longitude,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
           locName: `${pos.coords.latitude.toFixed(2)}°N  ${pos.coords.longitude.toFixed(2)}°E`,
           ...(tz ? { cityTz: tz } : {}),
         });
@@ -327,13 +394,19 @@ export default function App() {
   const iqamah = useMemo(() => {
     if (!iqamahAutoCalc) return rawIqamah;
     const out = {};
-    for (const key of ['fajr','dhuhr','asr','maghrib','isha']) {
+    for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
       const adhan = todayTimes?.[key];
-      const buf   = Number(iqamahAutoBuffers?.[key] ?? 0);
-      if (!adhan) { out[key] = rawIqamah[key] || 0; continue; }
+      const buf = Number(iqamahAutoBuffers?.[key] ?? 0);
+      if (!adhan) {
+        out[key] = rawIqamah[key] || 0;
+        continue;
+      }
 
       // Special case: buf=0 means iqamah=adhan exactly. Don't round.
-      if (buf === 0) { out[key] = 0; continue; }
+      if (buf === 0) {
+        out[key] = 0;
+        continue;
+      }
 
       // Step 1+2: shift adhan by buffer minutes
       const target = new Date(adhan.getTime() + buf * 60 * 1000);
@@ -376,35 +449,40 @@ export default function App() {
   // CRITICAL: clock must show the CITY's local time (not device's local time),
   // so prayer times and the displayed clock always match. We extract h/m/s
   // for the city's timezone via Intl.DateTimeFormat.
-  const h12     = cityNowParts.h % 12 || 12;
+  const h12 = cityNowParts.h % 12 || 12;
   const timeStr = `${h12}:${String(cityNowParts.m).padStart(2, '0')}`;
-  const secStr  = `:${String(cityNowParts.s).padStart(2, '0')} ${cityNowParts.h >= 12 ? 'PM' : 'AM'}`;
+  const secStr = `:${String(cityNowParts.s).padStart(2, '0')} ${cityNowParts.h >= 12 ? 'PM' : 'AM'}`;
   const dateStr = `${cityNowParts.weekday}, ${cityNowParts.monthName} ${cityNowParts.dayNum}, ${cityNowParts.yearNum}`;
   const hijri = useMemo(() => {
     if (hijriOffset === 0) return toHijri(cityNow);
     const adjusted = new Date(cityNow);
     adjusted.setDate(adjusted.getDate() + hijriOffset);
-    return toHijri(adjusted) + (hijriOffset !== 0 ? ` (${hijriOffset > 0 ? '+' : ''}${hijriOffset})` : '');
+    return (
+      toHijri(adjusted) +
+      (hijriOffset !== 0 ? ` (${hijriOffset > 0 ? '+' : ''}${hijriOffset})` : '')
+    );
   }, [cityNow.toDateString(), hijriOffset]);
-  const qibla   = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
+  const qibla = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
 
   // ── Parametric inputs for IslamicGeometryEngine ──────────────────────────
   // Sun elevation: 0° = horizon, +90° = zenith, negative = below horizon
   // Approximated from current time relative to sunrise/solar-noon/sunset
   const sunElevation = useMemo(() => {
-    const sr = todayTimes.sunrise, ss = todayTimes.maghrib;
+    const sr = todayTimes.sunrise,
+      ss = todayTimes.maghrib;
     if (!sr || !ss) return -10;
     const nowMs = now.getTime();
-    const srMs  = sr.getTime(), ssMs = ss.getTime();
+    const srMs = sr.getTime(),
+      ssMs = ss.getTime();
     if (nowMs < srMs || nowMs > ssMs) {
       // Night — interpolate descent below horizon (max -18° astronomical twilight)
       return nowMs < srMs
-        ? -18 + 18 * (nowMs - (srMs - 3600000)) / 3600000
+        ? -18 + (18 * (nowMs - (srMs - 3600000))) / 3600000
         : -18 * Math.min(1, (nowMs - ssMs) / 3600000);
     }
     // Day — sine arc peaking at solar noon
-    const maxEl  = 90 - Math.abs(lat - 23.5); // approximate max elevation
-    return maxEl * Math.sin(Math.PI * (nowMs - srMs) / (ssMs - srMs));
+    const maxEl = 90 - Math.abs(lat - 23.5); // approximate max elevation
+    return maxEl * Math.sin((Math.PI * (nowMs - srMs)) / (ssMs - srMs));
   }, [now, todayTimes, lat]);
 
   // Lunar phase — owned by useLunarPhase hook (computed from Hijri day)
@@ -416,15 +494,15 @@ export default function App() {
   // renders nothing). See src/hooks/useBlackoutMode.js for the windowing
   // logic + how yesterday's Isha edge case is handled.
   const blackout = useBlackoutMode({
-    enabled:        blackoutEnabled,
-    leadSeconds:    blackoutLeadSeconds,
-    durations:      blackoutDurations,
+    enabled: blackoutEnabled,
+    leadSeconds: blackoutLeadSeconds,
+    durations: blackoutDurations,
     todayTimes,
     yesterdayTimes,
     iqamah,
     now,
-    dismissedAt:    blackoutDismissedAt,
-    forceUntil:     testBlackoutUntil,
+    dismissedAt: blackoutDismissedAt,
+    forceUntil: testBlackoutUntil,
   });
 
   // Jumu'ah / Eid date helpers — must produce ABSOLUTE UTC instants whose
@@ -444,14 +522,14 @@ export default function App() {
 
   // Jumu'ah — Friday is the CITY's day-of-week (or testFriday override for QA)
   const isFridayEffective = isFriday || testFriday;
-  const activeJumuahSlots = jumuah.filter(j => j.enabled);
+  const activeJumuahSlots = jumuah.filter((j) => j.enabled);
   function jumuahDate(timeStr) {
     const [hh, mm] = timeStr.split(':').map(Number);
     return makeCityDateAt(hh, mm);
   }
   // Compare absolute instants against the absolute `now`
   const nextJumuah = isFridayEffective
-    ? activeJumuahSlots.map(j => jumuahDate(j.time)).find(t => t > now) ?? null
+    ? (activeJumuahSlots.map((j) => jumuahDate(j.time)).find((t) => t > now) ?? null)
     : null;
 
   // ── Jumu'ah substitution for next-prayer display ─────────────────────────
@@ -463,14 +541,14 @@ export default function App() {
   //   - it's effectively Friday (real or QA test)
   //   - there's an upcoming Jumu'ah slot today
   //   - the hook's next prayer is Dhuhr (so we don't replace e.g. Fajr or Asr)
-  let next       = rawNext;
-  let active     = rawActive;
+  let next = rawNext;
+  let active = rawActive;
   let secsToNext = rawSecsToNext;
   if (isFridayEffective && nextJumuah && rawNext?.key === 'dhuhr') {
     next = {
       key: 'jumuah',
-      en:  "Jumu'ah",
-      ar:  'الجمعة',
+      en: "Jumu'ah",
+      ar: 'الجمعة',
       time: nextJumuah,
     };
     secsToNext = Math.max(0, Math.floor((nextJumuah - now) / 1000));
@@ -509,19 +587,23 @@ export default function App() {
   // preview the banner via footer Test Fitr / Test Adha buttons without
   // waiting for actual Eid.
   const upcomingEid = testEidKind
-    ? { kind: testEidKind, eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()), daysUntil: 0 }
+    ? {
+        kind: testEidKind,
+        eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+        daysUntil: 0,
+      }
     : upcomingEidReal;
 
   // Pick the right schedule (eidFitr or eidAdha) and filter out disabled or
   // empty-time slots. Slot is active when enabled=true AND time is set.
   const activeEidSlots = upcomingEid.kind
-    ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha)
-        .filter(e => e.enabled && e.time && e.time.length > 0)
+    ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha).filter(
+        (e) => e.enabled && e.time && e.time.length > 0
+      )
     : [];
   // Auto-generated label based on detected Eid kind
-  const eidLabelAuto = upcomingEid.kind === 'fitr' ? 'Eid ul-Fitr'
-                     : upcomingEid.kind === 'adha' ? 'Eid ul-Adha'
-                     : '';
+  const eidLabelAuto =
+    upcomingEid.kind === 'fitr' ? 'Eid ul-Fitr' : upcomingEid.kind === 'adha' ? 'Eid ul-Adha' : '';
 
   // Eid time helper — anchors HH:MM to the actual upcoming Eid Gregorian date
   // (not "today" — that was the bug). If upcomingEid has no date yet (no Eid
@@ -533,7 +615,7 @@ export default function App() {
     d.setHours(hh, mm, 0, 0);
     return d;
   }
-  const lastEidTime  = activeEidSlots.length
+  const lastEidTime = activeEidSlots.length
     ? eidDate(activeEidSlots[activeEidSlots.length - 1].time)
     : null;
   const eidIqamahEnd = lastEidTime
@@ -547,14 +629,17 @@ export default function App() {
   //   - EXCEPTION: when testEidKind is active, always show the banner so
   //     staff can preview it at any time of day, regardless of whether the
   //     configured Eid prayer time has already passed for "today".
-  const showEidBanner = upcomingEid.kind !== null && activeEidSlots.length > 0 && (() => {
-    if (testEidKind) return true;                  // test mode — always show
-    if (!eidIqamahEnd) return false;
-    if (upcomingEid.daysUntil > 0) return true;    // real Eid in lead-up
-    return addMins(eidIqamahEnd, 30) > now;        // real Eid on its day
-  })();
+  const showEidBanner =
+    upcomingEid.kind !== null &&
+    activeEidSlots.length > 0 &&
+    (() => {
+      if (testEidKind) return true; // test mode — always show
+      if (!eidIqamahEnd) return false;
+      if (upcomingEid.daysUntil > 0) return true; // real Eid in lead-up
+      return addMins(eidIqamahEnd, 30) > now; // real Eid on its day
+    })();
   const nextEid = showEidBanner
-    ? activeEidSlots.map(e => eidDate(e.time)).find(t => t > now) ?? null
+    ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > now) ?? null)
     : null;
 
   // Hook: fire adhan/iqamah beep at the right times. Each flag gates its
@@ -576,7 +661,10 @@ export default function App() {
   function openSettings() {
     if (SETTINGS_PIN) {
       // Always ask PIN — never cache the unlock
-      setPinInput(''); setPinError(false); setShowPin(true); return;
+      setPinInput('');
+      setPinError(false);
+      setShowPin(true);
+      return;
     }
     _doOpenSettings();
   }
@@ -599,7 +687,8 @@ export default function App() {
       setShowPin(false);
       _doOpenSettings();
     } else {
-      setPinError(true); setPinInput('');
+      setPinError(true);
+      setPinInput('');
     }
   }
 
@@ -607,20 +696,26 @@ export default function App() {
     setSearchQuery(q);
     setSelectedCity(null);
     clearTimeout(searchTimer.current);
-    if (q.trim().length < 2) { setSearchResults([]); setSearchStatus('idle'); return; }
+    if (q.trim().length < 2) {
+      setSearchResults([]);
+      setSearchStatus('idle');
+      return;
+    }
     setSearchStatus('searching');
     searchTimer.current = setTimeout(async () => {
       try {
-        const res  = await fetch(`${GEO_API}?name=${encodeURIComponent(q.trim())}&count=8&language=en&format=json`);
+        const res = await fetch(
+          `${GEO_API}?name=${encodeURIComponent(q.trim())}&count=8&language=en&format=json`
+        );
         const data = await res.json();
-        const results = (data.results || []).map(r => ({
-          id:      r.id,
-          name:    r.name,
+        const results = (data.results || []).map((r) => ({
+          id: r.id,
+          name: r.name,
           country: r.country || '',
-          admin1:  r.admin1 || '',
-          lat:     r.latitude,
-          lng:     r.longitude,
-          tz:      r.timezone || '',
+          admin1: r.admin1 || '',
+          lat: r.latitude,
+          lng: r.longitude,
+          tz: r.timezone || '',
         }));
         setSearchResults(results);
         setSearchStatus(results.length ? 'done' : 'empty');
@@ -649,11 +744,11 @@ export default function App() {
   function exportSettings() {
     const payload = JSON.stringify(applied, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const d    = new Date();
-    const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    a.href     = url;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    a.href = url;
     a.download = `prayer-times-settings-${stamp}.json`;
     document.body.appendChild(a);
     a.click();
@@ -677,7 +772,7 @@ export default function App() {
           // Merge into drafts so the panel can show the new values; user
           // must click Apply to commit. We use updateDrafts with a function
           // form so it spreads atomically over the current drafts state.
-          updateDrafts(prev => ({ ...prev, ...parsed }));
+          updateDrafts((prev) => ({ ...prev, ...parsed }));
           resolve(true);
         } catch {
           resolve(false);
@@ -703,28 +798,40 @@ export default function App() {
     const sanitizedIqamah = Object.fromEntries(
       Object.entries(drafts.iqamah).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
     );
-    const sanitizedJumuah = drafts.jumuah.map(j => ({
-      ...j, iqamah: Math.min(60, Math.max(0, Number(j.iqamah) || 0)),
+    const sanitizedJumuah = drafts.jumuah.map((j) => ({
+      ...j,
+      iqamah: Math.min(60, Math.max(0, Number(j.iqamah) || 0)),
     }));
-    const sanitizedEidFitr = drafts.eidFitr.map(e => ({
-      ...e, iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
+    const sanitizedEidFitr = drafts.eidFitr.map((e) => ({
+      ...e,
+      iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
     }));
-    const sanitizedEidAdha = drafts.eidAdha.map(e => ({
-      ...e, iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
+    const sanitizedEidAdha = drafts.eidAdha.map((e) => ({
+      ...e,
+      iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
     }));
-    const sanitizedDays  = Math.min(30, Math.max(0, Number(drafts.eidDaysBefore) || 0));
-    const sanitizedHijri = Math.min(3,  Math.max(-3, Number(drafts.hijriOffset)  || 0));
-    const sanitizedFont  = Math.min(130, Math.max(70, Number(drafts.fontScale)   || 100));
+    const sanitizedDays = Math.min(30, Math.max(0, Number(drafts.eidDaysBefore) || 0));
+    const sanitizedHijri = Math.min(3, Math.max(-3, Number(drafts.hijriOffset) || 0));
+    const sanitizedFont = Math.min(130, Math.max(70, Number(drafts.fontScale) || 100));
     // Blackout per-prayer durations: clamp 0..60 min. 0 = effectively disabled
     // for that prayer (window collapses to just the leadSeconds before iqamah).
     const sanitizedBlackoutDur = Object.fromEntries(
-      Object.entries(drafts.blackoutDurations).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
+      Object.entries(drafts.blackoutDurations).map(([k, v]) => [
+        k,
+        Math.min(60, Math.max(0, Number(v) || 0)),
+      ])
     );
     // Blackout opacity: clamp 0..100 percent.
-    const sanitizedBlackoutOpacity = Math.min(100, Math.max(0, Number(drafts.blackoutOpacity) || 0));
+    const sanitizedBlackoutOpacity = Math.min(
+      100,
+      Math.max(0, Number(drafts.blackoutOpacity) || 0)
+    );
     // Auto-iqamah buffers: clamp 0..60 min per prayer.
     const sanitizedAutoBuf = Object.fromEntries(
-      Object.entries(drafts.iqamahAutoBuffers || {}).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
+      Object.entries(drafts.iqamahAutoBuffers || {}).map(([k, v]) => [
+        k,
+        Math.min(60, Math.max(0, Number(v) || 0)),
+      ])
     );
 
     // Build the new applied state in one shot. City selection (if any)
@@ -732,22 +839,22 @@ export default function App() {
     const newMasjid = draftMasjid.trim();
     const newApplied = {
       ...drafts,
-      iqamah:            sanitizedIqamah,
-      jumuah:            sanitizedJumuah,
-      eidFitr:           sanitizedEidFitr,
-      eidAdha:           sanitizedEidAdha,
-      eidDaysBefore:     sanitizedDays,
-      hijriOffset:       sanitizedHijri,
-      fontScale:         sanitizedFont,
+      iqamah: sanitizedIqamah,
+      jumuah: sanitizedJumuah,
+      eidFitr: sanitizedEidFitr,
+      eidAdha: sanitizedEidAdha,
+      eidDaysBefore: sanitizedDays,
+      hijriOffset: sanitizedHijri,
+      fontScale: sanitizedFont,
       blackoutDurations: sanitizedBlackoutDur,
-      blackoutOpacity:   sanitizedBlackoutOpacity,
+      blackoutOpacity: sanitizedBlackoutOpacity,
       iqamahAutoBuffers: sanitizedAutoBuf,
-      masjidName:        newMasjid,
-      logoDataUrl:       draftLogo || '',
+      masjidName: newMasjid,
+      logoDataUrl: draftLogo || '',
     };
     if (selectedCity) {
-      newApplied.lat     = selectedCity.lat;
-      newApplied.lng     = selectedCity.lng;
+      newApplied.lat = selectedCity.lat;
+      newApplied.lng = selectedCity.lng;
       newApplied.locName = selectedCity.admin1
         ? `${selectedCity.name}, ${selectedCity.admin1}, ${selectedCity.country}`
         : `${selectedCity.name}, ${selectedCity.country}`;
@@ -762,12 +869,12 @@ export default function App() {
   function geolocate() {
     if (!navigator.geolocation) return alert(t('alert.geoUnsupported'));
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      (pos) => {
         // Batch lat/lng/cityTz/locName into one update
         updateApplied({
-          lat:     pos.coords.latitude,
-          lng:     pos.coords.longitude,
-          cityTz:  Intl.DateTimeFormat().resolvedOptions().timeZone,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          cityTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
           locName: `${pos.coords.latitude.toFixed(2)}°N  ${pos.coords.longitude.toFixed(2)}°E`,
         });
         setShowSett(false);
@@ -816,8 +923,10 @@ export default function App() {
           lunarPhase={lunarPhase}
           theme={theme}
         />
-        <div className="corner tl"/><div className="corner tr"/>
-        <div className="corner bl"/><div className="corner br"/>
+        <div className="corner tl" />
+        <div className="corner tr" />
+        <div className="corner bl" />
+        <div className="corner br" />
 
         {/* Floating Settings button — top-right corner, icon-only.
             Replaces the old text "⚙ Settings" button in the footer.
@@ -831,11 +940,19 @@ export default function App() {
           className="settings-fab"
         >
           {/* Gear icon — pure SVG, inherits currentColor for theming */}
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
-               stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
-               strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <svg
+            viewBox="0 0 24 24"
+            width="22"
+            height="22"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
         </button>
 
@@ -848,15 +965,13 @@ export default function App() {
           method={method}
           activePrayerKey={testPrayer || active?.key || 'fajr'}
           lunarPhase={lunarPhase}
-          centerSlot={<HeaderQibla qibla={qibla}/>}
+          centerSlot={<HeaderQibla qibla={qibla} />}
         />
 
         {/* Grid */}
         <div className="grid">
-
           {/* Main row: prayer list + clock side-by-side (or stacked in portrait) */}
           <div className="grid-main">
-
             {/* Left: prayer list with Adhan + Iqamah */}
             <PrayerList
               todayTimes={todayTimes}
@@ -873,7 +988,7 @@ export default function App() {
               eidDate={eidDate}
               showEidBanner={showEidBanner}
               eidLabelAuto={eidLabelAuto}
-              footerSlot={<WeatherStrip weather={weather} weatherState={weatherState}/>}
+              footerSlot={<WeatherStrip weather={weather} weatherState={weatherState} />}
             />
 
             {/* Centre: clock + countdown */}
@@ -897,26 +1012,41 @@ export default function App() {
                 //   - Otherwise: sun if currently between sunrise & sunset,
                 //     moon otherwise (covers pre-dawn, dusk, and overnight)
                 const sun = todayTimes?.sunrise;
-                const set = todayTimes?.maghrib;  // maghrib ≈ sunset
+                const set = todayTimes?.maghrib; // maghrib ≈ sunset
                 const isDay = !testMoonActive && sun && set && now >= sun && now < set;
-                return isDay
-                  ? <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz}/>
-                  : <MoonArc lat={lat} lng={lng} now={now} cityTz={cityTz} phaseOverride={testMoonPhase}/>;
+                return isDay ? (
+                  <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz} />
+                ) : (
+                  <MoonArc
+                    lat={lat}
+                    lng={lng}
+                    now={now}
+                    cityTz={cityTz}
+                    phaseOverride={testMoonPhase}
+                  />
+                );
               })()}
-              bottomSlot={<FastBar todayTimes={todayTimes} tomorrowTimes={tomorrowTimes} now={now} cityTz={cityTz}/>}
+              bottomSlot={
+                <FastBar
+                  todayTimes={todayTimes}
+                  tomorrowTimes={tomorrowTimes}
+                  now={now}
+                  cityTz={cityTz}
+                />
+              }
             />
-
-          </div>{/* end grid-main */}
+          </div>
+          {/* end grid-main */}
 
           {/* (Bottom widget row removed — each widget now lives in its
               surrounding chrome: HeaderQibla in header, SunArc/MoonArc above
               clock, WeatherStrip below prayer list, FastBar under countdown.) */}
-
-        </div>{/* end grid */}
+        </div>
+        {/* end grid */}
 
         {/* App footer — outside .grid, always at bottom of .app */}
         <div className="app-footer">
-          <Ticker announcements={announcements}/>
+          <Ticker announcements={announcements} />
           <Footer
             showTestBtns={SHOW_TEST_BTNS}
             testFriday={testFriday}
@@ -927,9 +1057,9 @@ export default function App() {
             testMoonPhaseValue={testMoonPhase}
             testEidKind={testEidKind}
             activeKey={active?.key || 'fajr'}
-            onToggleFriday={() => setTestFriday(f => !f)}
+            onToggleFriday={() => setTestFriday((f) => !f)}
             onCyclePrayer={(curKey) => {
-              const cycle = ['fajr','sunrise','dhuhr','asr','maghrib','isha'];
+              const cycle = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
               const cur = testPrayer || curKey || 'fajr';
               const next = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
               setTestPrayer(next);
@@ -948,7 +1078,7 @@ export default function App() {
               // Test Moon — force the arc above the clock to render MoonArc
               // (with phase visualization) regardless of whether the sun
               // is up. Toggles off on second click.
-              setTestMoonActive(m => !m);
+              setTestMoonActive((m) => !m);
             }}
             onCyclePhase={() => {
               // Test Phase — cycle through 9 stops: real-phase (null),
@@ -957,7 +1087,7 @@ export default function App() {
               // last-quarter (.75), waning-crescent (.875), back to real.
               // Each click advances by one stop. Forces Test Moon ON so
               // the change is visible immediately.
-              const stops = [null, 0, .125, .25, .375, .5, .625, .75, .875];
+              const stops = [null, 0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875];
               const idx = stops.indexOf(testMoonPhase);
               const nextIdx = (idx + 1) % stops.length;
               setTestMoonPhase(stops[nextIdx]);
@@ -966,17 +1096,17 @@ export default function App() {
             onToggleTestFitr={() => {
               // Force-show Eid ul-Fitr banner. Toggles off on second click,
               // or switches from Adha to Fitr if Adha test was active.
-              setTestEidKind(k => k === 'fitr' ? null : 'fitr');
+              setTestEidKind((k) => (k === 'fitr' ? null : 'fitr'));
             }}
             onToggleTestAdha={() => {
               // Force-show Eid ul-Adha banner. Toggles off on second click,
               // or switches from Fitr to Adha if Fitr test was active.
-              setTestEidKind(k => k === 'adha' ? null : 'adha');
+              setTestEidKind((k) => (k === 'adha' ? null : 'adha'));
             }}
           />
         </div>
-
-      </div>{/* end .app */}
+      </div>
+      {/* end .app */}
 
       {/* (standalone footer removed — integrated into bottom-band above) */}
 
@@ -990,7 +1120,10 @@ export default function App() {
         visible={showPin}
         input={pinInput}
         error={pinError}
-        onChange={v => { setPinInput(v); setPinError(false); }}
+        onChange={(v) => {
+          setPinInput(v);
+          setPinError(false);
+        }}
         onSubmit={submitPin}
         onCancel={() => setShowPin(false)}
       />
@@ -1000,41 +1133,71 @@ export default function App() {
         visible={showSett}
         onCancel={() => setShowSett(false)}
         onApply={applySettings}
-        draftMethod={draftMethod}    setDraftMethod={setDraftMethod}
-        draftAsr={draftAsr}          setDraftAsr={setDraftAsr}
-        draftIqamah={draftIqamah}    setDraftIqamah={setDraftIqamah}
-        draftIqamahAutoCalc={draftIqamahAutoCalc}        setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
-        draftIqamahAutoBuffers={draftIqamahAutoBuffers}  setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
-        draftJumuah={draftJumuah}    setDraftJumuah={setDraftJumuah}
-        draftEidFitr={draftEidFitr}  setDraftEidFitr={setDraftEidFitr}
-        draftEidAdha={draftEidAdha}  setDraftEidAdha={setDraftEidAdha}
-        draftEidDays={draftEidDays}  setDraftEidDays={setDraftEidDays}
-        draftHijri={draftHijri}      setDraftHijri={setDraftHijri}
-        draftHighLat={draftHighLat}  setDraftHighLat={setDraftHighLat}
-        draftTheme={draftTheme}      setDraftTheme={setDraftTheme}
-        draftChimeAdhan={draftChimeAdhan}    setDraftChimeAdhan={setDraftChimeAdhan}
-        draftChimeIqamah={draftChimeIqamah}  setDraftChimeIqamah={setDraftChimeIqamah}
-        draftFontScale={draftFontScale}  setDraftFontScale={setDraftFontScale}
-        draftProgress={draftProgress}    setDraftProgress={setDraftProgress}
-        draftMasjid={draftMasjid}    setDraftMasjid={setDraftMasjid}
-        draftLogo={draftLogo}        setDraftLogo={setDraftLogo}
-        draftLang={draftLang}        setDraftLang={setDraftLang}
-        draftAnnouncements={draftAnnouncements}  setDraftAnnouncements={setDraftAnnouncements}
-        draftBlackoutEnabled={draftBlackoutEnabled}      setDraftBlackoutEnabled={setDraftBlackoutEnabled}
-        draftBlackoutDurations={draftBlackoutDurations}  setDraftBlackoutDurations={setDraftBlackoutDurations}
-        draftBlackoutOpacity={draftBlackoutOpacity}      setDraftBlackoutOpacity={setDraftBlackoutOpacity}
+        draftMethod={draftMethod}
+        setDraftMethod={setDraftMethod}
+        draftAsr={draftAsr}
+        setDraftAsr={setDraftAsr}
+        draftIqamah={draftIqamah}
+        setDraftIqamah={setDraftIqamah}
+        draftIqamahAutoCalc={draftIqamahAutoCalc}
+        setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
+        draftIqamahAutoBuffers={draftIqamahAutoBuffers}
+        setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
+        draftJumuah={draftJumuah}
+        setDraftJumuah={setDraftJumuah}
+        draftEidFitr={draftEidFitr}
+        setDraftEidFitr={setDraftEidFitr}
+        draftEidAdha={draftEidAdha}
+        setDraftEidAdha={setDraftEidAdha}
+        draftEidDays={draftEidDays}
+        setDraftEidDays={setDraftEidDays}
+        draftHijri={draftHijri}
+        setDraftHijri={setDraftHijri}
+        draftHighLat={draftHighLat}
+        setDraftHighLat={setDraftHighLat}
+        draftTheme={draftTheme}
+        setDraftTheme={setDraftTheme}
+        draftChimeAdhan={draftChimeAdhan}
+        setDraftChimeAdhan={setDraftChimeAdhan}
+        draftChimeIqamah={draftChimeIqamah}
+        setDraftChimeIqamah={setDraftChimeIqamah}
+        draftFontScale={draftFontScale}
+        setDraftFontScale={setDraftFontScale}
+        draftProgress={draftProgress}
+        setDraftProgress={setDraftProgress}
+        draftMasjid={draftMasjid}
+        setDraftMasjid={setDraftMasjid}
+        draftLogo={draftLogo}
+        setDraftLogo={setDraftLogo}
+        draftLang={draftLang}
+        setDraftLang={setDraftLang}
+        draftAnnouncements={draftAnnouncements}
+        setDraftAnnouncements={setDraftAnnouncements}
+        draftBlackoutEnabled={draftBlackoutEnabled}
+        setDraftBlackoutEnabled={setDraftBlackoutEnabled}
+        draftBlackoutDurations={draftBlackoutDurations}
+        setDraftBlackoutDurations={setDraftBlackoutDurations}
+        draftBlackoutOpacity={draftBlackoutOpacity}
+        setDraftBlackoutOpacity={setDraftBlackoutOpacity}
         searchQuery={searchQuery}
         searchResults={searchResults}
         searchStatus={searchStatus}
         onSearchInput={handleSearchInput}
         onSelectCity={handleSelectCity}
-        onClearCity={() => { setSelectedCity(null); setSearchQuery(''); setSearchStatus('idle'); }}
+        onClearCity={() => {
+          setSelectedCity(null);
+          setSearchQuery('');
+          setSearchStatus('idle');
+        }}
         selectedCity={selectedCity}
         onGeolocate={geolocate}
         onExportSettings={exportSettings}
         onImportSettings={importSettings}
         onResetSettings={resetSettings}
-        onPrintSchedule={() => { setShowSett(false); setShowPrint(true); }}
+        onPrintSchedule={() => {
+          setShowSett(false);
+          setShowPrint(true);
+        }}
         cityNow={cityNow}
         cityTz={cityTz}
         currentLocName={locName}

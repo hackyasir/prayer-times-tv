@@ -22,7 +22,7 @@ import NumberStepper from '../NumberStepper.jsx';
 // Helper — locates the − and + buttons by aria-label. Using aria-labels
 // instead of text matching keeps tests resilient to icon/text changes.
 const getMinus = () => screen.getByRole('button', { name: /decrease/i });
-const getPlus  = () => screen.getByRole('button', { name: /increase/i });
+const getPlus = () => screen.getByRole('button', { name: /increase/i });
 const getInput = () => screen.getByRole('textbox');
 
 describe('NumberStepper — rendering', () => {
@@ -171,7 +171,10 @@ describe('NumberStepper — text input behavior (iOS fallback)', () => {
     return (
       <NumberStepper
         value={v}
-        onChange={(n) => { setV(n); spy?.(n); }}
+        onChange={(n) => {
+          setV(n);
+          spy?.(n);
+        }}
         {...rest}
       />
     );

@@ -1,12 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- ── Strict Content Security Policy ──────────────────────────────────── -->
-  <!--
+    <!-- ── Strict Content Security Policy ──────────────────────────────────── -->
+    <!--
     Explanation of each directive:
     default-src 'self'        – block everything not explicitly listed
     script-src  'self'        – JS only from same origin (Vite handles hashes in prod)
@@ -23,7 +22,9 @@
     form-action 'self'        – Prevent form hijacking
     object-src  'none'        – No Flash / plugins
   -->
-  <meta http-equiv="Content-Security-Policy" content="
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
       default-src 'self';
       script-src  'self';
       style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -36,33 +37,36 @@
       base-uri    'self';
       form-action 'self';
       object-src  'none';
-    " />
+    "
+    />
 
-  <!-- ── SEO / Social ─────────────────────────────────────────────────────── -->
-  <title>Prayer Times — Digital Masjid Display</title>
-  <meta name="description"
-    content="A high-visibility prayer times dashboard optimised for Smart TVs, Fire Sticks, and large displays. Works offline. Open-source." />
-  <meta name="theme-color" content="#000000" />
+    <!-- ── SEO / Social ─────────────────────────────────────────────────────── -->
+    <title>Prayer Times — Digital Masjid Display</title>
+    <meta
+      name="description"
+      content="A high-visibility prayer times dashboard optimised for Smart TVs, Fire Sticks, and large displays. Works offline. Open-source."
+    />
+    <meta name="theme-color" content="#000000" />
 
-  <!-- ── PWA ──────────────────────────────────────────────────────────────── -->
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <!-- Favicon: modern browsers prefer SVG (crisp at any size), fallback to
+    <!-- ── PWA ──────────────────────────────────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <!-- Favicon: modern browsers prefer SVG (crisp at any size), fallback to
        ICO for older browsers. Both files generated as part of the build. -->
-  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
 
-  <!-- ── Fonts ─────────────────────────────────────────────────────────────── -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap"
-    rel="stylesheet" />
-</head>
+    <!-- ── Fonts ─────────────────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-<body class="bg-black">
-  <div id="root"></div>
-  <script type="module" src="/src/main.jsx"></script>
-</body>
-
+  <body class="bg-black">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

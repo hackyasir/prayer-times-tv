@@ -127,7 +127,7 @@ describe('addMins', () => {
 
 describe('fmtCountdown', () => {
   it('formats hours, minutes, seconds with zero-padding', () => {
-    expect(fmtCountdown(3661)).toBe('01:01:01');  // 1h 1m 1s
+    expect(fmtCountdown(3661)).toBe('01:01:01'); // 1h 1m 1s
   });
 
   it('returns "00:00:00" for zero seconds', () => {

@@ -23,12 +23,12 @@ export default function useAudioUnlock() {
       }, 200);
     };
     window.addEventListener('pointerdown', onGesture, { passive: true });
-    window.addEventListener('keydown',     onGesture, { passive: true });
-    window.addEventListener('touchstart',  onGesture, { passive: true });
+    window.addEventListener('keydown', onGesture, { passive: true });
+    window.addEventListener('touchstart', onGesture, { passive: true });
     return () => {
       window.removeEventListener('pointerdown', onGesture);
-      window.removeEventListener('keydown',     onGesture);
-      window.removeEventListener('touchstart',  onGesture);
+      window.removeEventListener('keydown', onGesture);
+      window.removeEventListener('touchstart', onGesture);
     };
   }, [audioReady]);
 

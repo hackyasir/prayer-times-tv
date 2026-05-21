@@ -22,7 +22,7 @@
 
 import { useRef, useState } from 'react';
 
-const MAX_BYTES = 100 * 1024;  // 100 KB
+const MAX_BYTES = 100 * 1024; // 100 KB
 const ACCEPTED = 'image/png,image/jpeg,image/svg+xml,image/webp';
 
 export default function LogoUploader({ value, onChange }) {
@@ -71,7 +71,7 @@ export default function LogoUploader({ value, onChange }) {
           <div className="logo-uploader-preview-meta">
             <div className="logo-uploader-preview-label">Current logo</div>
             <div className="logo-uploader-preview-size">
-              {Math.ceil(value.length * 0.75 / 1024)} KB
+              {Math.ceil((value.length * 0.75) / 1024)} KB
             </div>
           </div>
         </div>
@@ -82,24 +82,16 @@ export default function LogoUploader({ value, onChange }) {
         ref={inputRef}
         type="file"
         accept={ACCEPTED}
-        onChange={e => handleFile(e.target.files?.[0])}
+        onChange={(e) => handleFile(e.target.files?.[0])}
         style={{ display: 'none' }}
       />
 
       <div className="logo-uploader-actions">
-        <button
-          type="button"
-          className="sbtn"
-          onClick={() => inputRef.current?.click()}
-        >
+        <button type="button" className="sbtn" onClick={() => inputRef.current?.click()}>
           {value ? 'Replace logo' : 'Choose logo file'}
         </button>
         {value && (
-          <button
-            type="button"
-            className="sbtn"
-            onClick={handleClear}
-          >
+          <button type="button" className="sbtn" onClick={handleClear}>
             Remove
           </button>
         )}

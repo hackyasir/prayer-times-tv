@@ -1,0 +1,46 @@
+# ── .editorconfig ─────────────────────────────────────────────────────
+#
+# Cross-editor formatting baseline. Read by VS Code (native), JetBrains
+# IDEs, vim, and most modern editors via plugin. Establishes the
+# "physical" file conventions (line endings, indent style, charset)
+# that Prettier and ESLint then build on top of.
+#
+# Why this file FIRST (before Prettier):
+#   Prettier respects line endings from .editorconfig, so setting LF
+#   here means Prettier's first auto-format produces consistently-LF
+#   files. Without this, Prettier may inherit whatever endings each
+#   file already has — preserving the CRLF/LF mix that's been creating
+#   noise in git diffs across sessions.
+#
+# Spec: https://editorconfig.org/
+
+root = true
+
+# ── Defaults for all files ────────────────────────────────────────────
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# ── Markdown: preserve trailing whitespace ────────────────────────────
+# Markdown uses "two trailing spaces" to mean a hard line break.
+# Trimming them would silently break formatting in some renderers.
+[*.md]
+trim_trailing_whitespace = false
+
+# ── Windows batch files: must use CRLF ────────────────────────────────
+# Some Windows command-line tools (older cmd.exe builds, schtasks)
+# choke on LF-only .bat files. Keep them CRLF for safety.
+[*.bat]
+end_of_line = crlf
+
+# ── YAML: enforce 2-space indent strictly (GitHub Actions is picky) ──
+[*.{yml,yaml}]
+indent_size = 2
+
+# ── JSON: 2-space indent (default for npm/Vite/etc.) ─────────────────
+[*.json]
+indent_size = 2

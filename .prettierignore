@@ -1,0 +1,34 @@
+# Prettier ignore — mirrors .gitignore for files that shouldn't be
+# auto-formatted. Generated files, lockfiles, and build artifacts get
+# rewritten by tools that don't care about our formatting rules.
+
+node_modules/
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+.vitest-cache/
+
+# Lockfiles are managed by npm — never hand-edit.
+package-lock.json
+
+# Local sync helpers (gitignored already, but skip here too)
+sync.bat
+upload.bat
+precheck.bat
+_unzip_temp/
+
+# Accidentally-extracted upload/sync content
+prayer-times-tv-upload/
+prayer-times-tv/
+prayer-times-tv-upload.zip
+prayer-times-tv.zip
+
+# Logs and temp
+*.log
+*.tmp
+
+# Public assets — don't touch the shipped service worker, manifest, etc.
+# (Prettier can rewrite minified output undesirably.)
+public/sw.js

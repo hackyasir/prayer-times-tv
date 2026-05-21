@@ -72,6 +72,7 @@ src/
 Not every new feature needs tests. The rule used in this project:
 
 **Write tests for:**
+
 - New `lib/*` functions — pure logic with edge cases is the highest test-ROI
 - Data migrations or settings persistence — silent failures are dangerous
 - Logic that's **duplicated across multiple files** — drift risk
@@ -79,6 +80,7 @@ Not every new feature needs tests. The rule used in this project:
 - Code with subtle edge cases (boundary values, null inputs, rounding, time math)
 
 **Skip tests for:**
+
 - Pure visual layout / CSS — verify by looking at the screen
 - Trivial prop drilling and state passthroughs
 - Component wiring without computation (e.g. button → callback)
@@ -92,14 +94,14 @@ Not every new feature needs tests. The rule used in this project:
 
 ## What's covered
 
-| File | Tests | Type | Focus |
-|---|---:|---|---|
-| `lib/__tests__/hijri.test.js` | 25 | Unit | Gregorian↔Hijri conversion; Eid auto-detection; **Hijri offset bug regression** |
-| `lib/__tests__/formatters.test.js` | 30 | Unit | Time formatting, countdown, compass bearings, edge cases |
-| `lib/__tests__/prayerCalc.test.js` | 20 | Unit | All 12 calculation methods, prayer ordering invariants, madhab, high-latitude |
-| `lib/__tests__/iqamah.test.js` | 25 | Unit | Manual / auto-rounding modes; **safety floor (iqamah never before adhan)**; Maghrib buf=0 convention |
-| `components/__tests__/NumberStepper.test.jsx` | 20 | Component | iOS spinner replacement, clamping, disabled states, digit-only input |
-| `context/__tests__/SettingsContext.test.jsx` | 20 | Component | **Legacy migrations** (eid array → eidFitr/eidAdha, chimeEnabled → split), draft/applied separation, persistence |
+| File                                          | Tests | Type      | Focus                                                                                                            |
+| --------------------------------------------- | ----: | --------- | ---------------------------------------------------------------------------------------------------------------- |
+| `lib/__tests__/hijri.test.js`                 |    25 | Unit      | Gregorian↔Hijri conversion; Eid auto-detection; **Hijri offset bug regression**                                  |
+| `lib/__tests__/formatters.test.js`            |    30 | Unit      | Time formatting, countdown, compass bearings, edge cases                                                         |
+| `lib/__tests__/prayerCalc.test.js`            |    20 | Unit      | All 12 calculation methods, prayer ordering invariants, madhab, high-latitude                                    |
+| `lib/__tests__/iqamah.test.js`                |    25 | Unit      | Manual / auto-rounding modes; **safety floor (iqamah never before adhan)**; Maghrib buf=0 convention             |
+| `components/__tests__/NumberStepper.test.jsx` |    20 | Component | iOS spinner replacement, clamping, disabled states, digit-only input                                             |
+| `context/__tests__/SettingsContext.test.jsx`  |    20 | Component | **Legacy migrations** (eid array → eidFitr/eidAdha, chimeEnabled → split), draft/applied separation, persistence |
 
 **~140 tests total.**
 
@@ -114,14 +116,14 @@ Each suite includes tests for bugs we've actually encountered:
 
 ### Not tested (intentional)
 
-| Component | Why skipped |
-|---|---|
-| `PrayerList` | ~25 props, prop-driven UI — bugs surface visually in seconds. Brittle assertions vs. low real-bug catch rate. |
-| `SettingsPanel` | Admin-only UI behind PIN; 109 inline-styled inputs. Low ROI. |
-| `Footer` test buttons | Dev-only, manual verification sufficient. |
-| `widgets/*` | Mostly SVG renderers with little logic. Visual inspection covers them. |
-| End-to-end / Playwright | Offline display app has no user flows worth E2E testing. |
-| Visual regression | Out of scope; would need baseline image management. |
+| Component               | Why skipped                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `PrayerList`            | ~25 props, prop-driven UI — bugs surface visually in seconds. Brittle assertions vs. low real-bug catch rate. |
+| `SettingsPanel`         | Admin-only UI behind PIN; 109 inline-styled inputs. Low ROI.                                                  |
+| `Footer` test buttons   | Dev-only, manual verification sufficient.                                                                     |
+| `widgets/*`             | Mostly SVG renderers with little logic. Visual inspection covers them.                                        |
+| End-to-end / Playwright | Offline display app has no user flows worth E2E testing.                                                      |
+| Visual regression       | Out of scope; would need baseline image management.                                                           |
 
 ---
 
@@ -153,12 +155,12 @@ Generates HTML + LCOV reports in `./coverage/`. Open `coverage/index.html` in a 
 
 Coverage targets (from `vitest.config.js`):
 
-| Metric | Threshold |
-|---|---|
-| Lines | 70% |
-| Functions | 70% |
-| Branches | 60% |
-| Statements | 70% |
+| Metric     | Threshold |
+| ---------- | --------- |
+| Lines      | 70%       |
+| Functions  | 70%       |
+| Branches   | 60%       |
+| Statements | 70%       |
 
 > Coverage targets are intentionally moderate to avoid pressure to write low-value tests. Adjust in `vitest.config.js` if your team prefers higher.
 
@@ -259,7 +261,7 @@ vi.setSystemTime(new Date('2026-05-18T12:00:00Z'));
 
 // ... code that reads Date.now() or new Date()
 
-vi.useRealTimers();  // afterEach also does this automatically
+vi.useRealTimers(); // afterEach also does this automatically
 ```
 
 ### Environment variables
@@ -277,12 +279,15 @@ vi.stubEnv('VITE_SETTINGS_PIN', 'test1234');
 //   "fetch() called in test without a mock"
 // Tests that need fetch must install their own:
 
-vi.stubGlobal('fetch', vi.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ temperature: 22 }),
-  })
-));
+vi.stubGlobal(
+  'fetch',
+  vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ temperature: 22 }),
+    })
+  )
+);
 ```
 
 ### localStorage
@@ -299,9 +304,9 @@ A minimal in-memory polyfill is installed in `setup.js` (Vitest's Node environme
 
 The coverage report (`npm run test:coverage`) includes:
 
-- **`src/lib/**/*.js`** — pure functions
-- **`src/components/**/*.{js,jsx}`** — React components
-- **`src/context/**/*.{js,jsx}`** — context + hooks
+- **`src/lib/**/\*.js`\*\* — pure functions
+- **`src/components/**/\*.{js,jsx}`\*\* — React components
+- **`src/context/**/\*.{js,jsx}`\*\* — context + hooks
 
 Excluded:
 
@@ -402,7 +407,7 @@ Vitest's default per-test timeout is 5 seconds. If you have a legitimate long-ru
 ```js
 it('long async work', async () => {
   // ...
-}, 10_000);  // 10-second timeout for this test
+}, 10_000); // 10-second timeout for this test
 ```
 
 But usually the right fix is to mock the slow dependency.

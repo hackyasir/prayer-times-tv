@@ -70,9 +70,9 @@ export default defineConfig({
       ],
       // Phase 1 target — adjust upward as we add tests.
       thresholds: {
-        lines:      70,
-        functions:  70,
-        branches:   60,
+        lines: 70,
+        functions: 70,
+        branches: 60,
         statements: 70,
       },
     },

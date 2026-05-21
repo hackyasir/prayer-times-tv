@@ -31,7 +31,8 @@ export default function WeatherStrip({ weather, weatherState }) {
   return (
     <div className="weather-strip" aria-label="Current weather">
       <span className="weather-strip-temp">
-        {weather.temp}{weather.unit}
+        {weather.temp}
+        {weather.unit}
       </span>
       <span className="weather-strip-emoji" aria-hidden="true">
         {emoji}
@@ -40,7 +41,8 @@ export default function WeatherStrip({ weather, weatherState }) {
           More relevant than just "Overcast" / "Clear Sky". */}
       {weather.feelsLike != null && (
         <span className="weather-strip-desc">
-          {t('widget.weather.feelsLike')} {weather.feelsLike}{weather.unit}
+          {t('widget.weather.feelsLike')} {weather.feelsLike}
+          {weather.unit}
         </span>
       )}
       {/* Hi/Lo — pushed to the right edge via flex auto-margin on this span.

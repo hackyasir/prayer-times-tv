@@ -23,16 +23,20 @@ import { useT } from '../../i18n/I18nContext.jsx';
 
 // Same viewBox as SunArc so the two components render at identical size
 // when swapped. See SunArc.jsx for full geometry explanation.
-const ARC_W  = 400;
-const ARC_H  = 84;   // matches SunArc — accommodates larger labels
-const PAD_X  = 22;
+const ARC_W = 400;
+const ARC_H = 84; // matches SunArc — accommodates larger labels
+const PAD_X = 22;
 const ARC_Y0 = 46;
 const ARC_Y1 = 8;
 
 /** Quadratic Bézier point at parameter t ∈ [0..1]. */
 function bezierPoint(t) {
-  const x0 = PAD_X, x1 = ARC_W / 2, x2 = ARC_W - PAD_X;
-  const y0 = ARC_Y0, y1 = ARC_Y1, y2 = ARC_Y0;
+  const x0 = PAD_X,
+    x1 = ARC_W / 2,
+    x2 = ARC_W - PAD_X;
+  const y0 = ARC_Y0,
+    y1 = ARC_Y1,
+    y2 = ARC_Y0;
   const mt = 1 - t;
   return {
     x: mt * mt * x0 + 2 * mt * t * x1 + t * t * x2,
@@ -89,7 +93,7 @@ function MoonPhase({ cx, cy, r, phase }) {
   // horizontal radius shrinks as the moon gets fuller. We then offset
   // it left or right depending on which side should be dark.
   const waxing = phase < 0.5;
-  const direction = waxing ? -1 : 1;  // -1 = dark on left, +1 = dark on right
+  const direction = waxing ? -1 : 1; // -1 = dark on left, +1 = dark on right
   // Ellipse needs to be offset so its visible edge meets the moon's centerline
   // exactly when c crosses 0 (quarter moon). offset = (r - ellipseRx) * direction
   const offsetX = (r - ellipseRx) * direction * (c > 0 ? 1 : -1);
@@ -100,24 +104,17 @@ function MoonPhase({ cx, cy, r, phase }) {
   return (
     <g className="moon-arc-phase">
       {haloOpacity > 0.02 && (
-        <circle cx={cx} cy={cy} r={r * 1.8}
-                className="moon-arc-halo" opacity={haloOpacity}/>
+        <circle cx={cx} cy={cy} r={r * 1.8} className="moon-arc-halo" opacity={haloOpacity} />
       )}
       {/* Lit disk */}
-      <circle cx={cx} cy={cy} r={r} className="moon-arc-lit"/>
+      <circle cx={cx} cy={cy} r={r} className="moon-arc-lit" />
       {/* Dark ellipse covering the unlit portion. Skip when phase exactly
        * 0.5 (full moon) to avoid a zero-radius render. */}
       {ellipseRx > 0.05 && (
-        <ellipse
-          cx={cx + offsetX}
-          cy={cy}
-          rx={ellipseRx}
-          ry={r}
-          className="moon-arc-dark"
-        />
+        <ellipse cx={cx + offsetX} cy={cy} rx={ellipseRx} ry={r} className="moon-arc-dark" />
       )}
       {/* Subtle outline so the moon is visible even at near-new phase */}
-      <circle cx={cx} cy={cy} r={r} className="moon-arc-ring"/>
+      <circle cx={cx} cy={cy} r={r} className="moon-arc-ring" />
     </g>
   );
 }
@@ -133,13 +130,15 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
   // (e.g. near poles). Fall back to "yesterday's rise" or "tomorrow's set"
   // so we always have a valid window.
   if (!moonrise || !moonset) {
-    const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
-    const tomorrow  = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const prevTimes = SunCalc.getMoonTimes(yesterday, lat, lng);
-    const nextTimes = SunCalc.getMoonTimes(tomorrow,  lat, lng);
+    const nextTimes = SunCalc.getMoonTimes(tomorrow, lat, lng);
     if (!moonrise) moonrise = prevTimes.rise;
-    if (!moonset)  moonset  = nextTimes.set;
-    if (!moonrise || !moonset) return null;  // truly degenerate, bail
+    if (!moonset) moonset = nextTimes.set;
+    if (!moonrise || !moonset) return null; // truly degenerate, bail
   }
 
   // If moonset is BEFORE moonrise (e.g. moon rises evening, sets next morning),
@@ -170,9 +169,9 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
   const moonPos = bezierPoint(tClamped);
 
   const transitPos = bezierPoint(0.5);
-  const startPos = { x: PAD_X,           y: ARC_Y0 };
-  const endPos   = { x: ARC_W - PAD_X,   y: ARC_Y0 };
-  const arcPath  = `M${startPos.x},${startPos.y} Q${ARC_W / 2},${ARC_Y1} ${endPos.x},${endPos.y}`;
+  const startPos = { x: PAD_X, y: ARC_Y0 };
+  const endPos = { x: ARC_W - PAD_X, y: ARC_Y0 };
+  const arcPath = `M${startPos.x},${startPos.y} Q${ARC_W / 2},${ARC_Y1} ${endPos.x},${endPos.y}`;
 
   return (
     <div className="sun-arc moon-arc">
@@ -183,31 +182,49 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
         aria-label="Moon arc"
       >
         {/* Dotted full arc (always drawn) */}
-        <path d={arcPath} className="sun-arc-path moon-arc-path"/>
+        <path d={arcPath} className="sun-arc-path moon-arc-path" />
         {/* Bright overlay — only while moon is in the sky */}
-        {inMoonNight && (
-          <path d={arcPath} className="sun-arc-path-active moon-arc-path-active"/>
-        )}
+        {inMoonNight && <path d={arcPath} className="sun-arc-path-active moon-arc-path-active" />}
 
         {/* Marker dots — moonrise / transit / moonset */}
-        <circle cx={startPos.x}   cy={startPos.y}   r="2.5" className="sun-arc-marker moon-arc-marker"/>
-        <circle cx={transitPos.x} cy={transitPos.y} r="2"   className="sun-arc-marker moon-arc-marker"/>
-        <circle cx={endPos.x}     cy={endPos.y}     r="2.5" className="sun-arc-marker moon-arc-marker"/>
+        <circle
+          cx={startPos.x}
+          cy={startPos.y}
+          r="2.5"
+          className="sun-arc-marker moon-arc-marker"
+        />
+        <circle
+          cx={transitPos.x}
+          cy={transitPos.y}
+          r="2"
+          className="sun-arc-marker moon-arc-marker"
+        />
+        <circle cx={endPos.x} cy={endPos.y} r="2.5" className="sun-arc-marker moon-arc-marker" />
 
         {/* Current moon — phase visualization */}
-        {inMoonNight && (
-          <MoonPhase cx={moonPos.x} cy={moonPos.y} r={6} phase={moonPhase}/>
-        )}
+        {inMoonNight && <MoonPhase cx={moonPos.x} cy={moonPos.y} r={6} phase={moonPhase} />}
 
         {/* Labels — moonrise / transit / moonset */}
-        <text x={startPos.x}   y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.moonrise')}</text>
-        <text x={transitPos.x} y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.transit')}</text>
-        <text x={endPos.x}     y={ARC_Y0 + 12} className="sun-arc-label">{t('widget.moon.moonset')}</text>
+        <text x={startPos.x} y={ARC_Y0 + 12} className="sun-arc-label">
+          {t('widget.moon.moonrise')}
+        </text>
+        <text x={transitPos.x} y={ARC_Y0 + 12} className="sun-arc-label">
+          {t('widget.moon.transit')}
+        </text>
+        <text x={endPos.x} y={ARC_Y0 + 12} className="sun-arc-label">
+          {t('widget.moon.moonset')}
+        </text>
 
         {/* Times — tight under labels */}
-        <text x={startPos.x}   y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonrise,    cityTz)}</text>
-        <text x={transitPos.x} y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonTransit, cityTz)}</text>
-        <text x={endPos.x}     y={ARC_Y0 + 26} className="sun-arc-time">{fmt12(moonset,     cityTz)}</text>
+        <text x={startPos.x} y={ARC_Y0 + 26} className="sun-arc-time">
+          {fmt12(moonrise, cityTz)}
+        </text>
+        <text x={transitPos.x} y={ARC_Y0 + 26} className="sun-arc-time">
+          {fmt12(moonTransit, cityTz)}
+        </text>
+        <text x={endPos.x} y={ARC_Y0 + 26} className="sun-arc-time">
+          {fmt12(moonset, cityTz)}
+        </text>
       </svg>
     </div>
   );

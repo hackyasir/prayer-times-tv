@@ -39,111 +39,279 @@
   /* .ccol contains [SunArc, .clock, .next-sec, .hadith].  We hide all but
    * SunArc above.  Tighten .ccol's gap so SunArc sits snug below the prayer
    * cards without a giant empty column. */
-  .ccol { gap: 0; min-height: 0; }
+  .ccol {
+    gap: 0;
+    min-height: 0;
+  }
 }
 
 /* ── 768px+ — side-by-side, viewport lock ────────────────────────────────── */
 @media (min-width: 768px) {
-  .app       { height: 100svh; padding: 2.4vh 2.8vw; }
-  .corner    { display: block; }
-  .hdr       { flex-wrap: nowrap; gap: 0; }
-  .hdr-right { text-align: right; flex: unset; }
-  .grid      { gap: 1.2vw; }
-  .grid-main { gap: 1.2vw; }
-  .ccol      { gap: .8vh; }
-  .pcol      { align-self: stretch; }
-  .pcard     { flex: 1; min-height: clamp(36px, 7vh, 80px); max-height: clamp(60px, 14vh, 160px); }
+  .app {
+    height: 100svh;
+    padding: 2.4vh 2.8vw;
+  }
+  .corner {
+    display: block;
+  }
+  .hdr {
+    flex-wrap: nowrap;
+    gap: 0;
+  }
+  .hdr-right {
+    text-align: right;
+    flex: unset;
+  }
+  .grid {
+    gap: 1.2vw;
+  }
+  .grid-main {
+    gap: 1.2vw;
+  }
+  .ccol {
+    gap: 0.8vh;
+  }
+  .pcol {
+    align-self: stretch;
+  }
+  .pcard {
+    flex: 1;
+    min-height: clamp(36px, 7vh, 80px);
+    max-height: clamp(60px, 14vh, 160px);
+  }
 }
 
 /* ── 768px+ portrait — kiosk portrait stack ─────────────────────────────── */
 @media (min-width: 768px) and (orientation: portrait) {
-  .grid-main  { flex-direction: column; }
-  .ccol       { order: -1; gap: 2vh; }
-  .clock-main { font-size: calc(clamp(3.5rem, 12vw, 18rem) * var(--t-fs, 1)); }
-  .countdown  { font-size: calc(clamp(2rem, 6vw, 10rem) * var(--t-fs, 1)); }
-  .next-name  { font-size: calc(clamp(2rem, 5vw, 9rem) * var(--t-fs, 1)); }
-  .pcol       { justify-content: space-evenly; }
+  .grid-main {
+    flex-direction: column;
+  }
+  .ccol {
+    order: -1;
+    gap: 2vh;
+  }
+  .clock-main {
+    font-size: calc(clamp(3.5rem, 12vw, 18rem) * var(--t-fs, 1));
+  }
+  .countdown {
+    font-size: calc(clamp(2rem, 6vw, 10rem) * var(--t-fs, 1));
+  }
+  .next-name {
+    font-size: calc(clamp(2rem, 5vw, 9rem) * var(--t-fs, 1));
+  }
+  .pcol {
+    justify-content: space-evenly;
+  }
 }
 
 /* ── 768px+ AND max-height 500px — landscape phone (e.g. 932×430) ────────── */
 /* Only max-height query in the codebase — justified: landscape phones overflow */
 @media (min-width: 768px) and (max-height: 500px) {
   /* Hide Arabic prayer names — no vertical space at ~34px card height */
-  .par            { display: none; }
+  .par {
+    display: none;
+  }
   /* Compress cards further */
-  .pcard          { min-height: clamp(24px, 6vh, 48px); max-height: clamp(30px, 7.5vh, 60px); }
+  .pcard {
+    min-height: clamp(24px, 6vh, 48px);
+    max-height: clamp(30px, 7.5vh, 60px);
+  }
   /* Compress clock column */
-  .hadith         { display: none; }
-  .ccol           { gap: 0.2vh; }
-  .ring-wrap      { display: none; }
+  .hadith {
+    display: none;
+  }
+  .ccol {
+    gap: 0.2vh;
+  }
+  .ring-wrap {
+    display: none;
+  }
   /* Compress Jumuah banner */
-  .jumuah-arabic  { display: none; }
-  .jumuah-banner  { max-height: clamp(30px, 7.5vh, 60px); overflow: hidden; padding: clamp(2px,.3vh,5px) clamp(6px,.8vw,12px); }
-  .jumuah-slots   { margin-top: 0; gap: .2vw; }
-  .jumuah-slot    { padding: clamp(1px,.2vh,3px) clamp(4px,.5vw,8px); }
+  .jumuah-arabic {
+    display: none;
+  }
+  .jumuah-banner {
+    max-height: clamp(30px, 7.5vh, 60px);
+    overflow: hidden;
+    padding: clamp(2px, 0.3vh, 5px) clamp(6px, 0.8vw, 12px);
+  }
+  .jumuah-slots {
+    margin-top: 0;
+    gap: 0.2vw;
+  }
+  .jumuah-slot {
+    padding: clamp(1px, 0.2vh, 3px) clamp(4px, 0.5vw, 8px);
+  }
   /* Compress Eid banner */
-  .eid-arabic     { display: none; }
-  .eid-banner     { max-height: clamp(30px, 7.5vh, 60px); overflow: hidden; padding: clamp(2px,.3vh,5px) clamp(6px,.8vw,12px); }
-  .eid-slots      { margin-top: 0; gap: .2vw; }
-  .eid-slot       { padding: clamp(1px,.2vh,3px) clamp(4px,.5vw,8px); }
+  .eid-arabic {
+    display: none;
+  }
+  .eid-banner {
+    max-height: clamp(30px, 7.5vh, 60px);
+    overflow: hidden;
+    padding: clamp(2px, 0.3vh, 5px) clamp(6px, 0.8vw, 12px);
+  }
+  .eid-slots {
+    margin-top: 0;
+    gap: 0.2vw;
+  }
+  .eid-slot {
+    padding: clamp(1px, 0.2vh, 3px) clamp(4px, 0.5vw, 8px);
+  }
 }
 
 /* ── 1200px+ — kiosk / TV ────────────────────────────────────────────────── */
 @media (min-width: 1200px) {
-  .app  { padding: 2.4vh 2.8vw; }
-  .grid { gap: 1.5vw; }
+  .app {
+    padding: 2.4vh 2.8vw;
+  }
+  .grid {
+    gap: 1.5vw;
+  }
 }
 
 /* ── 2400px+ — 4K landscape ──────────────────────────────────────────────── */
 @media (min-width: 2400px) {
-  .app  { padding: 3.5vh 3.5vw; }
-  .grid { gap: 2vw; }
+  .app {
+    padding: 3.5vh 3.5vw;
+  }
+  .grid {
+    gap: 2vw;
+  }
 
-  .clock-main    { font-size: calc(clamp(8rem, 11vw, 22rem) * var(--t-fs, 1)); }
-  .clock-sec     { font-size: calc(clamp(2.5rem, 4vw, 7.5rem) * var(--t-fs, 1)); }
-  .countdown     { font-size: calc(clamp(3rem, 6vw, 12rem) * var(--t-fs, 1)); }
-  .countdown-big { font-size: calc(clamp(7rem, 15vw, 28rem) * var(--t-fs, 1)); }
-  .next-name     { font-size: calc(clamp(3rem, 6vw, 12.5rem) * var(--t-fs, 1)); }
-  .next-ar       { font-size: calc(clamp(2rem, 4vw, 8rem) * var(--t-fs, 1)); }
-  .clock-date    { font-size: calc(clamp(1rem, 1.5vw, 2.5rem) * var(--t-fs, 1)); }
-  .next-lbl      { font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1)); }
-  .countdown-lbl { font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1)); }
+  .clock-main {
+    font-size: calc(clamp(8rem, 11vw, 22rem) * var(--t-fs, 1));
+  }
+  .clock-sec {
+    font-size: calc(clamp(2.5rem, 4vw, 7.5rem) * var(--t-fs, 1));
+  }
+  .countdown {
+    font-size: calc(clamp(3rem, 6vw, 12rem) * var(--t-fs, 1));
+  }
+  .countdown-big {
+    font-size: calc(clamp(7rem, 15vw, 28rem) * var(--t-fs, 1));
+  }
+  .next-name {
+    font-size: calc(clamp(3rem, 6vw, 12.5rem) * var(--t-fs, 1));
+  }
+  .next-ar {
+    font-size: calc(clamp(2rem, 4vw, 8rem) * var(--t-fs, 1));
+  }
+  .clock-date {
+    font-size: calc(clamp(1rem, 1.5vw, 2.5rem) * var(--t-fs, 1));
+  }
+  .next-lbl {
+    font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1));
+  }
+  .countdown-lbl {
+    font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1));
+  }
 
-  .pen           { font-size: calc(clamp(1.5rem, 2.2vw, 5rem) * var(--t-fs, 1)); }
-  .par           { font-size: calc(clamp(1.1rem, 1.6vw, 3.5rem) * var(--t-fs, 1)); }
+  .pen {
+    font-size: calc(clamp(1.5rem, 2.2vw, 5rem) * var(--t-fs, 1));
+  }
+  .par {
+    font-size: calc(clamp(1.1rem, 1.6vw, 3.5rem) * var(--t-fs, 1));
+  }
   /* ptime bigger than ptime-iqamah — different sizes, wider columns */
-  .ptime         { font-size: calc(clamp(1.5rem, 2.4vw, 5rem) * var(--t-fs, 1)); width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1)); }
-  .ptime-iqamah  { font-size: calc(clamp(1.2rem, 1.9vw, 4rem) * var(--t-fs, 1)); width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1)); }
-  .pheader-col   { font-size: calc(clamp(0.6rem, 0.85vw, 1.4rem) * var(--t-fs, 1)); width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1)); }
+  .ptime {
+    font-size: calc(clamp(1.5rem, 2.4vw, 5rem) * var(--t-fs, 1));
+    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
+  }
+  .ptime-iqamah {
+    font-size: calc(clamp(1.2rem, 1.9vw, 4rem) * var(--t-fs, 1));
+    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
+  }
+  .pheader-col {
+    font-size: calc(clamp(0.6rem, 0.85vw, 1.4rem) * var(--t-fs, 1));
+    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
+  }
 
-  .app-title     { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
-  .arabic-title  { font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1)); }
-  .loc           { font-size: calc(clamp(0.85rem, 1.2vw, 2rem) * var(--t-fs, 1)); }
-  .hijri         { font-size: calc(clamp(1rem, 1.4vw, 2.4rem) * var(--t-fs, 1)); }
+  .app-title {
+    font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1));
+  }
+  .arabic-title {
+    font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1));
+  }
+  .loc {
+    font-size: calc(clamp(0.85rem, 1.2vw, 2rem) * var(--t-fs, 1));
+  }
+  .hijri {
+    font-size: calc(clamp(1rem, 1.4vw, 2.4rem) * var(--t-fs, 1));
+  }
 
-  .hadith-ar     { font-size: calc(clamp(1.2rem, 1.6vw, 2.6rem) * var(--t-fs, 1)); }
-  .hadith-en     { font-size: calc(clamp(0.7rem, 0.95vw, 1.5rem) * var(--t-fs, 1)); }
+  .hadith-ar {
+    font-size: calc(clamp(1.2rem, 1.6vw, 2.6rem) * var(--t-fs, 1));
+  }
+  .hadith-en {
+    font-size: calc(clamp(0.7rem, 0.95vw, 1.5rem) * var(--t-fs, 1));
+  }
 
-  .pcol  { align-self: stretch; justify-content: stretch; }
-  .pcard { flex: 1; max-height: 20vh; }
-  .ccol  { justify-content: space-between; gap: 0; }
-  .jumuah-banner, .eid-banner { flex: 1; max-height: 20vh; }
+  .pcol {
+    align-self: stretch;
+    justify-content: stretch;
+  }
+  .pcard {
+    flex: 1;
+    max-height: 20vh;
+  }
+  .ccol {
+    justify-content: space-between;
+    gap: 0;
+  }
+  .jumuah-banner,
+  .eid-banner {
+    flex: 1;
+    max-height: 20vh;
+  }
 }
 
 /* ── min-height 2400px — 4K portrait (2160×3840) ────────────────────────── */
 /* 2160px wide falls below the 2400px landscape threshold above */
 @media (min-height: 2400px) {
-  .clock-main    { font-size: calc(clamp(6rem, 9vw, 18rem) * var(--t-fs, 1)); }
-  .clock-sec     { font-size: calc(clamp(2rem, 3.5vw, 7rem) * var(--t-fs, 1)); }
-  .countdown     { font-size: calc(clamp(3rem, 6vw, 12rem) * var(--t-fs, 1)); }
-  .next-name     { font-size: calc(clamp(2.5rem, 5vw, 10rem) * var(--t-fs, 1)); }
-  .next-ar       { font-size: calc(clamp(1.5rem, 3vw, 6rem) * var(--t-fs, 1)); }
-  .pen           { font-size: calc(clamp(1.2rem, 2vw, 4rem) * var(--t-fs, 1)); }
-  .par           { font-size: calc(clamp(1rem, 1.8vw, 3rem) * var(--t-fs, 1)); }
-  .ptime         { font-size: calc(clamp(1.2rem, 2.2vw, 4rem) * var(--t-fs, 1)); width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1)); }
-  .ptime-iqamah  { font-size: calc(clamp(1rem, 1.8vw, 3.2rem) * var(--t-fs, 1)); width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1)); }
-  .pheader-col   { width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1)); }
-  .pcard { flex: 1; max-height: 22vh; }
-  .ccol  { justify-content: space-between; gap: 0; }
-  .jumuah-banner, .eid-banner { flex: 1; max-height: 22vh; }
+  .clock-main {
+    font-size: calc(clamp(6rem, 9vw, 18rem) * var(--t-fs, 1));
+  }
+  .clock-sec {
+    font-size: calc(clamp(2rem, 3.5vw, 7rem) * var(--t-fs, 1));
+  }
+  .countdown {
+    font-size: calc(clamp(3rem, 6vw, 12rem) * var(--t-fs, 1));
+  }
+  .next-name {
+    font-size: calc(clamp(2.5rem, 5vw, 10rem) * var(--t-fs, 1));
+  }
+  .next-ar {
+    font-size: calc(clamp(1.5rem, 3vw, 6rem) * var(--t-fs, 1));
+  }
+  .pen {
+    font-size: calc(clamp(1.2rem, 2vw, 4rem) * var(--t-fs, 1));
+  }
+  .par {
+    font-size: calc(clamp(1rem, 1.8vw, 3rem) * var(--t-fs, 1));
+  }
+  .ptime {
+    font-size: calc(clamp(1.2rem, 2.2vw, 4rem) * var(--t-fs, 1));
+    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
+  }
+  .ptime-iqamah {
+    font-size: calc(clamp(1rem, 1.8vw, 3.2rem) * var(--t-fs, 1));
+    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
+  }
+  .pheader-col {
+    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
+  }
+  .pcard {
+    flex: 1;
+    max-height: 22vh;
+  }
+  .ccol {
+    justify-content: space-between;
+    gap: 0;
+  }
+  .jumuah-banner,
+  .eid-banner {
+    flex: 1;
+    max-height: 22vh;
+  }
 }

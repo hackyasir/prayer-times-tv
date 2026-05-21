@@ -1,0 +1,67 @@
+# ── .github/dependabot.yml ────────────────────────────────────────────
+#
+# GitHub-native dependency update bot. Watches package.json and opens
+# pull requests when packages can be upgraded.
+#
+# What it does for us:
+#   - Security advisories → immediate PR (GitHub does this regardless of
+#     this config, but explicit setup ensures it groups cleanly)
+#   - Weekly check for outdated deps → grouped PRs
+#   - CI runs on each PR (lint + test + build) → bad bumps fail before merge
+#
+# Tuning:
+#   - `interval: weekly` keeps PR volume sane (vs daily firehose)
+#   - `open-pull-requests-limit: 5` caps the in-flight queue
+#   - Grouped updates: prod deps in one PR, dev deps in another →
+#     fewer PRs to review, faster merging when a group is safe
+#
+# Spec: https://docs.github.com/en/code-security/dependabot/
+
+version: 2
+updates:
+  # ── npm packages ────────────────────────────────────────────────────
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'America/Toronto'
+    open-pull-requests-limit: 5
+    # Group related updates so a Monday-morning review handles many
+    # patches in a single PR rather than 10 individual ones.
+    groups:
+      # Dev tooling — vitest, eslint, prettier, etc.
+      # These can usually be updated together with low risk.
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      # React core and other prod runtime deps — riskier, kept separate
+      # so we can review them with more attention.
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'patch'
+    # Conventional-commit style — keeps git history clean.
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: 'scope'
+    labels:
+      - 'dependencies'
+
+  # ── GitHub Actions ─────────────────────────────────────────────────
+  # Keeps deploy.yml's actions/checkout@v4, actions/setup-node@v4, etc.
+  # current. Lower priority than npm but worth automating.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore(ci)'
+    labels:
+      - 'dependencies'
+      - 'github-actions'

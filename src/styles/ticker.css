@@ -59,7 +59,7 @@
 .ticker-segment {
   font-size: calc(clamp(0.8rem, 1.05vw, 1.2rem) * var(--t-fs, 1));
   color: var(--t-accent-dim);
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 500;
   flex-shrink: 0;
@@ -90,11 +90,11 @@
   }
 }
 
-.ticker[data-dir="ltr"] .ticker-track {
+.ticker[data-dir='ltr'] .ticker-track {
   animation: ticker-scroll-ltr 40s linear infinite;
 }
 
-.ticker[data-dir="rtl"] .ticker-track {
+.ticker[data-dir='rtl'] .ticker-track {
   animation: ticker-scroll-rtl 40s linear infinite;
 }
 
@@ -109,9 +109,8 @@
    the trade for accessibility, and acceptable since reduced-motion users
    typically accept some content limitations. */
 @media (prefers-reduced-motion: reduce) {
-
-  .ticker[data-dir="ltr"] .ticker-track,
-  .ticker[data-dir="rtl"] .ticker-track {
+  .ticker[data-dir='ltr'] .ticker-track,
+  .ticker[data-dir='rtl'] .ticker-track {
     animation: none;
     transform: none;
     width: 100%;
@@ -122,7 +121,7 @@
 
   /* Track has two copies for the marquee loop; in static fallback only show
      one so the centred text doesn't read as a double announcement. */
-  .ticker .ticker-segment+.ticker-segment {
+  .ticker .ticker-segment + .ticker-segment {
     display: none;
   }
 }

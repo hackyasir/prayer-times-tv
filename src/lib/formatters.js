@@ -19,10 +19,12 @@ export function fmt12(date, tz) {
   try {
     if (tz) {
       const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz, hour12: false,
-        hour: '2-digit', minute: '2-digit',
+        timeZone: tz,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
       }).formatToParts(date);
-      const get = (t) => parts.find(p => p.type === t)?.value ?? '';
+      const get = (t) => parts.find((p) => p.type === t)?.value ?? '';
       // Intl.DateTimeFormat with hour12:false can return "24" for midnight
       // on some platforms (Node 18+ / V8 newer than ~10.x) instead of "00".
       // Normalize: 24 → 0 so the AM/PM check below picks AM, not PM.
@@ -31,8 +33,11 @@ export function fmt12(date, tz) {
       const m = parseInt(get('minute'), 10);
       return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
     }
-  } catch { /* fall through to device-local */ }
-  const h = date.getHours(), m = date.getMinutes();
+  } catch {
+    /* fall through to device-local */
+  }
+  const h = date.getHours(),
+    m = date.getMinutes();
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
@@ -52,7 +57,8 @@ export function addMins(date, mins) {
 export function fmtCountdown(secs) {
   if (secs <= 0) return '00:00:00';
   return [Math.floor(secs / 3600), Math.floor((secs % 3600) / 60), secs % 60]
-    .map(x => String(x).padStart(2, '0')).join(':');
+    .map((x) => String(x).padStart(2, '0'))
+    .join(':');
 }
 
 /**
@@ -60,7 +66,7 @@ export function fmtCountdown(secs) {
  *   0° → N,  22.5° → NNE,  45° → NE,  ... ,  337.5° → NNW
  */
 export function bearingToCompass(deg) {
-  const i = Math.round(((deg % 360) + 360) % 360 / 22.5) % 16;
+  const i = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
   return COMPASS_16[i];
 }
 

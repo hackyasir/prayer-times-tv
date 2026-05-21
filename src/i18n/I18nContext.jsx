@@ -45,7 +45,7 @@ const I18nContext = createContext(null);
 
 export function I18nProvider({ children }) {
   const { applied } = useSettings();
-  const lang  = applied.lang || 'en';
+  const lang = applied.lang || 'en';
   const isRTL = RTL_LANGS.has(lang);
 
   // Set the html dir attribute so CSS direction-aware properties
@@ -53,25 +53,21 @@ export function I18nProvider({ children }) {
   // Also set lang for accessibility / screen readers.
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.documentElement.dir  = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
   }, [lang, isRTL]);
 
   // Lookup function. Falls through to English if the key is missing in the
   // current language, then to the raw key itself if missing everywhere.
   // This means a translator can ship a partial dictionary safely.
   const t = useMemo(() => {
-    const dict     = DICTS[lang] || DICTS.en;
+    const dict = DICTS[lang] || DICTS.en;
     const fallback = DICTS.en;
     return (key) => dict[key] ?? fallback[key] ?? key;
   }, [lang]);
 
   const value = useMemo(() => ({ t, lang, isRTL }), [t, lang, isRTL]);
 
-  return (
-    <I18nContext.Provider value={value}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 /**

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
-import { I18nProvider }     from './i18n/I18nContext.jsx';
+import { I18nProvider } from './i18n/I18nContext.jsx';
 
 // All stylesheets imported once at app entry. Vite resolves the chain via
 // the @imports in styles/index.css. Theme CSS variables are still injected

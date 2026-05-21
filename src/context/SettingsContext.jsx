@@ -35,8 +35,11 @@ import { STORAGE_KEY } from '../lib/constants.js';
 // over defaults, so any saved value wins; defaults only fill in missing keys.
 
 export const DEFAULTS = {
-  lat: 43.6532, lng: -79.3832, locName: 'Toronto, Ontario, Canada',
-  cityTz: 'America/Toronto', masjidName: '',
+  lat: 43.6532,
+  lng: -79.3832,
+  locName: 'Toronto, Ontario, Canada',
+  cityTz: 'America/Toronto',
+  masjidName: '',
   // ── Mosque branding ──────────────────────────────────────────────────
   // Optional logo uploaded by the admin. Stored as a base64 data URL so
   // it survives in localStorage with no backend or file system access.
@@ -45,7 +48,8 @@ export const DEFAULTS = {
   // - Size capped at ~100 KB in the upload handler to prevent storage bloat
   //   (localStorage has a ~5 MB total budget on most browsers).
   logoDataUrl: '',
-  method: 'MWL', shadow: 1,
+  method: 'MWL',
+  shadow: 1,
   iqamah: { fajr: 30, dhuhr: 30, asr: 30, maghrib: 0, isha: 20 },
   // ── Auto-iqamah (Smart Mode) ─────────────────────────────────────────────
   // When iqamahAutoCalc is true, the iqamah offsets above are IGNORED at
@@ -89,8 +93,8 @@ export const DEFAULTS = {
     { time: '09:30', iqamah: 10, enabled: false },
     { time: '10:30', iqamah: 10, enabled: false },
   ],
-  eidDaysBefore: 7,    // show Eid banner this many days before the actual Eid
-  hijriOffset: 0,    // ±days adjustment for Hijri date display
+  eidDaysBefore: 7, // show Eid banner this many days before the actual Eid
+  hijriOffset: 0, // ±days adjustment for Hijri date display
   highLatRule: 'middleOfNight', // for cities above ~48° latitude
   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
   theme: 'Classic Gold',
@@ -102,10 +106,10 @@ export const DEFAULTS = {
   // a stored true value sets BOTH new flags true; false sets both false.
   chimeAdhan: false,
   chimeIqamah: true,
-  fontScale: 100,  // % — 100 = default, 70..130 adjustable in settings
+  fontScale: 100, // % — 100 = default, 70..130 adjustable in settings
   progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
-  lang: 'en',   // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
-  announcements: '',     // Newline-separated list shown in the bottom ticker.
+  lang: 'en', // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
+  announcements: '', // Newline-separated list shown in the bottom ticker.
   // Empty string = hide ticker entirely.
 
   // ── Blackout mode (Phase 3) ──────────────────────────────────────────────
@@ -116,7 +120,7 @@ export const DEFAULTS = {
   // congregational prayer lengths (Maghrib shortest, Isha longest).
   blackoutEnabled: false,
   blackoutLeadSeconds: 30,
-  blackoutOpacity: 70,    // % opacity of the overlay (0..100)
+  blackoutOpacity: 70, // % opacity of the overlay (0..100)
   // 0 = fully transparent (dashboard fully visible)
   // 85 = default — clearly "in prayer mode" but
   //      dashboard still faintly visible underneath
@@ -154,11 +158,16 @@ function loadSettings() {
     //   - Putting all slots (stripped of `enabled` + `label`) into that
     //     Eid's new array
     //   - Leaving the OTHER Eid at DEFAULTS values
-    if ('eid' in stored && Array.isArray(stored.eid) && !('eidFitr' in stored) && !('eidAdha' in stored)) {
-      const cleanedSlots = stored.eid.map(e => ({
+    if (
+      'eid' in stored &&
+      Array.isArray(stored.eid) &&
+      !('eidFitr' in stored) &&
+      !('eidAdha' in stored)
+    ) {
+      const cleanedSlots = stored.eid.map((e) => ({
         time: e.time || '',
         iqamah: Number(e.iqamah) || 20,
-        enabled: e.enabled !== false,  // preserve original enabled flag
+        enabled: e.enabled !== false, // preserve original enabled flag
       }));
       const guessedKind = stored.eid[0]?.label?.toLowerCase().includes('adha') ? 'adha' : 'fitr';
       if (guessedKind === 'adha') {
@@ -171,7 +180,9 @@ function loadSettings() {
     }
 
     return { ...DEFAULTS, ...stored };
-  } catch { return DEFAULTS; }
+  } catch {
+    return DEFAULTS;
+  }
 }
 function saveSettings(s) {
   try {
@@ -197,7 +208,7 @@ export function SettingsProvider({ children }) {
   // through the panel (geolocation, city-search select, geolocation pin).
   // Auto-persists to localStorage so a page reload keeps the new state.
   const updateApplied = useCallback((partial) => {
-    setApplied(prev => {
+    setApplied((prev) => {
       const next = { ...prev, ...partial };
       saveSettings(next);
       return next;
@@ -209,9 +220,8 @@ export function SettingsProvider({ children }) {
   // OR a function `(prevDrafts) => newDrafts` for functional updates. Does
   // NOT persist; the user must click "Apply" for that.
   const updateDrafts = useCallback((partialOrFn) => {
-    setDrafts(prev => typeof partialOrFn === 'function'
-      ? partialOrFn(prev)
-      : { ...prev, ...partialOrFn }
+    setDrafts((prev) =>
+      typeof partialOrFn === 'function' ? partialOrFn(prev) : { ...prev, ...partialOrFn }
     );
   }, []);
 
@@ -236,11 +246,7 @@ export function SettingsProvider({ children }) {
     applyDrafts,
   };
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  );
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
 
 /**

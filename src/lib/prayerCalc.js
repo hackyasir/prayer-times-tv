@@ -38,22 +38,22 @@ import {
 
 const METHOD_FACTORIES = {
   // Global / multi-regional
-  MWL:           CalculationMethod.MuslimWorldLeague,
+  MWL: CalculationMethod.MuslimWorldLeague,
   // North America
-  ISNA:          CalculationMethod.NorthAmerica,
-  Moonsighting:  CalculationMethod.MoonsightingCommittee,
+  ISNA: CalculationMethod.NorthAmerica,
+  Moonsighting: CalculationMethod.MoonsightingCommittee,
   // Middle East / North Africa
-  Egypt:         CalculationMethod.Egyptian,
-  Makkah:        CalculationMethod.UmmAlQura,
-  Dubai:         CalculationMethod.Dubai,
-  Qatar:         CalculationMethod.Qatar,
-  Kuwait:        CalculationMethod.Kuwait,
+  Egypt: CalculationMethod.Egyptian,
+  Makkah: CalculationMethod.UmmAlQura,
+  Dubai: CalculationMethod.Dubai,
+  Qatar: CalculationMethod.Qatar,
+  Kuwait: CalculationMethod.Kuwait,
   // South / Southeast Asia
-  Karachi:       CalculationMethod.Karachi,
-  Singapore:     CalculationMethod.Singapore,
+  Karachi: CalculationMethod.Karachi,
+  Singapore: CalculationMethod.Singapore,
   // Other regional
-  Turkey:        CalculationMethod.Turkey,
-  Tehran:        CalculationMethod.Tehran,
+  Turkey: CalculationMethod.Turkey,
+  Tehran: CalculationMethod.Tehran,
 };
 
 // ── High-latitude rule mapping ──────────────────────────────────────────────
@@ -75,9 +75,9 @@ const METHOD_FACTORIES = {
 // angle-based calculation works year-round.
 
 const HIGH_LAT_RULES = {
-  middleOfNight:  HighLatitudeRule.MiddleOfTheNight,
+  middleOfNight: HighLatitudeRule.MiddleOfTheNight,
   seventhOfNight: HighLatitudeRule.SeventhOfTheNight,
-  twilightAngle:  HighLatitudeRule.TwilightAngle,
+  twilightAngle: HighLatitudeRule.TwilightAngle,
 };
 
 /**
@@ -105,30 +105,34 @@ const HIGH_LAT_RULES = {
  *           produces a result via the chosen high-latitude rule).
  */
 export function calcTimes(
-  date, lat, lng, method, shadow,
+  date,
+  lat,
+  lng,
+  method,
+  shadow,
   ianaTimezone /* unused */,
   highLatRule = 'middleOfNight'
 ) {
   // adhan-js wants the calendar day; building a fresh Date with just Y/M/D
   // avoids any timezone-shift surprises from passing in a time component.
   const dayOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const coords  = new Coordinates(lat, lng);
+  const coords = new Coordinates(lat, lng);
 
   // Build CalculationParameters: factory → mutate madhab + highLatitudeRule
   const factory = METHOD_FACTORIES[method] || METHOD_FACTORIES.MWL;
-  const params  = factory();
-  params.madhab           = shadow === 2 ? Madhab.Hanafi : Madhab.Shafi;
+  const params = factory();
+  params.madhab = shadow === 2 ? Madhab.Hanafi : Madhab.Shafi;
   params.highLatitudeRule = HIGH_LAT_RULES[highLatRule] || HighLatitudeRule.MiddleOfTheNight;
 
   const pt = new PrayerTimes(coords, dayOnly, params);
 
   return {
-    fajr:    pt.fajr    || null,
+    fajr: pt.fajr || null,
     sunrise: pt.sunrise || null,
-    dhuhr:   pt.dhuhr   || null,
-    asr:     pt.asr     || null,
+    dhuhr: pt.dhuhr || null,
+    asr: pt.asr || null,
     maghrib: pt.maghrib || null,
-    isha:    pt.isha    || null,
+    isha: pt.isha || null,
   };
 }
 
@@ -159,16 +163,22 @@ export function tzOffsetHours(ianaTimezone, date) {
   try {
     // Intl trick: format the same instant in UTC and in the target tz,
     // then diff them to get the UTC offset without a timezone database.
-    const fmt = (tz) => new Intl.DateTimeFormat('en-US', {
-      timeZone: tz,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-      hour12: false,
-    }).format(date);
+    const fmt = (tz) =>
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }).format(date);
     const local = fmt(ianaTimezone);
-    const utc   = fmt('UTC');
-    const parse = s => {
-      const [, mo, dd, yyyy, hh, min, sec] = s.match(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/) || [];
+    const utc = fmt('UTC');
+    const parse = (s) => {
+      const [, mo, dd, yyyy, hh, min, sec] =
+        s.match(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/) || [];
       return Date.UTC(+yyyy, +mo - 1, +dd, +hh % 24, +min, +sec);
     };
     return (parse(local) - parse(utc)) / 3600000;

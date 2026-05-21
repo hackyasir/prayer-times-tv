@@ -35,8 +35,8 @@ export default function Clock({
   activeKey,
   hadiths,
   // Optional render slots for the embedded layout variant
-  topSlot,       // sits above the clock time block (e.g. SunArc)
-  bottomSlot,    // sits below the countdown label (e.g. FastBar)
+  topSlot, // sits above the clock time block (e.g. SunArc)
+  bottomSlot, // sits below the countdown label (e.g. FastBar)
 }) {
   const { t, lang } = useT();
 
@@ -47,11 +47,11 @@ export default function Clock({
   function nextNames() {
     if (!next) return { primary: '', secondary: '' };
     const arabicName = next.ar || '';
-    const localized  = next.key ? t(`prayer.${next.key}`) : next.en;
-    const englishKey = next.en  || '';
+    const localized = next.key ? t(`prayer.${next.key}`) : next.en;
+    const englishKey = next.en || '';
     if (lang === 'ar') return { primary: arabicName, secondary: englishKey };
-    if (lang === 'ur') return { primary: localized,  secondary: arabicName };
-    return                    { primary: localized,  secondary: arabicName };
+    if (lang === 'ur') return { primary: localized, secondary: arabicName };
+    return { primary: localized, secondary: arabicName };
   }
   const names = nextNames();
 
@@ -68,7 +68,7 @@ export default function Clock({
         <div className="clock-date">{dateStr}</div>
       </div>
 
-      <div className="divider"/>
+      <div className="divider" />
 
       {/* Next-prayer section: Arabic + Latin name, then ProgressVisual + countdown */}
       {next ? (
@@ -102,7 +102,10 @@ export default function Clock({
             <>
               <div className="countdown">{fmtCountdown(secsToNext)}</div>
               <div className="countdown-lbl">
-                {fmtStr(t('label.until'), { prayer: names.primary, time: fmt12(next.time, cityTz) })}
+                {fmtStr(t('label.until'), {
+                  prayer: names.primary,
+                  time: fmt12(next.time, cityTz),
+                })}
               </div>
             </>
           )}
@@ -110,16 +113,14 @@ export default function Clock({
           {bottomSlot}
         </div>
       ) : (
-        <div className="clock-complete">
-          {t('label.allComplete')}
-        </div>
+        <div className="clock-complete">{t('label.allComplete')}</div>
       )}
 
-      <div className="divider"/>
+      <div className="divider" />
 
       {/* Rotating hadith — picks one based on current active prayer index */}
       {(() => {
-        const idx = PRAYERS.findIndex(p => p.key === activeKey);
+        const idx = PRAYERS.findIndex((p) => p.key === activeKey);
         const h = hadiths[idx >= 0 ? idx % hadiths.length : 0];
         return (
           <div className="hadith">

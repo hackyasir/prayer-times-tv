@@ -19,6 +19,6 @@ export default function useLunarPhase(hijri) {
     // Hijri string starts with "D Month YYYY AH" — extract D
     const dayMatch = hijri.match(/^(\d+)/);
     const hDay = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-    return Math.abs(Math.sin(Math.PI * (hDay - 1) / 29.5));
+    return Math.abs(Math.sin((Math.PI * (hDay - 1)) / 29.5));
   }, [hijri]);
 }

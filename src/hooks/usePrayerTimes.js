@@ -19,7 +19,16 @@ import { useMemo } from 'react';
 import { calcTimes } from '../lib/prayerCalc.js';
 import { PRAYERS } from '../lib/constants.js';
 
-export default function usePrayerTimes({ cityNow, now, lat, lng, method, shadow, cityTz, highLatRule }) {
+export default function usePrayerTimes({
+  cityNow,
+  now,
+  lat,
+  lng,
+  method,
+  shadow,
+  cityTz,
+  highLatRule,
+}) {
   // Today's prayer times — recompute only when city date / location / method changes.
   // (Note: we use `cityNow.toDateString()` as a dep so the memo invalidates exactly
   // when the city's calendar day rolls over, not on every clock tick.)
@@ -46,13 +55,13 @@ export default function usePrayerTimes({ cityNow, now, lat, lng, method, shadow,
 
   // Active + next prayer derivation
   const { active, next, activeStart } = useMemo(() => {
-    let active      = null;
-    let activeStart = null;   // absolute UTC instant when active prayer entered
-    let next        = null;
+    let active = null;
+    let activeStart = null; // absolute UTC instant when active prayer entered
+    let next = null;
 
     // Walk today's prayers in order; we're "in" prayer i if t[i] <= now < t[i+1]
     for (let i = 0; i < PRAYERS.length; i++) {
-      const t     = todayTimes[PRAYERS[i].key];
+      const t = todayTimes[PRAYERS[i].key];
       const tNext = todayTimes[PRAYERS[i + 1]?.key];
       if (t && t <= now && (!tNext || tNext > now)) {
         active = PRAYERS[i];
@@ -63,7 +72,10 @@ export default function usePrayerTimes({ cityNow, now, lat, lng, method, shadow,
     // The next prayer today (strictly after now)
     for (let i = 0; i < PRAYERS.length; i++) {
       const t = todayTimes[PRAYERS[i].key];
-      if (t && t > now) { next = { ...PRAYERS[i], time: t }; break; }
+      if (t && t > now) {
+        next = { ...PRAYERS[i], time: t };
+        break;
+      }
     }
 
     // Pre-Fajr window: clock past midnight, Fajr hasn't arrived.
@@ -90,7 +102,7 @@ export default function usePrayerTimes({ cityNow, now, lat, lng, method, shadow,
   const ringProgress = useMemo(() => {
     if (!active || !next || !activeStart) return 0;
     const start = activeStart;
-    const end   = next.time;
+    const end = next.time;
     if (end <= start) return 0;
     return Math.min(1, Math.max(0, (now - start) / (end - start)));
   }, [active, next, activeStart, now]);

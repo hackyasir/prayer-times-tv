@@ -33,11 +33,7 @@
  */
 export function computeIqamah(adhan, opts = {}) {
   if (!adhan) return null;
-  const {
-    autoCalc       = false,
-    bufferMinutes  = 0,
-    offsetMinutes  = 0,
-  } = opts;
+  const { autoCalc = false, bufferMinutes = 0, offsetMinutes = 0 } = opts;
 
   // Manual mode — straight addition.
   if (!autoCalc) {

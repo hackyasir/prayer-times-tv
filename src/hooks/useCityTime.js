@@ -34,33 +34,41 @@ export default function useCityTime(cityTz) {
     let h, m, s, weekday, monthName, dayNum, yearNum;
     try {
       const fmt = new Intl.DateTimeFormat('en-US', {
-        timeZone: cityTz, hour12: false,
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+        timeZone: cityTz,
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
       });
       const parts = fmt.formatToParts(now);
-      const get = (t) => parts.find(p => p.type === t)?.value ?? '';
+      const get = (t) => parts.find((p) => p.type === t)?.value ?? '';
       h = parseInt(get('hour'), 10);
       m = parseInt(get('minute'), 10);
       s = parseInt(get('second'), 10);
-      weekday   = get('weekday');
+      weekday = get('weekday');
       monthName = get('month');
-      dayNum    = parseInt(get('day'), 10);
-      yearNum   = parseInt(get('year'), 10);
+      dayNum = parseInt(get('day'), 10);
+      yearNum = parseInt(get('year'), 10);
     } catch {
-      h = now.getHours(); m = now.getMinutes(); s = now.getSeconds();
-      weekday   = DAYS[now.getDay()];
+      h = now.getHours();
+      m = now.getMinutes();
+      s = now.getSeconds();
+      weekday = DAYS[now.getDay()];
       monthName = MONTHS_FULL[now.getMonth()];
-      dayNum    = now.getDate();
-      yearNum   = now.getFullYear();
+      dayNum = now.getDate();
+      yearNum = now.getFullYear();
     }
-    const weekdayIdx = DAYS.indexOf(weekday);            // 0..6 (Sun..Sat)
-    const monthIdx   = MONTHS_FULL.indexOf(monthName);   // 0..11
-    const anchor     = new Date(yearNum, monthIdx, dayNum, h, m, s);
+    const weekdayIdx = DAYS.indexOf(weekday); // 0..6 (Sun..Sat)
+    const monthIdx = MONTHS_FULL.indexOf(monthName); // 0..11
+    const anchor = new Date(yearNum, monthIdx, dayNum, h, m, s);
     return { h, m, s, weekday, monthName, dayNum, yearNum, weekdayIdx, monthIdx, anchor };
   }, [now, cityTz]);
 
-  const cityNow  = cityNowParts.anchor;
+  const cityNow = cityNowParts.anchor;
   const isFriday = cityNowParts.weekdayIdx === 5;
 
   return { now, cityNow, cityNowParts, isFriday };

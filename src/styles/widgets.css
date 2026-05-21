@@ -9,7 +9,7 @@
 /* ── Footer / status strip ───────────────────────────────────────────────── */
 .ftr {
   flex-shrink: 0;
-  padding: .5vh 0 .2vh;
+  padding: 0.5vh 0 0.2vh;
   position: relative;
   z-index: 1;
   display: flex;
@@ -19,8 +19,8 @@
 }
 
 .ftr-txt {
-  font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
-  letter-spacing: .15em;
+  font-size: calc(clamp(0.438rem, 0.75vw, 0.75rem) * var(--t-fs, 1));
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--t-text-dim);
 }
@@ -37,13 +37,13 @@
 
 .ftr-dots {
   display: flex;
-  gap: clamp(4px, .4vw, 8px);
+  gap: clamp(4px, 0.4vw, 8px);
   align-items: center;
 }
 
 .ftr-dot {
-  width: clamp(3px, .3vw, 6px);
-  height: clamp(3px, .3vw, 6px);
+  width: clamp(3px, 0.3vw, 6px);
+  height: clamp(3px, 0.3vw, 6px);
   border-radius: 50%;
   background: var(--t-border);
 }
@@ -60,20 +60,20 @@
  * .is-active is the state toggle. */
 .test-btn {
   background: transparent;
-  border: 1px solid rgba(201, 168, 76, .15);
+  border: 1px solid rgba(201, 168, 76, 0.15);
   border-radius: var(--radius-xs);
   padding: 2px 8px;
-  color: #9A8B6E;
+  color: #9a8b6e;
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.438rem, .72vw, 0.688rem) * var(--t-fs, 1));
-  letter-spacing: .1em;
+  font-size: calc(clamp(0.438rem, 0.72vw, 0.688rem) * var(--t-fs, 1));
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .test-btn.is-disabled {
   cursor: default;
-  opacity: .7;
+  opacity: 0.7;
 }
 /* Compact variant — used by the ✕ clear button (no letter-spacing/text-transform
  * needed, less horizontal padding). */
@@ -86,24 +86,36 @@
 /* Active-state tints. Each variant changes border + text color when the
  * `.is-active` class is also present. Keep these in lock-step with the
  * JSX class composition in Footer.jsx. */
-.test-btn--jumuah.is-active  { border-color: rgba( 61, 200, 120, .5); color: #3DC878; }
-.test-btn--eid.is-active     { border-color: rgba(196, 158, 255, .5); color: #c49eff; }
-.test-btn--neutral.is-active { border-color: rgba(255, 255, 255, .5); color: #FFFFFF; }
-.test-btn--moon.is-active    { border-color: rgba(180, 200, 230, .5); color: #c5d4e6; }
+.test-btn--jumuah.is-active {
+  border-color: rgba(61, 200, 120, 0.5);
+  color: #3dc878;
+}
+.test-btn--eid.is-active {
+  border-color: rgba(196, 158, 255, 0.5);
+  color: #c49eff;
+}
+.test-btn--neutral.is-active {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+}
+.test-btn--moon.is-active {
+  border-color: rgba(180, 200, 230, 0.5);
+  color: #c5d4e6;
+}
 
 /* Settings trigger button */
 .strig {
   background: transparent;
   border: 1px solid var(--t-border);
   border-radius: var(--radius-sm);
-  padding: clamp(3px, .35vh, 6px) clamp(8px, .6vw, 14px);
+  padding: clamp(3px, 0.35vh, 6px) clamp(8px, 0.6vw, 14px);
   color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.438rem, .75vw, 0.75rem) * var(--t-fs, 1));
-  letter-spacing: .1em;
+  font-size: calc(clamp(0.438rem, 0.75vw, 0.75rem) * var(--t-fs, 1));
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all .2s;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
@@ -124,7 +136,7 @@
 .header-qibla {
   display: flex;
   align-items: center;
-  gap: .8vw;
+  gap: 0.8vw;
   flex-shrink: 0;
 }
 
@@ -137,8 +149,8 @@
 
 .header-qibla-lbl {
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.5rem, .8vw, 0.875rem) * var(--t-fs, 1));
-  letter-spacing: .2em;
+  font-size: calc(clamp(0.5rem, 0.8vw, 0.875rem) * var(--t-fs, 1));
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--t-text-dim);
 }
@@ -147,7 +159,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(clamp(0.75rem, 1.1vw, 1.25rem) * var(--t-fs, 1));
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   color: var(--t-accent);
   font-variant-numeric: tabular-nums;
 }
@@ -158,7 +170,7 @@
 .sun-arc {
   width: 92%;
   max-width: 600px;
-  margin: 0 auto .8vh;
+  margin: 0 auto 0.8vh;
   flex-shrink: 0;
 }
 
@@ -174,7 +186,7 @@
 /* The dotted full-day arc (always drawn) */
 .sun-arc-path {
   fill: none;
-  stroke: rgba(var(--t-accent-rgb), .18);
+  stroke: rgba(var(--t-accent-rgb), 0.18);
   stroke-width: 1;
   stroke-dasharray: 3 4;
 }
@@ -201,7 +213,7 @@
 
 .sun-arc-sun-halo {
   fill: var(--t-accent);
-  opacity: .3;
+  opacity: 0.3;
 }
 
 /* Sun rays — short lines radiating from the disk at 45° intervals.
@@ -210,7 +222,7 @@
   stroke: var(--t-accent-hi);
   stroke-width: 1.2;
   stroke-linecap: round;
-  opacity: .85;
+  opacity: 0.85;
 }
 
 /* Labels under the markers (Sunrise / Noon / Sunset).
@@ -220,7 +232,7 @@
  * three labels horizontally without overflow. */
 .sun-arc-label {
   font-size: calc(13px * var(--t-fs, 1));
-  fill: rgba(var(--t-accent-rgb), .65);
+  fill: rgba(var(--t-accent-rgb), 0.65);
   letter-spacing: 0.6px;
   text-anchor: middle;
   font-weight: 700;
@@ -240,11 +252,11 @@
 .weather-strip {
   display: flex;
   align-items: center;
-  gap: .8vw;
-  padding: .6vh 1vw;
-  margin-top: .6vh;
-  background: rgba(var(--t-accent-rgb), .04);
-  border: 1px solid rgba(var(--t-accent-rgb), .1);
+  gap: 0.8vw;
+  padding: 0.6vh 1vw;
+  margin-top: 0.6vh;
+  background: rgba(var(--t-accent-rgb), 0.04);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.1);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   font-weight: 700;
@@ -263,14 +275,14 @@
 
 .weather-strip-desc {
   color: var(--t-text-dim);
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   flex: 1;
   text-align: center;
 }
 
 .weather-strip-hilo {
   color: var(--t-text-dim);
-  letter-spacing: .04em;
+  letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -281,11 +293,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: .8vw;
-  margin-top: .8vh;
-  padding: .5vh .8vw;
-  background: rgba(var(--t-accent-rgb), .06);
-  border: 1px solid rgba(var(--t-accent-rgb), .12);
+  gap: 0.8vw;
+  margin-top: 0.8vh;
+  padding: 0.5vh 0.8vw;
+  background: rgba(var(--t-accent-rgb), 0.06);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.12);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   width: 100%;
@@ -296,19 +308,19 @@
  * Uppercase + bold + dim gold for a quiet but readable hint. */
 .fast-bar-label {
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.625rem, .8vw, 1rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.625rem, 0.8vw, 1rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-accent);
-  letter-spacing: .14em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   flex-shrink: 0;
-  opacity: .8;
+  opacity: 0.8;
 }
 
 .fast-bar-times {
   display: flex;
   align-items: center;
-  gap: .4vw;
+  gap: 0.4vw;
   flex-shrink: 0;
 }
 
@@ -318,14 +330,14 @@
 .fast-bar-endpoint {
   display: flex;
   align-items: baseline;
-  gap: .3vw;
+  gap: 0.3vw;
 }
 
 .fast-bar-endpoint-lbl {
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.563rem, .7vw, 0.875rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.563rem, 0.7vw, 0.875rem) * var(--t-fs, 1));
   color: var(--t-text-dim);
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -340,13 +352,13 @@
 .fast-bar-arrow {
   color: var(--t-accent-dim);
   font-size: calc(1.2rem * var(--t-fs, 1));
-  opacity: .6;
+  opacity: 0.6;
 }
 
 .fast-bar-track {
   flex: 1;
   height: 4px;
-  background: rgba(var(--t-accent-rgb), .12);
+  background: rgba(var(--t-accent-rgb), 0.12);
   border-radius: var(--radius-xs);
   overflow: hidden;
   min-width: 40px;
@@ -362,7 +374,7 @@
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(clamp(1.2rem, 1vw, 1.6rem) * var(--t-fs, 1));
   color: var(--t-accent);
-  letter-spacing: .05em;
+  letter-spacing: 0.05em;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
@@ -379,17 +391,17 @@
 
 .moon-arc-path {
   /* Dim dotted arc — slightly cooler than sun's gold */
-  stroke: rgba(180, 200, 230, .15);
+  stroke: rgba(180, 200, 230, 0.15);
 }
 
 .moon-arc-path-active {
   /* Bright moon-path overlay — silver gradient */
-  stroke: rgba(200, 220, 240, .5);
+  stroke: rgba(200, 220, 240, 0.5);
   stroke-width: 1.5;
 }
 
 .moon-arc-marker {
-  fill: rgba(180, 200, 230, .5);
+  fill: rgba(180, 200, 230, 0.5);
 }
 
 /* Moon disk components */
@@ -406,7 +418,7 @@
 .moon-arc-ring {
   /* subtle outline */
   fill: none;
-  stroke: rgba(200, 220, 240, .35);
+  stroke: rgba(200, 220, 240, 0.35);
   stroke-width: 0.5;
 }
 

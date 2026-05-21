@@ -14,15 +14,15 @@ import { useT } from '../i18n/I18nContext.jsx';
 /** Short label for a moon phase test value. null = real-phase (auto from
  * suncalc); 0..1 = forced phase. Used by the Test Phase footer button. */
 function phaseLabel(phaseValue) {
-  if (phaseValue == null)       return 'Phase: Auto';
-  if (phaseValue === 0)         return 'New';
-  if (phaseValue === .125)      return 'Wax. Cres.';
-  if (phaseValue === .25)       return '1st Qtr';
-  if (phaseValue === .375)      return 'Wax. Gibb.';
-  if (phaseValue === .5)        return 'Full';
-  if (phaseValue === .625)      return 'Wan. Gibb.';
-  if (phaseValue === .75)       return 'Last Qtr';
-  if (phaseValue === .875)      return 'Wan. Cres.';
+  if (phaseValue == null) return 'Phase: Auto';
+  if (phaseValue === 0) return 'New';
+  if (phaseValue === 0.125) return 'Wax. Cres.';
+  if (phaseValue === 0.25) return '1st Qtr';
+  if (phaseValue === 0.375) return 'Wax. Gibb.';
+  if (phaseValue === 0.5) return 'Full';
+  if (phaseValue === 0.625) return 'Wan. Gibb.';
+  if (phaseValue === 0.75) return 'Last Qtr';
+  if (phaseValue === 0.875) return 'Wan. Cres.';
   return `${(phaseValue * 100).toFixed(0)}%`;
 }
 
@@ -55,23 +55,30 @@ export default function Footer({
             status text. */}
         <div className="ftr-txt">{t('footer.offline')}</div>
       </div>
-      <div className="ftr-dots">{[0,1,2,3,4].map(i => <div key={i} className="ftr-dot"/>)}</div>
+      <div className="ftr-dots">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="ftr-dot" />
+        ))}
+      </div>
       <div className="ftr-section">
         {showTestBtns && (
           <>
             <button
               onClick={onToggleFriday}
               className={`test-btn test-btn--jumuah${testFriday ? ' is-active' : ''}`}
-            >{testFriday ? t('footer.jumuahOn') : t('footer.testJumuah')}</button>
+            >
+              {testFriday ? t('footer.jumuahOn') : t('footer.testJumuah')}
+            </button>
             <button
               onClick={() => onCyclePrayer(activeKey)}
               className={`test-btn test-btn--eid${testPrayer ? ' is-active' : ''}`}
-            >🎨 {testPrayer ? testPrayer.toUpperCase() : t('footer.testPattern')}</button>
+            >
+              🎨 {testPrayer ? testPrayer.toUpperCase() : t('footer.testPattern')}
+            </button>
             {testPrayer && (
-              <button
-                onClick={onClearPrayer}
-                className="test-btn test-btn--compact"
-              >✕</button>
+              <button onClick={onClearPrayer} className="test-btn test-btn--compact">
+                ✕
+              </button>
             )}
             {/* Test Blackout — fires a 60-second blackout overlay right now,
                 ignoring real iqamah times. Lets staff verify the dismiss
@@ -82,7 +89,9 @@ export default function Footer({
               onClick={onTestBlackout}
               disabled={testBlackoutActive}
               className={`test-btn test-btn--neutral${testBlackoutActive ? ' is-active is-disabled' : ''}`}
-            >⬛ {testBlackoutActive ? 'Active' : 'Test Blackout'}</button>
+            >
+              ⬛ {testBlackoutActive ? 'Active' : 'Test Blackout'}
+            </button>
             {/* Test Countdown — forces a 60-second window so Clock renders
                 the giant pulsing seconds digit (.countdown-big mode auto-
                 activates when secsToNext <= 60). Lets staff verify the
@@ -91,14 +100,19 @@ export default function Footer({
               onClick={onTestCountdown}
               disabled={testCountdownActive}
               className={`test-btn test-btn--neutral${testCountdownActive ? ' is-active is-disabled' : ''}`}
-            >⏱ {testCountdownActive ? 'Active' : t('test.countdown')}</button>
+            >
+              ⏱ {testCountdownActive ? 'Active' : t('test.countdown')}
+            </button>
             {/* Test Moon — forces the centre arc to render MoonArc with
                 phase visualization regardless of whether the sun is up.
                 Useful for verifying night-mode visuals during the day. */}
             <button
               onClick={onToggleMoon}
               className={`test-btn test-btn--moon${testMoonActive ? ' is-active' : ''}`}
-            >🌙 {t('test.moon')}{testMoonActive ? ' ✓' : ''}</button>
+            >
+              🌙 {t('test.moon')}
+              {testMoonActive ? ' ✓' : ''}
+            </button>
             {/* Test Phase — cycle through 9 phase stops (real → new →
                 waxing crescent → first quarter → ... → waning crescent
                 → real). Each click advances one stop; label shows the
@@ -107,18 +121,24 @@ export default function Footer({
             <button
               onClick={onCyclePhase}
               className={`test-btn test-btn--moon${testMoonPhaseValue != null ? ' is-active' : ''}`}
-            >☾ {phaseLabel(testMoonPhaseValue)}</button>
+            >
+              ☾ {phaseLabel(testMoonPhaseValue)}
+            </button>
             {/* Test Fitr — force-show Eid ul-Fitr banner regardless of
                 whether the Hijri calendar has detected an upcoming Eid. */}
             <button
               onClick={onToggleTestFitr}
               className={`test-btn test-btn--eid${testEidKind === 'fitr' ? ' is-active' : ''}`}
-            >🕌 Fitr{testEidKind === 'fitr' ? ' ✓' : ''}</button>
+            >
+              🕌 Fitr{testEidKind === 'fitr' ? ' ✓' : ''}
+            </button>
             {/* Test Adha — force-show Eid ul-Adha banner. */}
             <button
               onClick={onToggleTestAdha}
               className={`test-btn test-btn--eid${testEidKind === 'adha' ? ' is-active' : ''}`}
-            >🕋 Adha{testEidKind === 'adha' ? ' ✓' : ''}</button>
+            >
+              🕋 Adha{testEidKind === 'adha' ? ' ✓' : ''}
+            </button>
           </>
         )}
         <div className="ftr-txt">{t('footer.updated')}</div>

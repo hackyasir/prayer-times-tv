@@ -19,16 +19,20 @@ export default function PinOverlay({ visible, input, error, onChange, onSubmit, 
         <input
           type="password"
           value={input}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && onSubmit()}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
           placeholder={t('pin.placeholder')}
           autoFocus
           className={`pin-input${error ? ' pin-input--error' : ''}`}
         />
         {error && <div className="pin-error">{t('pin.error')}</div>}
         <div className="pin-actions">
-          <button className="sbtn" onClick={onCancel}>{t('pin.cancel')}</button>
-          <button className="sbtn pri" onClick={onSubmit}>{t('pin.unlock')}</button>
+          <button className="sbtn" onClick={onCancel}>
+            {t('pin.cancel')}
+          </button>
+          <button className="sbtn pri" onClick={onSubmit}>
+            {t('pin.unlock')}
+          </button>
         </div>
       </div>
     </div>

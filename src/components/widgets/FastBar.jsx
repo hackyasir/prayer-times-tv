@@ -20,9 +20,9 @@ import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 
 export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
   const { t } = useT();
-  const todayFajr    = todayTimes?.fajr;
+  const todayFajr = todayTimes?.fajr;
   const todayMaghrib = todayTimes?.maghrib;
-  const tomorrowFajr    = tomorrowTimes?.fajr;
+  const tomorrowFajr = tomorrowTimes?.fajr;
   const tomorrowMaghrib = tomorrowTimes?.maghrib;
 
   // Need at least today's Fajr+Maghrib to render anything. If those are
@@ -31,7 +31,7 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
 
   // Decide which window to show based on whether today's Maghrib has passed.
   const afterMaghrib = now >= todayMaghrib;
-  const fajr    = afterMaghrib ? tomorrowFajr    : todayFajr;
+  const fajr = afterMaghrib ? tomorrowFajr : todayFajr;
   const maghrib = afterMaghrib ? tomorrowMaghrib : todayMaghrib;
   if (!fajr || !maghrib) return null;
 
@@ -41,7 +41,7 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
   // STATE A pre-Fajr: pct = 0 because we're waiting for Fajr.
   let pct = 0;
   if (!afterMaghrib && now >= fajr) {
-    const totalMs   = maghrib - fajr;
+    const totalMs = maghrib - fajr;
     const elapsedMs = now - fajr;
     pct = Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100));
   }
@@ -52,14 +52,14 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
   //   STATE B after Maghrib: → Tomorrow's Fajr (Suhoor)
   let labelTime, labelKey;
   if (afterMaghrib) {
-    labelTime = fajr;          // tomorrow's Fajr
-    labelKey  = 'widget.fast.toSuhoor';
+    labelTime = fajr; // tomorrow's Fajr
+    labelKey = 'widget.fast.toSuhoor';
   } else if (now < fajr) {
-    labelTime = fajr;          // today's Fajr
-    labelKey  = 'widget.fast.toSuhoor';
+    labelTime = fajr; // today's Fajr
+    labelKey = 'widget.fast.toSuhoor';
   } else {
-    labelTime = maghrib;       // today's Maghrib
-    labelKey  = 'widget.fast.toIftar';
+    labelTime = maghrib; // today's Maghrib
+    labelKey = 'widget.fast.toIftar';
   }
   const remainingMin = Math.max(0, Math.ceil((labelTime - now) / 60000));
   const remH = Math.floor(remainingMin / 60);
@@ -78,24 +78,21 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
           <span className="fast-bar-endpoint-lbl">{t('widget.fast.suhoor')}</span>
           <span className="fast-bar-time">{fmt12(fajr, cityTz)}</span>
         </span>
-        <span className="fast-bar-arrow" aria-hidden="true">→</span>
+        <span className="fast-bar-arrow" aria-hidden="true">
+          →
+        </span>
         <span className="fast-bar-endpoint">
           <span className="fast-bar-endpoint-lbl">{t('widget.fast.iftar')}</span>
           <span className="fast-bar-time">{fmt12(maghrib, cityTz)}</span>
         </span>
       </div>
       <div className="fast-bar-track">
-        <div
-          className="fast-bar-fill"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="fast-bar-fill" style={{ width: `${pct}%` }} />
       </div>
       {/* Right: actionable countdown — what most users actually look at.
        * Reworded from "to Iftar 6h 20m" → "Iftar in 6h 20m" for natural
        * English phrasing. */}
-      <div className="fast-bar-remaining">
-        {fmtStr(t(labelKey), { hours: remH, mins: remM })}
-      </div>
+      <div className="fast-bar-remaining">{fmtStr(t(labelKey), { hours: remH, mins: remM })}</div>
     </div>
   );
 }
