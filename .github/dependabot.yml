@@ -3,17 +3,23 @@
 # GitHub-native dependency update bot. Watches package.json and opens
 # pull requests when packages can be upgraded.
 #
-# What it does for us:
-#   - Security advisories → immediate PR (GitHub does this regardless of
-#     this config, but explicit setup ensures it groups cleanly)
-#   - Weekly check for outdated deps → grouped PRs
-#   - CI runs on each PR (lint + test + build) → bad bumps fail before merge
+# Policy (hardened after the May 2026 incident):
+#   - Major version bumps are BLOCKED at the Dependabot layer. They will
+#     not generate PRs. You upgrade majors manually (npm install pkg@N)
+#     when you have time to investigate peer dep compatibility and
+#     breaking changes.
+#   - Patch + minor updates flow through as grouped weekly PRs.
+#   - Security advisories from GitHub override `ignore` rules — those
+#     PRs still come through (correctly — security gets priority).
 #
-# Tuning:
-#   - `interval: weekly` keeps PR volume sane (vs daily firehose)
-#   - `open-pull-requests-limit: 5` caps the in-flight queue
-#   - Grouped updates: prod deps in one PR, dev deps in another →
-#     fewer PRs to review, faster merging when a group is safe
+# Why block majors:
+#   On 2026-05-21, a batch of Dependabot major-version PRs (vite 6→8,
+#   eslint 9→10, eslint-plugin-react-hooks 5→7, vite-plugin-pwa 0→1)
+#   passed CI individually but together broke `npm install` due to
+#   peer dependency conflicts (plugin-react@4 didn't support vite 8;
+#   eslint-plugin-react@7 didn't support eslint 10). Required a full
+#   rollback. Lesson: major bumps need active investigation, not
+#   click-to-merge.
 #
 # Spec: https://docs.github.com/en/code-security/dependabot/
 
@@ -28,22 +34,33 @@ updates:
       time: '09:00'
       timezone: 'America/Toronto'
     open-pull-requests-limit: 5
+
+    # Block ALL major version updates project-wide.
+    # If we need a major bump, we run `npm install pkg@latest` ourselves
+    # in a focused session. Security advisories override this, so
+    # critical vulns still come through as PRs.
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
+
     # Group related updates so a Monday-morning review handles many
     # patches in a single PR rather than 10 individual ones.
     groups:
       # Dev tooling — vitest, eslint, prettier, etc.
-      # These can usually be updated together with low risk.
+      # Patch + minor only (major is blocked above).
       dev-dependencies:
         dependency-type: 'development'
         update-types:
           - 'minor'
           - 'patch'
-      # React core and other prod runtime deps — riskier, kept separate
-      # so we can review them with more attention.
+      # React core and other prod runtime deps — riskier, kept tighter.
+      # Patch only (no minor, no major).
       production-dependencies:
         dependency-type: 'production'
         update-types:
           - 'patch'
+
     # Conventional-commit style — keeps git history clean.
     commit-message:
       prefix: 'chore(deps)'
@@ -54,12 +71,20 @@ updates:
 
   # ── GitHub Actions ─────────────────────────────────────────────────
   # Keeps deploy.yml's actions/checkout@v4, actions/setup-node@v4, etc.
-  # current. Lower priority than npm but worth automating.
+  # current. Same major-block rule applies — actions/checkout v4 → v6
+  # in May 2026 worked but wasn't worth the click-merge risk pattern;
+  # we'll bump these consciously.
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
       interval: 'monthly'
     open-pull-requests-limit: 3
+
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
+
     commit-message:
       prefix: 'chore(ci)'
     labels:
