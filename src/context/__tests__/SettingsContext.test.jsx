@@ -111,7 +111,7 @@ describe('SettingsProvider — draft / applied separation', () => {
   it('updateDrafts accepts a function (previous-state update)', () => {
     const { result } = renderHook(() => useSettings(), { wrapper });
     act(() => {
-      result.current.updateDrafts(prev => ({ ...prev, method: 'Egypt' }));
+      result.current.updateDrafts((prev) => ({ ...prev, method: 'Egypt' }));
     });
     expect(result.current.drafts.method).toBe('Egypt');
   });
@@ -176,9 +176,9 @@ describe('SettingsProvider — legacy migrations', () => {
       const legacy = {
         ...DEFAULTS,
         eid: [
-          { time: '08:30', iqamah: 25, enabled: true,  label: 'Eid ul-Fitr' },
+          { time: '08:30', iqamah: 25, enabled: true, label: 'Eid ul-Fitr' },
           { time: '09:30', iqamah: 25, enabled: false, label: 'Eid ul-Fitr' },
-          { time: '',      iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
+          { time: '', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
         ],
       };
       delete legacy.eidFitr;
@@ -188,10 +188,14 @@ describe('SettingsProvider — legacy migrations', () => {
       const { result } = renderHook(() => useSettings(), { wrapper });
       // eidFitr should have the migrated values.
       expect(result.current.applied.eidFitr[0]).toEqual({
-        time: '08:30', iqamah: 25, enabled: true,
+        time: '08:30',
+        iqamah: 25,
+        enabled: true,
       });
       expect(result.current.applied.eidFitr[1]).toEqual({
-        time: '09:30', iqamah: 25, enabled: false,
+        time: '09:30',
+        iqamah: 25,
+        enabled: false,
       });
       // eidAdha should fall back to DEFAULTS (untouched).
       expect(result.current.applied.eidAdha).toEqual(DEFAULTS.eidAdha);
@@ -200,9 +204,7 @@ describe('SettingsProvider — legacy migrations', () => {
     it('migrates an Adha-labeled eid array to eidAdha', () => {
       const legacy = {
         ...DEFAULTS,
-        eid: [
-          { time: '07:00', iqamah: 20, enabled: true, label: 'Eid ul-Adha' },
-        ],
+        eid: [{ time: '07:00', iqamah: 20, enabled: true, label: 'Eid ul-Adha' }],
       };
       delete legacy.eidFitr;
       delete legacy.eidAdha;
@@ -210,7 +212,9 @@ describe('SettingsProvider — legacy migrations', () => {
 
       const { result } = renderHook(() => useSettings(), { wrapper });
       expect(result.current.applied.eidAdha[0]).toEqual({
-        time: '07:00', iqamah: 20, enabled: true,
+        time: '07:00',
+        iqamah: 20,
+        enabled: true,
       });
       // eidFitr falls back to DEFAULTS.
       expect(result.current.applied.eidFitr).toEqual(DEFAULTS.eidFitr);
@@ -233,7 +237,7 @@ describe('SettingsProvider — legacy migrations', () => {
       const legacy = {
         ...DEFAULTS,
         eid: [
-          { time: '08:00', iqamah: 20, enabled: true,  label: 'Eid ul-Fitr' },
+          { time: '08:00', iqamah: 20, enabled: true, label: 'Eid ul-Fitr' },
           { time: '09:00', iqamah: 20, enabled: false, label: 'Eid ul-Fitr' },
         ],
       };
@@ -249,7 +253,7 @@ describe('SettingsProvider — legacy migrations', () => {
     it('defaults guessed kind to Fitr when label is missing/ambiguous', () => {
       const legacy = {
         ...DEFAULTS,
-        eid: [{ time: '08:00', iqamah: 20, enabled: true }],  // no label
+        eid: [{ time: '08:00', iqamah: 20, enabled: true }], // no label
       };
       delete legacy.eidFitr;
       delete legacy.eidAdha;
@@ -285,9 +289,7 @@ describe('useSettings — outside provider', () => {
     const originalError = console.error;
     console.error = () => {};
     try {
-      expect(() => renderHook(() => useSettings())).toThrow(
-        /outside.*SettingsProvider/i
-      );
+      expect(() => renderHook(() => useSettings())).toThrow(/outside.*SettingsProvider/i);
     } finally {
       console.error = originalError;
     }

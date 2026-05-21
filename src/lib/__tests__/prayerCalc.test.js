@@ -15,8 +15,8 @@ import { describe, it, expect } from 'vitest';
 import { calcTimes, calcQibla, tzOffsetHours } from '../prayerCalc.js';
 
 // Anchor locations
-const MAKKAH    = { lat: 21.4225, lng: 39.8262 };
-const TORONTO   = { lat: 43.6532, lng: -79.3832 };
+const MAKKAH = { lat: 21.4225, lng: 39.8262 };
+const TORONTO = { lat: 43.6532, lng: -79.3832 };
 const REYKJAVIK = { lat: 64.1466, lng: -21.9426 };
 
 const SAMPLE_DATE = new Date('2026-05-18T12:00:00Z');
@@ -61,9 +61,18 @@ describe('calcTimes', () => {
   describe('method handling', () => {
     it('accepts all 12 registered method keys without error', () => {
       const methods = [
-        'MWL', 'ISNA', 'Moonsighting', 'Egypt', 'Makkah',
-        'Dubai', 'Qatar', 'Kuwait', 'Karachi', 'Singapore',
-        'Turkey', 'Tehran',
+        'MWL',
+        'ISNA',
+        'Moonsighting',
+        'Egypt',
+        'Makkah',
+        'Dubai',
+        'Qatar',
+        'Kuwait',
+        'Karachi',
+        'Singapore',
+        'Turkey',
+        'Tehran',
       ];
       for (const m of methods) {
         const t = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, m, 1);
@@ -79,7 +88,7 @@ describe('calcTimes', () => {
 
     it('different methods produce different Fajr times', () => {
       // ISNA (15°) and Egypt (19.5°) should differ for Fajr.
-      const isna  = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'ISNA',  1);
+      const isna = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'ISNA', 1);
       const egypt = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'Egypt', 1);
       expect(isna.fajr.getTime()).not.toBe(egypt.fajr.getTime());
     });
@@ -88,7 +97,7 @@ describe('calcTimes', () => {
   describe('madhab (shadow) handling', () => {
     it('Hanafi (shadow=2) Asr is later than Shafi (shadow=1)', () => {
       // Hanafi uses 2× shadow length → Asr falls later in the day.
-      const shafi  = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'ISNA', 1);
+      const shafi = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'ISNA', 1);
       const hanafi = calcTimes(SAMPLE_DATE, TORONTO.lat, TORONTO.lng, 'ISNA', 2);
       expect(hanafi.asr.getTime()).toBeGreaterThan(shafi.asr.getTime());
     });
@@ -112,8 +121,24 @@ describe('calcTimes', () => {
     });
 
     it('falls back to middleOfNight for unknown rule strings', () => {
-      const def    = calcTimes(SAMPLE_DATE, REYKJAVIK.lat, REYKJAVIK.lng, 'MWL', 1, undefined, 'middleOfNight');
-      const fallback = calcTimes(SAMPLE_DATE, REYKJAVIK.lat, REYKJAVIK.lng, 'MWL', 1, undefined, 'NotARule');
+      const def = calcTimes(
+        SAMPLE_DATE,
+        REYKJAVIK.lat,
+        REYKJAVIK.lng,
+        'MWL',
+        1,
+        undefined,
+        'middleOfNight'
+      );
+      const fallback = calcTimes(
+        SAMPLE_DATE,
+        REYKJAVIK.lat,
+        REYKJAVIK.lng,
+        'MWL',
+        1,
+        undefined,
+        'NotARule'
+      );
       expect(fallback.fajr.getTime()).toBe(def.fajr.getTime());
     });
   });
@@ -146,7 +171,7 @@ describe('calcQibla', () => {
   });
 
   it('from far east of Makkah (e.g. Karachi), points roughly west (~270°)', () => {
-    const q = calcQibla(24.8607, 67.0011);  // Karachi
+    const q = calcQibla(24.8607, 67.0011); // Karachi
     expect(q).toBeGreaterThan(250);
     expect(q).toBeLessThan(290);
   });

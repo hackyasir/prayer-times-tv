@@ -19,7 +19,7 @@ export default function HeaderQibla({ qibla }) {
 
   return (
     <div className="header-qibla" aria-label="Qibla direction">
-      <QiblaCompass bearing={qibla}/>
+      <QiblaCompass bearing={qibla} />
       <div className="header-qibla-text">
         <div className="header-qibla-lbl">{t('widget.qibla.label')}</div>
         <div className="header-qibla-val">

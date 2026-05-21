@@ -33,13 +33,17 @@ export default function NumberStepper({
   width = 44,
   disabled = false,
 }) {
-  const clamp = v => Math.min(max, Math.max(min, v));
+  const clamp = (v) => Math.min(max, Math.max(min, v));
   const current = Number(value) || 0;
 
   // The increment/decrement handlers clamp to min/max so values never
   // escape bounds even if the user mashes the buttons.
-  const decrement = () => { if (!disabled) onChange(clamp(current - step)); };
-  const increment = () => { if (!disabled) onChange(clamp(current + step)); };
+  const decrement = () => {
+    if (!disabled) onChange(clamp(current - step));
+  };
+  const increment = () => {
+    if (!disabled) onChange(clamp(current + step));
+  };
 
   const btnStyle = {
     background: 'rgba(201,168,76,.08)',
@@ -72,24 +76,33 @@ export default function NumberStepper({
         onClick={decrement}
         disabled={disabled || current <= min}
         aria-label="Decrease"
-        style={{ ...btnStyle, opacity: (disabled || current <= min) ? 0.3 : 1 }}
-      >−</button>
+        style={{ ...btnStyle, opacity: disabled || current <= min ? 0.3 : 1 }}
+      >
+        −
+      </button>
       <input
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
         value={current}
-        onChange={e => {
+        onChange={(e) => {
           // Strip non-digits, clamp to bounds. Empty input → 0.
           const cleaned = e.target.value.replace(/[^0-9]/g, '');
           onChange(clamp(Number(cleaned) || 0));
         }}
         disabled={disabled}
         style={{
-          width, background: '#0A0A0A', border: '1px solid rgba(201,168,76,.3)',
-          borderRadius: 3, padding: '4px 6px', color: '#F0C96A',
-          fontFamily: 'Rajdhani,sans-serif', fontSize: 15, fontWeight: 700,
-          textAlign: 'center', outline: 'none',
+          width,
+          background: '#0A0A0A',
+          border: '1px solid rgba(201,168,76,.3)',
+          borderRadius: 3,
+          padding: '4px 6px',
+          color: '#F0C96A',
+          fontFamily: 'Rajdhani,sans-serif',
+          fontSize: 15,
+          fontWeight: 700,
+          textAlign: 'center',
+          outline: 'none',
           // Belt-and-suspenders: hide any browser-native number spinner that
           // might leak through (iOS Safari, some Android browsers). With
           // type="text" these rules are normally moot but cost nothing.
@@ -103,8 +116,10 @@ export default function NumberStepper({
         onClick={increment}
         disabled={disabled || current >= max}
         aria-label="Increase"
-        style={{ ...btnStyle, opacity: (disabled || current >= max) ? 0.3 : 1 }}
-      >+</button>
+        style={{ ...btnStyle, opacity: disabled || current >= max ? 0.3 : 1 }}
+      >
+        +
+      </button>
     </div>
   );
 }

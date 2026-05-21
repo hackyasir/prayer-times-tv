@@ -41,11 +41,18 @@ export function primeAudio() {
         a.currentTime = 0;
         a.muted = false;
         _audioUnlocked = true;
-      }).catch(() => { /* still blocked — try again next gesture */ });
+      }).catch(() => {
+        /* still blocked — try again next gesture */
+      });
     } else {
-      a.pause(); a.currentTime = 0; a.muted = false; _audioUnlocked = true;
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      _audioUnlocked = true;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -58,7 +65,7 @@ export function playBeep() {
     a.currentTime = 0;
     const p = a.play();
     if (p && typeof p.catch === 'function') {
-      p.catch(e => console.warn('Beep autoplay blocked:', e));
+      p.catch((e) => console.warn('Beep autoplay blocked:', e));
     }
   } catch (e) {
     console.warn('Beep failed:', e);

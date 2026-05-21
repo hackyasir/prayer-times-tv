@@ -9,6 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 30",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -34,6 +36,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.11.0",
     "jsdom": "^25.0.0",
+    "prettier": "^3.3.3",
     "vite": "^6.0.0",
     "vite-plugin-pwa": "^0.21.0",
     "vitest": "^4.1.7"

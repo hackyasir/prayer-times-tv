@@ -24,15 +24,15 @@
 // this component owns the form UI.
 
 import { useState, useRef } from 'react';
-import { THEMES }        from '../../lib/themes.js';
+import { THEMES } from '../../lib/themes.js';
 import { METHOD_LABELS } from '../../lib/constants.js';
 import { fmt12, addMins } from '../../lib/formatters.js';
-import { toHijri }       from '../../lib/hijri.js';
-import { playBeep }      from '../../lib/audio.js';
+import { toHijri } from '../../lib/hijri.js';
+import { playBeep } from '../../lib/audio.js';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import { LANGUAGE_LABELS } from '../../i18n/I18nContext.jsx';
-import NumberStepper      from '../NumberStepper.jsx';
-import LogoUploader       from './LogoUploader.jsx';
+import NumberStepper from '../NumberStepper.jsx';
+import LogoUploader from './LogoUploader.jsx';
 
 export default function SettingsPanel({
   visible,
@@ -40,31 +40,56 @@ export default function SettingsPanel({
   onCancel,
   onApply,
   // Draft state (all 11 settings drafts)
-  draftMethod,    setDraftMethod,
-  draftAsr,       setDraftAsr,
-  draftIqamah,    setDraftIqamah,
-  draftIqamahAutoCalc,    setDraftIqamahAutoCalc,
-  draftIqamahAutoBuffers, setDraftIqamahAutoBuffers,
-  draftJumuah,    setDraftJumuah,
-  draftEidFitr,   setDraftEidFitr,
-  draftEidAdha,   setDraftEidAdha,
-  draftEidDays,   setDraftEidDays,
-  draftHijri,     setDraftHijri,
-  draftHighLat,   setDraftHighLat,
-  draftTheme,     setDraftTheme,
-  draftChimeAdhan,    setDraftChimeAdhan,
-  draftChimeIqamah,   setDraftChimeIqamah,
-  draftFontScale, setDraftFontScale,
-  draftProgress,  setDraftProgress,
-  draftMasjid,    setDraftMasjid,
-  draftLogo,      setDraftLogo,
-  draftLang,      setDraftLang,
-  draftAnnouncements, setDraftAnnouncements,
-  draftBlackoutEnabled,   setDraftBlackoutEnabled,
-  draftBlackoutDurations, setDraftBlackoutDurations,
-  draftBlackoutOpacity,   setDraftBlackoutOpacity,
+  draftMethod,
+  setDraftMethod,
+  draftAsr,
+  setDraftAsr,
+  draftIqamah,
+  setDraftIqamah,
+  draftIqamahAutoCalc,
+  setDraftIqamahAutoCalc,
+  draftIqamahAutoBuffers,
+  setDraftIqamahAutoBuffers,
+  draftJumuah,
+  setDraftJumuah,
+  draftEidFitr,
+  setDraftEidFitr,
+  draftEidAdha,
+  setDraftEidAdha,
+  draftEidDays,
+  setDraftEidDays,
+  draftHijri,
+  setDraftHijri,
+  draftHighLat,
+  setDraftHighLat,
+  draftTheme,
+  setDraftTheme,
+  draftChimeAdhan,
+  setDraftChimeAdhan,
+  draftChimeIqamah,
+  setDraftChimeIqamah,
+  draftFontScale,
+  setDraftFontScale,
+  draftProgress,
+  setDraftProgress,
+  draftMasjid,
+  setDraftMasjid,
+  draftLogo,
+  setDraftLogo,
+  draftLang,
+  setDraftLang,
+  draftAnnouncements,
+  setDraftAnnouncements,
+  draftBlackoutEnabled,
+  setDraftBlackoutEnabled,
+  draftBlackoutDurations,
+  setDraftBlackoutDurations,
+  draftBlackoutOpacity,
+  setDraftBlackoutOpacity,
   // City search state + handlers
-  searchQuery, searchResults, searchStatus,
+  searchQuery,
+  searchResults,
+  searchStatus,
   onSearchInput,
   onSelectCity,
   onClearCity,
@@ -76,8 +101,11 @@ export default function SettingsPanel({
   onResetSettings,
   onPrintSchedule,
   // City-time context — used for Hijri preview + Jumu'ah time displays
-  cityNow, cityTz,
-  currentLocName, currentLat, currentLng,
+  cityNow,
+  cityTz,
+  currentLocName,
+  currentLat,
+  currentLng,
   // Today's prayer times — used by the iqamah offset preview ("Fajr 4:19 → 4:39")
   todayTimes,
 }) {
@@ -98,7 +126,7 @@ export default function SettingsPanel({
   // is the transient feedback message shown next to the buttons after an
   // import attempt (success or parse error). Auto-clears after 3 seconds.
   const fileInputRef = useRef(null);
-  const [importMsg, setImportMsg] = useState(null);  // { ok: bool, text: str } | null
+  const [importMsg, setImportMsg] = useState(null); // { ok: bool, text: str } | null
 
   // Reset confirmation — 2-click pattern to avoid accidental wipes. First
   // click puts the button into "confirm?" state; second click within 5s
@@ -139,874 +167,1740 @@ export default function SettingsPanel({
   // `handleSearchInput` / `handleSelectCity` / `geolocate`. We bind those
   // to the corresponding prop-named callbacks here so we don't have to
   // touch the (large) JSX block.
-  const setShowSett       = () => onCancel();
-  const applySettings     = onApply;
+  const setShowSett = () => onCancel();
+  const applySettings = onApply;
   const handleSearchInput = onSearchInput;
-  const handleSelectCity  = onSelectCity;
-  const geolocate         = onGeolocate;
+  const handleSelectCity = onSelectCity;
+  const geolocate = onGeolocate;
 
   return (
-      <div className="overlay">
-        <div className="sbox">
-          {/* Fixed header with title + action buttons */}
-          <div className="sbox-hdr">
-            <div className="stitle">{t('settings.title')}</div>
-            <div className="sbtn-row">
-              <button className="sbtn" onClick={() => setShowSett(false)}>{t('settings.cancel')}</button>
-              <button className="sbtn pri" onClick={applySettings}>{t('settings.apply')}</button>
-            </div>
+    <div className="overlay">
+      <div className="sbox">
+        {/* Fixed header with title + action buttons */}
+        <div className="sbox-hdr">
+          <div className="stitle">{t('settings.title')}</div>
+          <div className="sbtn-row">
+            <button className="sbtn" onClick={() => setShowSett(false)}>
+              {t('settings.cancel')}
+            </button>
+            <button className="sbtn pri" onClick={applySettings}>
+              {t('settings.apply')}
+            </button>
           </div>
+        </div>
 
-
-          {/* Tab strip — horizontal navigation across the panel. Five tabs
+        {/* Tab strip — horizontal navigation across the panel. Five tabs
               ordered by usage frequency: Display first (most-tweaked), then
               Location, Prayer Times, Iqamah, and Behaviour. On narrow widths
               the tab buttons wrap to a second row (flex-wrap in CSS). */}
-          <div className="stab-strip">
-            {[
-              ['display',     t('settings.tab.display')],
-              ['location',    t('settings.tab.location')],
-              ['prayerTimes', t('settings.tab.prayerTimes')],
-              ['iqamah',      t('settings.tab.iqamah')],
-              ['behaviour',   t('settings.tab.behaviour')],
-            ].map(([key, label]) => (
-              <button
-                key={key}
-                className={'stab' + (activeTab === key ? ' active' : '')}
-                onClick={() => setActiveTab(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="stab-strip">
+          {[
+            ['display', t('settings.tab.display')],
+            ['location', t('settings.tab.location')],
+            ['prayerTimes', t('settings.tab.prayerTimes')],
+            ['iqamah', t('settings.tab.iqamah')],
+            ['behaviour', t('settings.tab.behaviour')],
+          ].map(([key, label]) => (
+            <button
+              key={key}
+              className={'stab' + (activeTab === key ? ' active' : '')}
+              onClick={() => setActiveTab(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {/* Scrollable content */}
-          <div className="sbox-body">
-
-          {activeTab === 'display' && (<>
-          {/* Language picker — first setting, since it changes everything else.
+        {/* Scrollable content */}
+        <div className="sbox-body">
+          {activeTab === 'display' && (
+            <>
+              {/* Language picker — first setting, since it changes everything else.
               `lang` is stored as a 2-letter ISO code ('en','ar','ur') in
               applied.lang. Changing it instantly retranslates the entire UI
               via I18nContext, and flips `dir` on <html> for Arabic/Urdu. */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.language')}</label>
-            <select
-              className="ssel"
-              value={draftLang}
-              onChange={e => setDraftLang(e.target.value)}
-            >
-              {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>{label}</option>
-              ))}
-            </select>
-          </div>
-          </>)}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.language')}</label>
+                <select
+                  className="ssel"
+                  value={draftLang}
+                  onChange={(e) => setDraftLang(e.target.value)}
+                >
+                  {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-          {activeTab === 'behaviour' && (<>
-          {/* Announcements — newline-separated list shown in the bottom ticker.
+          {activeTab === 'behaviour' && (
+            <>
+              {/* Announcements — newline-separated list shown in the bottom ticker.
               Empty string = ticker hidden entirely (default).
               Stays in whatever language the admin types — no per-language
               variants, to keep the authoring workflow simple. */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.announcements')}</label>
-            <textarea
-              className="sinput"
-              rows={4}
-              value={draftAnnouncements}
-              placeholder={t('settings.announcements.placeholder')}
-              onChange={e => setDraftAnnouncements(e.target.value)}
-              style={{ resize: 'vertical', fontFamily: 'Rajdhani, sans-serif', lineHeight: 1.5 }}
-            />
-            <div style={{ marginTop:5, fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', lineHeight:1.4 }}>
-              {t('settings.announcements.note')}
-            </div>
-          </div>
-          </>)}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.announcements')}</label>
+                <textarea
+                  className="sinput"
+                  rows={4}
+                  value={draftAnnouncements}
+                  placeholder={t('settings.announcements.placeholder')}
+                  onChange={(e) => setDraftAnnouncements(e.target.value)}
+                  style={{
+                    resize: 'vertical',
+                    fontFamily: 'Rajdhani, sans-serif',
+                    lineHeight: 1.5,
+                  }}
+                />
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.05em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {t('settings.announcements.note')}
+                </div>
+              </div>
+            </>
+          )}
 
-          {activeTab === 'behaviour' && (<>
-          {/* Blackout mode — global toggle + per-prayer durations.
+          {activeTab === 'behaviour' && (
+            <>
+              {/* Blackout mode — global toggle + per-prayer durations.
               When enabled, the dashboard goes dark from `blackoutLeadSeconds`
               before each iqamah until the configured duration after. Defaults
               are sensible (10/10/10/7/12 minutes for Fajr/Dhuhr/Asr/Maghrib/Isha)
               and reflect typical mosque prayer lengths. */}
-          <div className="sgrp">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
-              <div>
-                <div style={{ fontSize:14, color:'var(--t-text)', fontWeight:600 }}>{t('settings.blackout')}</div>
-                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2, lineHeight:1.4, maxWidth:'42ch' }}>
-                  {t('settings.blackout.note')}
+              <div className="sgrp">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.blackout')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                        maxWidth: '42ch',
+                      }}
+                    >
+                      {t('settings.blackout.note')}
+                    </div>
+                  </div>
+                  {/* Custom-styled toggle — same pattern as the chime toggle elsewhere */}
+                  <button
+                    onClick={() => setDraftBlackoutEnabled((v) => !v)}
+                    style={{
+                      width: 46,
+                      height: 24,
+                      borderRadius: 12,
+                      background: draftBlackoutEnabled ? 'var(--t-accent)' : '#333',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background .2s',
+                      flexShrink: 0,
+                    }}
+                    aria-pressed={draftBlackoutEnabled}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftBlackoutEnabled ? 24 : 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
                 </div>
-              </div>
-              {/* Custom-styled toggle — same pattern as the chime toggle elsewhere */}
-              <button
-                onClick={() => setDraftBlackoutEnabled(v => !v)}
-                style={{
-                  width:46, height:24, borderRadius:12,
-                  background: draftBlackoutEnabled ? 'var(--t-accent)' : '#333',
-                  border:'none', cursor:'pointer', position:'relative',
-                  transition:'background .2s', flexShrink:0,
-                }}
-                aria-pressed={draftBlackoutEnabled}
-              >
-                <div style={{
-                  position:'absolute',
-                  top:2, left: draftBlackoutEnabled ? 24 : 2,
-                  width:20, height:20, borderRadius:'50%',
-                  background:'#fff', transition:'left .2s',
-                }}/>
-              </button>
-            </div>
 
-            {/* Opacity slider — controls how dim the overlay is when active.
+                {/* Opacity slider — controls how dim the overlay is when active.
                 0% = fully transparent (dashboard fully visible — defeats the
                 purpose, but available for those who want it).
                 100% = fully opaque (pure black, no dashboard visible).
                 Default 85% matches industry standard for "dim mode" displays. */}
-            {draftBlackoutEnabled && (
-              <div style={{ marginTop:8 }}>
-                <label className="slbl">{t('settings.blackout.opacity')}</label>
-                <div style={{ display:'flex', alignItems:'center', gap:12, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'8px 12px' }}>
-                  <input
-                    type="range"
-                    min="0" max="100" step="5"
-                    value={draftBlackoutOpacity}
-                    onChange={e => setDraftBlackoutOpacity(Number(e.target.value))}
-                    style={{ flex:1, accentColor:'var(--t-accent)', cursor:'pointer' }}
-                  />
-                  <span style={{ width:48, textAlign:'right', fontSize:14, fontWeight:700, color:'#F0C96A', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>
-                    {draftBlackoutOpacity}%
-                  </span>
-                </div>
-                {/* Live preview swatch — shows roughly what the overlay will
+                {draftBlackoutEnabled && (
+                  <div style={{ marginTop: 8 }}>
+                    <label className="slbl">{t('settings.blackout.opacity')}</label>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        background: '#111',
+                        border: '1px solid rgba(201,168,76,.15)',
+                        borderRadius: 4,
+                        padding: '8px 12px',
+                      }}
+                    >
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={draftBlackoutOpacity}
+                        onChange={(e) => setDraftBlackoutOpacity(Number(e.target.value))}
+                        style={{ flex: 1, accentColor: 'var(--t-accent)', cursor: 'pointer' }}
+                      />
+                      <span
+                        style={{
+                          width: 48,
+                          textAlign: 'right',
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: '#F0C96A',
+                          fontVariantNumeric: 'tabular-nums',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {draftBlackoutOpacity}%
+                      </span>
+                    </div>
+                    {/* Live preview swatch — shows roughly what the overlay will
                     look like at the chosen opacity. The swatch sits on a
                     "checkerboard" background (built via gradients) so the
                     transparency is visually clear at low values. */}
-                <div style={{
-                  marginTop:8, height:32, borderRadius:4, overflow:'hidden',
-                  border:'1px solid rgba(201,168,76,.15)',
-                  background:
-                    'repeating-linear-gradient(45deg, #222 0 8px, #2c2c2c 8px 16px)',
-                  position:'relative',
-                }}>
-                  <div style={{
-                    position:'absolute', inset:0,
-                    background: `rgba(0,0,0,${draftBlackoutOpacity/100})`,
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    fontFamily:'Amiri, serif',
-                    fontSize:14,
-                    color:'rgba(201, 168, 76, 0.55)',
-                    letterSpacing:'.04em',
-                  }}>
-                    بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Per-prayer durations — visible only when blackout is enabled */}
-            {draftBlackoutEnabled && (
-              <div style={{ marginTop:8 }}>
-                <label className="slbl">{t('settings.blackout.duration')}</label>
-                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                  {['fajr','dhuhr','asr','maghrib','isha'].map(key => (
-                    <div key={key} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'7px 12px' }}>
-                      <span style={{ width:62, fontSize:13, color:'#9A8B6E', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0 }}>
-                        {t(`prayer.${key}`)}
-                      </span>
-                      <NumberStepper
-                        value={draftBlackoutDurations[key]}
-                        onChange={v => setDraftBlackoutDurations(prev => ({ ...prev, [key]: v }))}
-                        min={0} max={60} step={5} width={56}
-                      />
-                      <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        height: 32,
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        border: '1px solid rgba(201,168,76,.15)',
+                        background:
+                          'repeating-linear-gradient(45deg, #222 0 8px, #2c2c2c 8px 16px)',
+                        position: 'relative',
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: `rgba(0,0,0,${draftBlackoutOpacity / 100})`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontFamily: 'Amiri, serif',
+                          fontSize: 14,
+                          color: 'rgba(201, 168, 76, 0.55)',
+                          letterSpacing: '.04em',
+                        }}
+                      >
+                        بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-          </>)}
+                  </div>
+                )}
 
-          {activeTab === 'display' && (<>
-          {/* Theme picker */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.theme')}</label>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
-              {Object.entries(THEMES).map(([key, theme]) => {
-                const active = draftTheme === key;
-                const [bg, acc, txt] = theme.preview;
-                return (
-                  <button key={key} onClick={() => setDraftTheme(key)}
-                    style={{
-                      background: bg, border:`2px solid ${active ? acc : 'rgba(255,255,255,.1)'}`,
-                      borderRadius:6, padding:'8px 6px', cursor:'pointer', textAlign:'center',
-                      transition:'border-color .2s', outline:'none',
-                    }}
-                  >
-                    {/* Colour swatches */}
-                    <div style={{ display:'flex', gap:3, justifyContent:'center', marginBottom:5 }}>
-                      {[bg, acc, txt].map((c,i) => (
-                        <div key={i} style={{ width:12, height:12, borderRadius:'50%', background:c, border:'1px solid rgba(255,255,255,.15)' }}/>
+                {/* Per-prayer durations — visible only when blackout is enabled */}
+                {draftBlackoutEnabled && (
+                  <div style={{ marginTop: 8 }}>
+                    <label className="slbl">{t('settings.blackout.duration')}</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((key) => (
+                        <div
+                          key={key}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            background: '#111',
+                            border: '1px solid rgba(201,168,76,.15)',
+                            borderRadius: 4,
+                            padding: '7px 12px',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 62,
+                              fontSize: 13,
+                              color: '#9A8B6E',
+                              letterSpacing: '.08em',
+                              textTransform: 'uppercase',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {t(`prayer.${key}`)}
+                          </span>
+                          <NumberStepper
+                            value={draftBlackoutDurations[key]}
+                            onChange={(v) =>
+                              setDraftBlackoutDurations((prev) => ({ ...prev, [key]: v }))
+                            }
+                            min={0}
+                            max={60}
+                            step={5}
+                            width={56}
+                          />
+                          <span
+                            style={{ fontSize: 11, color: 'rgba(201,168,76,.4)', flexShrink: 0 }}
+                          >
+                            {t('unit.min')}
+                          </span>
+                        </div>
                       ))}
                     </div>
-                    <div style={{ fontSize:11, color: active ? acc : 'rgba(255,255,255,.5)', fontFamily:'Rajdhani,sans-serif', letterSpacing:'.05em', fontWeight: active ? 700 : 400 }}>
-                      {theme.label}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          </>)}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
-          {activeTab === 'display' && (<>
-          {/* Font size scale */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.size')}</label>
-            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
-              <button
-                onClick={() => setDraftFontScale(v => Math.max(70, v - 5))}
-                style={{ width:32, height:32, borderRadius:4, border:'1px solid rgba(var(--t-accent-rgb),.3)', background:'transparent', color:'var(--t-accent)', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
-              >A−</button>
-              <div style={{ flex:1, textAlign:'center' }}>
-                <div style={{ fontSize:16, color:'var(--t-text)', fontWeight:700, fontVariantNumeric:'tabular-nums' }}>
-                  {draftFontScale}%
-                </div>
-                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2 }}>
-                  {draftFontScale === 100 ? t('settings.size.default') : draftFontScale < 100 ? t('settings.size.smaller') : t('settings.size.larger')}
+          {activeTab === 'display' && (
+            <>
+              {/* Theme picker */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.theme')}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  {Object.entries(THEMES).map(([key, theme]) => {
+                    const active = draftTheme === key;
+                    const [bg, acc, txt] = theme.preview;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => setDraftTheme(key)}
+                        style={{
+                          background: bg,
+                          border: `2px solid ${active ? acc : 'rgba(255,255,255,.1)'}`,
+                          borderRadius: 6,
+                          padding: '8px 6px',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'border-color .2s',
+                          outline: 'none',
+                        }}
+                      >
+                        {/* Colour swatches */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 3,
+                            justifyContent: 'center',
+                            marginBottom: 5,
+                          }}
+                        >
+                          {[bg, acc, txt].map((c, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                background: c,
+                                border: '1px solid rgba(255,255,255,.15)',
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: active ? acc : 'rgba(255,255,255,.5)',
+                            fontFamily: 'Rajdhani,sans-serif',
+                            letterSpacing: '.05em',
+                            fontWeight: active ? 700 : 400,
+                          }}
+                        >
+                          {theme.label}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <button
-                onClick={() => setDraftFontScale(v => Math.min(130, v + 5))}
-                style={{ width:32, height:32, borderRadius:4, border:'1px solid rgba(var(--t-accent-rgb),.3)', background:'transparent', color:'var(--t-accent)', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
-              >A+</button>
-              {draftFontScale !== 100 && (
-                <button
-                  onClick={() => setDraftFontScale(100)}
-                  style={{ background:'transparent', border:'1px solid var(--t-border)', borderRadius:4, padding:'5px 10px', color:'var(--t-text-dim)', fontFamily:'Rajdhani,sans-serif', fontSize:11, fontWeight:600, letterSpacing:'.08em', cursor:'pointer' }}
-                >{t('settings.size.reset')}</button>
-              )}
-            </div>
-            <div style={{ marginTop:5, fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em' }}>
-              {t('settings.size.note')}
-            </div>
-          </div>
-          </>)}
+            </>
+          )}
 
-          {activeTab === 'display' && (<>
-          {/* Progress Style picker */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.progressStyle')}</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:6 }}>
-              {[
-                { key:'ring',   label:t('settings.progress.ring'),   desc:t('settings.progress.ring.sub') },
-                { key:'daybar', label:t('settings.progress.daybar'), desc:t('settings.progress.daybar.sub') },
-                { key:'moon',   label:t('settings.progress.moon'),   desc:t('settings.progress.moon.sub') },
-                { key:'line',   label:t('settings.progress.line'),   desc:t('settings.progress.line.sub') },
-                { key:'hero',   label:t('settings.progress.hero'),   desc:t('settings.progress.hero.sub') },
-              ].map(opt => (
-                <button
-                  key={opt.key}
-                  onClick={() => setDraftProgress(opt.key)}
+          {activeTab === 'display' && (
+            <>
+              {/* Font size scale */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.size')}</label>
+                <div
                   style={{
-                    background: draftProgress === opt.key ? 'rgba(var(--t-accent-rgb),.18)' : 'transparent',
-                    border: `1px solid ${draftProgress === opt.key ? 'var(--t-border-hi)' : 'var(--t-border)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
                     borderRadius: 4,
-                    padding: '10px 6px',
-                    color: draftProgress === opt.key ? 'var(--t-accent-hi)' : 'var(--t-text)',
-                    fontFamily: 'Rajdhani,sans-serif',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    letterSpacing: '.05em',
-                    cursor: 'pointer',
-                    transition: 'all .15s',
-                    textAlign: 'center',
+                    padding: '10px 14px',
                   }}
                 >
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{opt.label}</div>
-                  <div style={{ fontSize: 9, color:'var(--t-text-dim)', marginTop: 2, letterSpacing:'.03em' }}>
-                    {opt.desc}
+                  <button
+                    onClick={() => setDraftFontScale((v) => Math.max(70, v - 5))}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 4,
+                      border: '1px solid rgba(var(--t-accent-rgb),.3)',
+                      background: 'transparent',
+                      color: 'var(--t-accent)',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    A−
+                  </button>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <div
+                      style={{
+                        fontSize: 16,
+                        color: 'var(--t-text)',
+                        fontWeight: 700,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {draftFontScale}%
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                      }}
+                    >
+                      {draftFontScale === 100
+                        ? t('settings.size.default')
+                        : draftFontScale < 100
+                          ? t('settings.size.smaller')
+                          : t('settings.size.larger')}
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setDraftFontScale((v) => Math.min(130, v + 5))}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 4,
+                      border: '1px solid rgba(var(--t-accent-rgb),.3)',
+                      background: 'transparent',
+                      color: 'var(--t-accent)',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    A+
+                  </button>
+                  {draftFontScale !== 100 && (
+                    <button
+                      onClick={() => setDraftFontScale(100)}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid var(--t-border)',
+                        borderRadius: 4,
+                        padding: '5px 10px',
+                        color: 'var(--t-text-dim)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        letterSpacing: '.08em',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {t('settings.size.reset')}
+                    </button>
+                  )}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.05em',
+                  }}
+                >
+                  {t('settings.size.note')}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'display' && (
+            <>
+              {/* Progress Style picker */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.progressStyle')}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                  {[
+                    {
+                      key: 'ring',
+                      label: t('settings.progress.ring'),
+                      desc: t('settings.progress.ring.sub'),
+                    },
+                    {
+                      key: 'daybar',
+                      label: t('settings.progress.daybar'),
+                      desc: t('settings.progress.daybar.sub'),
+                    },
+                    {
+                      key: 'moon',
+                      label: t('settings.progress.moon'),
+                      desc: t('settings.progress.moon.sub'),
+                    },
+                    {
+                      key: 'line',
+                      label: t('settings.progress.line'),
+                      desc: t('settings.progress.line.sub'),
+                    },
+                    {
+                      key: 'hero',
+                      label: t('settings.progress.hero'),
+                      desc: t('settings.progress.hero.sub'),
+                    },
+                  ].map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setDraftProgress(opt.key)}
+                      style={{
+                        background:
+                          draftProgress === opt.key
+                            ? 'rgba(var(--t-accent-rgb),.18)'
+                            : 'transparent',
+                        border: `1px solid ${draftProgress === opt.key ? 'var(--t-border-hi)' : 'var(--t-border)'}`,
+                        borderRadius: 4,
+                        padding: '10px 6px',
+                        color: draftProgress === opt.key ? 'var(--t-accent-hi)' : 'var(--t-text)',
+                        fontFamily: 'Rajdhani,sans-serif',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        letterSpacing: '.05em',
+                        cursor: 'pointer',
+                        transition: 'all .15s',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{opt.label}</div>
+                      <div
+                        style={{
+                          fontSize: 9,
+                          color: 'var(--t-text-dim)',
+                          marginTop: 2,
+                          letterSpacing: '.03em',
+                        }}
+                      >
+                        {opt.desc}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.05em',
+                  }}
+                >
+                  Visual indicator between "Next Prayer" and the countdown.
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'display' && (
+            <>
+              {/* Print Monthly Schedule — opens a separate full-page view with
+               * the whole month's prayer times formatted for paper. Clicking
+               * this closes Settings and swaps the live dashboard for the
+               * printable view. The printable view has its own back button. */}
+              <div className="sgrp">
+                <label className="slbl">Monthly Schedule</label>
+                <button
+                  type="button"
+                  className="sbtn pri"
+                  onClick={() => onPrintSchedule?.()}
+                  style={{ width: '100%' }}
+                >
+                  🖨 Open Printable Monthly Schedule
                 </button>
-              ))}
-            </div>
-            <div style={{ marginTop:5, fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em' }}>
-              Visual indicator between "Next Prayer" and the countdown.
-            </div>
-          </div>
-          </>)}
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.05em',
+                  }}
+                >
+                  Generates a printable table of the entire month's prayer times, suitable for
+                  posting on the wall or distributing to visitors.
+                </div>
+              </div>
+            </>
+          )}
 
-          {activeTab === 'display' && (<>
-          {/* Print Monthly Schedule — opens a separate full-page view with
-           * the whole month's prayer times formatted for paper. Clicking
-           * this closes Settings and swaps the live dashboard for the
-           * printable view. The printable view has its own back button. */}
-          <div className="sgrp">
-            <label className="slbl">Monthly Schedule</label>
-            <button
-              type="button"
-              className="sbtn pri"
-              onClick={() => onPrintSchedule?.()}
-              style={{ width: '100%' }}
-            >
-              🖨 Open Printable Monthly Schedule
-            </button>
-            <div style={{ marginTop:5, fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em' }}>
-              Generates a printable table of the entire month's prayer times,
-              suitable for posting on the wall or distributing to visitors.
-            </div>
-          </div>
-          </>)}
-
-          {activeTab === 'behaviour' && (<>
-          {/* Prayer beeps — split into adhan + iqamah, each independently
+          {activeTab === 'behaviour' && (
+            <>
+              {/* Prayer beeps — split into adhan + iqamah, each independently
               toggleable. A test button at the top plays the sound once so
               the admin can verify volume. Most mosques want iqamah ON
               (the "stand up" cue) and adhan OFF (real adhan plays from
               speakers anyway). */}
-          <div className="sgrp">
-            {/* Section header with overall label + Test button */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
-              <label className="slbl" style={{ margin:0 }}>{t('settings.beep')}</label>
-              <button
-                onClick={() => playBeep()}
-                style={{ background:'transparent', border:'1px solid var(--t-border)', borderRadius:4, padding:'5px 10px', color:'var(--t-accent)', fontFamily:'Rajdhani,sans-serif', fontSize:12, fontWeight:600, letterSpacing:'.08em', cursor:'pointer' }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(var(--t-accent-rgb),.1)'}
-                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-              >🔔 {t('settings.beep.test')}</button>
-            </div>
-            {/* Adhan toggle */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px', marginBottom:6 }}>
-              <button
-                onClick={() => setDraftChimeAdhan(v => !v)}
-                style={{ width:36, height:20, borderRadius:10, border:'none', cursor:'pointer', background: draftChimeAdhan ? 'var(--t-accent)' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
-                aria-pressed={draftChimeAdhan}
-              >
-                <span style={{ position:'absolute', top:2, left: draftChimeAdhan ? 18 : 2, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
-              </button>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, color:'var(--t-text)', fontWeight:600 }}>{t('settings.beep.adhan')}</div>
-                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2 }}>
-                  {t('settings.beep.adhan.desc')}
+              <div className="sgrp">
+                {/* Section header with overall label + Test button */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 7,
+                  }}
+                >
+                  <label className="slbl" style={{ margin: 0 }}>
+                    {t('settings.beep')}
+                  </label>
+                  <button
+                    onClick={() => playBeep()}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--t-border)',
+                      borderRadius: 4,
+                      padding: '5px 10px',
+                      color: 'var(--t-accent)',
+                      fontFamily: 'Rajdhani,sans-serif',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      letterSpacing: '.08em',
+                      cursor: 'pointer',
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.background = 'rgba(var(--t-accent-rgb),.1)')
+                    }
+                    onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    🔔 {t('settings.beep.test')}
+                  </button>
                 </div>
-              </div>
-            </div>
-            {/* Iqamah toggle */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
-              <button
-                onClick={() => setDraftChimeIqamah(v => !v)}
-                style={{ width:36, height:20, borderRadius:10, border:'none', cursor:'pointer', background: draftChimeIqamah ? 'var(--t-accent)' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
-                aria-pressed={draftChimeIqamah}
-              >
-                <span style={{ position:'absolute', top:2, left: draftChimeIqamah ? 18 : 2, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
-              </button>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, color:'var(--t-text)', fontWeight:600 }}>{t('settings.beep.iqamah')}</div>
-                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2 }}>
-                  {t('settings.beep.iqamah.desc')}
-                </div>
-              </div>
-            </div>
-          </div>
-          </>)}
-
-          {activeTab === 'location' && (<>
-          {/* Masjid name */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.masjidName')}</label>
-            <input
-              className="sinput"
-              type="text"
-              placeholder={t('settings.masjidName.placeholder')}
-              value={draftMasjid}
-              onChange={e => setDraftMasjid(e.target.value)}
-              maxLength={60}
-            />
-            {draftMasjid && (
-              <div style={{ marginTop:5, fontSize:11, color:'#9A8B6E', letterSpacing:'.05em' }}>
-                Shown in header · leave blank to show "Prayer Times"
-              </div>
-            )}
-          </div>
-
-          {/* Mosque logo upload — optional branding.
-           * Reads the picked file via FileReader → base64 string, then
-           * stores it in `draftLogo`. The handler enforces a 100 KB cap to
-           * keep localStorage usage modest; larger files are rejected with
-           * a small inline warning rather than silently truncated. */}
-          <div className="sgrp">
-            <label className="slbl">Mosque Logo (optional)</label>
-            <LogoUploader
-              value={draftLogo}
-              onChange={setDraftLogo}
-            />
-          </div>
-          </>)}
-
-          {activeTab === 'location' && (<>
-          {/* City search */}
-          <div className="sgrp">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
-              <label className="slbl" style={{ margin:0 }}>{t('settings.searchCity')}</label>
-              <button
-                onClick={geolocate}
-                style={{
-                  background:'transparent',
-                  border:'1px solid var(--t-border)',
-                  borderRadius:4,
-                  padding:'4px 10px',
-                  color:'var(--t-accent)',
-                  fontFamily:'Rajdhani,sans-serif',
-                  fontSize:12,
-                  fontWeight:600,
-                  letterSpacing:'.08em',
-                  cursor:'pointer',
-                  whiteSpace:'nowrap',
-                  transition:'background .2s',
-                }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(var(--t-accent-rgb),.1)'}
-                onMouseOut={e => e.currentTarget.style.background = 'transparent'}
-              >📍 {t('settings.useMyLocation')}</button>
-            </div>
-            {/* Search input — always rendered so the admin can refine their pick.
-                Picking a city from the dropdown sets `selectedCity` (parent state)
-                but does NOT clear this input — it stays for context. */}
-            <input
-              className="sinput"
-              type="text"
-              placeholder={t('settings.searchCity.placeholder')}
-              value={searchQuery}
-              onChange={e => handleSearchInput(e.target.value)}
-            />
-            <div className="search-results">
-              {searchStatus === 'searching' && (
-                <div className="search-status">{t('settings.searchCity.searching')}</div>
-              )}
-              {searchStatus === 'empty' && (
-                <div className="search-status">{t('settings.searchCity.empty')}</div>
-              )}
-              {searchStatus === 'error' && (
-                <div className="search-status">{t('settings.searchCity.error')}</div>
-              )}
-              {searchResults.map(r => (
-                <div key={r.id} className="search-item" onClick={() => handleSelectCity(r)}>
-                  <div className="search-item-name">{r.name}</div>
-                  <div className="search-item-sub">
-                    {[r.admin1, r.country].filter(Boolean).join(', ')}
-                    {r.tz ? ` · ${r.tz}` : ''}
+                {/* Adhan toggle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                    marginBottom: 6,
+                  }}
+                >
+                  <button
+                    onClick={() => setDraftChimeAdhan((v) => !v)}
+                    style={{
+                      width: 36,
+                      height: 20,
+                      borderRadius: 10,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: draftChimeAdhan ? 'var(--t-accent)' : '#333',
+                      position: 'relative',
+                      flexShrink: 0,
+                      transition: 'background .2s',
+                    }}
+                    aria-pressed={draftChimeAdhan}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftChimeAdhan ? 18 : 2,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.beep.adhan')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                      }}
+                    >
+                      {t('settings.beep.adhan.desc')}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                {/* Iqamah toggle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                  }}
+                >
+                  <button
+                    onClick={() => setDraftChimeIqamah((v) => !v)}
+                    style={{
+                      width: 36,
+                      height: 20,
+                      borderRadius: 10,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: draftChimeIqamah ? 'var(--t-accent)' : '#333',
+                      position: 'relative',
+                      flexShrink: 0,
+                      transition: 'background .2s',
+                    }}
+                    aria-pressed={draftChimeIqamah}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftChimeIqamah ? 18 : 2,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.beep.iqamah')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                      }}
+                    >
+                      {t('settings.beep.iqamah.desc')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
-            {/* Location summary card — ALWAYS shown below the search.
+          {activeTab === 'location' && (
+            <>
+              {/* Masjid name */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.masjidName')}</label>
+                <input
+                  className="sinput"
+                  type="text"
+                  placeholder={t('settings.masjidName.placeholder')}
+                  value={draftMasjid}
+                  onChange={(e) => setDraftMasjid(e.target.value)}
+                  maxLength={60}
+                />
+                {draftMasjid && (
+                  <div
+                    style={{ marginTop: 5, fontSize: 11, color: '#9A8B6E', letterSpacing: '.05em' }}
+                  >
+                    Shown in header · leave blank to show "Prayer Times"
+                  </div>
+                )}
+              </div>
+
+              {/* Mosque logo upload — optional branding.
+               * Reads the picked file via FileReader → base64 string, then
+               * stores it in `draftLogo`. The handler enforces a 100 KB cap to
+               * keep localStorage usage modest; larger files are rejected with
+               * a small inline warning rather than silently truncated. */}
+              <div className="sgrp">
+                <label className="slbl">Mosque Logo (optional)</label>
+                <LogoUploader value={draftLogo} onChange={setDraftLogo} />
+              </div>
+            </>
+          )}
+
+          {activeTab === 'location' && (
+            <>
+              {/* City search */}
+              <div className="sgrp">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 7,
+                  }}
+                >
+                  <label className="slbl" style={{ margin: 0 }}>
+                    {t('settings.searchCity')}
+                  </label>
+                  <button
+                    onClick={geolocate}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--t-border)',
+                      borderRadius: 4,
+                      padding: '4px 10px',
+                      color: 'var(--t-accent)',
+                      fontFamily: 'Rajdhani,sans-serif',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      letterSpacing: '.08em',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      transition: 'background .2s',
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.background = 'rgba(var(--t-accent-rgb),.1)')
+                    }
+                    onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    📍 {t('settings.useMyLocation')}
+                  </button>
+                </div>
+                {/* Search input — always rendered so the admin can refine their pick.
+                Picking a city from the dropdown sets `selectedCity` (parent state)
+                but does NOT clear this input — it stays for context. */}
+                <input
+                  className="sinput"
+                  type="text"
+                  placeholder={t('settings.searchCity.placeholder')}
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                />
+                <div className="search-results">
+                  {searchStatus === 'searching' && (
+                    <div className="search-status">{t('settings.searchCity.searching')}</div>
+                  )}
+                  {searchStatus === 'empty' && (
+                    <div className="search-status">{t('settings.searchCity.empty')}</div>
+                  )}
+                  {searchStatus === 'error' && (
+                    <div className="search-status">{t('settings.searchCity.error')}</div>
+                  )}
+                  {searchResults.map((r) => (
+                    <div key={r.id} className="search-item" onClick={() => handleSelectCity(r)}>
+                      <div className="search-item-name">{r.name}</div>
+                      <div className="search-item-sub">
+                        {[r.admin1, r.country].filter(Boolean).join(', ')}
+                        {r.tz ? ` · ${r.tz}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Location summary card — ALWAYS shown below the search.
                 When `selectedCity` is set (new pick pending Apply): gold accent,
                 shows the SELECTED city.
                 Otherwise: dimmer chrome, shows the CURRENTLY APPLIED location.
                 This gives the admin clear context: "I'm currently configured
                 for X; here's what I'd switch to if I click Apply." */}
-            <div
-              className="loc-summary"
-              data-pending={selectedCity ? 'true' : 'false'}
-            >
-              <div className="loc-summary-text">
-                <div className="loc-summary-label">
-                  {selectedCity ? t('settings.city.selected') : t('settings.city.current')}
-                </div>
-                {selectedCity ? (
-                  <>
-                    <div className="loc-summary-name">📍 {selectedCity.name}</div>
-                    <div className="loc-summary-sub">
-                      {[selectedCity.admin1, selectedCity.country].filter(Boolean).join(', ')}
-                      {' · '}{selectedCity.lat.toFixed(3)}°N {selectedCity.lng.toFixed(3)}°E
-                      {selectedCity.tz ? ` · ${selectedCity.tz}` : ''}
+                <div className="loc-summary" data-pending={selectedCity ? 'true' : 'false'}>
+                  <div className="loc-summary-text">
+                    <div className="loc-summary-label">
+                      {selectedCity ? t('settings.city.selected') : t('settings.city.current')}
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="loc-summary-name">📍 {currentLocName}</div>
-                    <div className="loc-summary-sub">
-                      {currentLat != null && currentLng != null && (
-                        <>{currentLat.toFixed(3)}°N {currentLng.toFixed(3)}°E</>
-                      )}
-                      {cityTz && ` · ${cityTz}`}
-                    </div>
-                  </>
-                )}
-              </div>
-              {/* Clear button visible only when a new city is pending. Clearing
+                    {selectedCity ? (
+                      <>
+                        <div className="loc-summary-name">📍 {selectedCity.name}</div>
+                        <div className="loc-summary-sub">
+                          {[selectedCity.admin1, selectedCity.country].filter(Boolean).join(', ')}
+                          {' · '}
+                          {selectedCity.lat.toFixed(3)}°N {selectedCity.lng.toFixed(3)}°E
+                          {selectedCity.tz ? ` · ${selectedCity.tz}` : ''}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="loc-summary-name">📍 {currentLocName}</div>
+                        <div className="loc-summary-sub">
+                          {currentLat != null && currentLng != null && (
+                            <>
+                              {currentLat.toFixed(3)}°N {currentLng.toFixed(3)}°E
+                            </>
+                          )}
+                          {cityTz && ` · ${cityTz}`}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Clear button visible only when a new city is pending. Clearing
                   cancels the pending change; current applied location is then
                   shown again. */}
-              {selectedCity && (
-                <button className="search-clear" onClick={onClearCity}>✕</button>
-              )}
-            </div>
-          </div>
-          </>)}
+                  {selectedCity && (
+                    <button className="search-clear" onClick={onClearCity}>
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
 
-          {activeTab === 'prayerTimes' && (<>
-          <div className="sgrp">
-            <label className="slbl">{t('settings.method')}</label>
-            <select className="ssel" value={draftMethod} onChange={e => setDraftMethod(e.target.value)}>
-              {Object.entries(METHOD_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          </>)}
+          {activeTab === 'prayerTimes' && (
+            <>
+              <div className="sgrp">
+                <label className="slbl">{t('settings.method')}</label>
+                <select
+                  className="ssel"
+                  value={draftMethod}
+                  onChange={(e) => setDraftMethod(e.target.value)}
+                >
+                  {Object.entries(METHOD_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
-          {activeTab === 'prayerTimes' && (<>
-          {/* High-latitude rule — for cities above ~48° (Stockholm, Edmonton,
+          {activeTab === 'prayerTimes' && (
+            <>
+              {/* High-latitude rule — for cities above ~48° (Stockholm, Edmonton,
               etc) where the sun doesn't dip 18° below the horizon in summer.
               Has no observable effect below ~48° latitude — fine to leave at
               the default. */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.highLat')}</label>
-            <select className="ssel" value={draftHighLat} onChange={e => setDraftHighLat(e.target.value)}>
-              <option value="middleOfNight">{t('settings.highLat.middle')}</option>
-              <option value="seventhOfNight">{t('settings.highLat.seventh')}</option>
-              <option value="twilightAngle">{t('settings.highLat.angle')}</option>
-            </select>
-            <div style={{ fontSize:11, color:'#9A8B6E', marginTop:6, letterSpacing:'.04em', lineHeight:1.4 }}>
-              Only matters above ~48° latitude in summer, when the sun doesn't
-              dip far enough below the horizon for standard Fajr/Isha angles.
-            </div>
-          </div>
-          </>)}
-
-          {activeTab === 'prayerTimes' && (<>
-          {/* Hijri date adjustment */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.hijri')}</label>
-            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'10px 14px' }}>
-              <button onClick={() => setDraftHijri(v => Math.max(-3, Number(v)-1))}
-                style={{ width:32, height:32, borderRadius:4, border:'1px solid rgba(201,168,76,.3)', background:'transparent', color:'#C9A84C', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>−</button>
-              <div style={{ flex:1, textAlign:'center' }}>
-                <div style={{ fontSize:22, fontWeight:700, color:'#F0C96A', fontVariantNumeric:'tabular-nums' }}>
-                  {Number(draftHijri) === 0 ? '0' : (Number(draftHijri) > 0 ? `+${draftHijri}` : draftHijri)}
-                </div>
-                <div style={{ fontSize:11, color:'#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', marginTop:2 }}>
-                  {Number(draftHijri) === 0
-                    ? t('settings.hijri.none')
-                    : fmtStr(
-                        t(Number(draftHijri) > 0 ? 'settings.hijri.fwd' : 'settings.hijri.back'),
-                        { days: Math.abs(Number(draftHijri)), plural: Math.abs(Number(draftHijri)) !== 1 ? 's' : '' }
-                      )}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.highLat')}</label>
+                <select
+                  className="ssel"
+                  value={draftHighLat}
+                  onChange={(e) => setDraftHighLat(e.target.value)}
+                >
+                  <option value="middleOfNight">{t('settings.highLat.middle')}</option>
+                  <option value="seventhOfNight">{t('settings.highLat.seventh')}</option>
+                  <option value="twilightAngle">{t('settings.highLat.angle')}</option>
+                </select>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: '#9A8B6E',
+                    marginTop: 6,
+                    letterSpacing: '.04em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Only matters above ~48° latitude in summer, when the sun doesn't dip far enough
+                  below the horizon for standard Fajr/Isha angles.
                 </div>
               </div>
-              <button onClick={() => setDraftHijri(v => Math.min(3, Number(v)+1))}
-                style={{ width:32, height:32, borderRadius:4, border:'1px solid rgba(201,168,76,.3)', background:'transparent', color:'#C9A84C', fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>+</button>
-            </div>
-            <div style={{ marginTop:5, fontSize:11, color:'#9A8B6E', letterSpacing:'.05em' }}>
-              {t('settings.hijri.preview')} {(() => {
-                const d = new Date(cityNow); d.setDate(d.getDate() + Number(draftHijri));
-                return toHijri(d);
-              })()}
-            </div>
-          </div>
-          </>)}
+            </>
+          )}
 
-          {activeTab === 'prayerTimes' && (<>
-          <div className="sgrp">
-            <label className="slbl">{t('settings.asrMethod')}</label>
-            <select className="ssel" value={draftAsr} onChange={e => setDraftAsr(e.target.value)}>
-              <option value="Standard">{t('settings.asr.standard')}</option>
-              <option value="Hanafi">{t('settings.asr.hanafi')}</option>
-            </select>
-          </div>
-          </>)}
-          {activeTab === 'iqamah' && (<>
-          {/* Auto-iqamah toggle + per-prayer buffers.
+          {activeTab === 'prayerTimes' && (
+            <>
+              {/* Hijri date adjustment */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.hijri')}</label>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    background: '#111',
+                    border: '1px solid rgba(201,168,76,.15)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                  }}
+                >
+                  <button
+                    onClick={() => setDraftHijri((v) => Math.max(-3, Number(v) - 1))}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 4,
+                      border: '1px solid rgba(201,168,76,.3)',
+                      background: 'transparent',
+                      color: '#C9A84C',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    −
+                  </button>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 700,
+                        color: '#F0C96A',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {Number(draftHijri) === 0
+                        ? '0'
+                        : Number(draftHijri) > 0
+                          ? `+${draftHijri}`
+                          : draftHijri}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: '#9A8B6E',
+                        letterSpacing: '.1em',
+                        textTransform: 'uppercase',
+                        marginTop: 2,
+                      }}
+                    >
+                      {Number(draftHijri) === 0
+                        ? t('settings.hijri.none')
+                        : fmtStr(
+                            t(
+                              Number(draftHijri) > 0 ? 'settings.hijri.fwd' : 'settings.hijri.back'
+                            ),
+                            {
+                              days: Math.abs(Number(draftHijri)),
+                              plural: Math.abs(Number(draftHijri)) !== 1 ? 's' : '',
+                            }
+                          )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDraftHijri((v) => Math.min(3, Number(v) + 1))}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 4,
+                      border: '1px solid rgba(201,168,76,.3)',
+                      background: 'transparent',
+                      color: '#C9A84C',
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                <div
+                  style={{ marginTop: 5, fontSize: 11, color: '#9A8B6E', letterSpacing: '.05em' }}
+                >
+                  {t('settings.hijri.preview')}{' '}
+                  {(() => {
+                    const d = new Date(cityNow);
+                    d.setDate(d.getDate() + Number(draftHijri));
+                    return toHijri(d);
+                  })()}
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'prayerTimes' && (
+            <>
+              <div className="sgrp">
+                <label className="slbl">{t('settings.asrMethod')}</label>
+                <select
+                  className="ssel"
+                  value={draftAsr}
+                  onChange={(e) => setDraftAsr(e.target.value)}
+                >
+                  <option value="Standard">{t('settings.asr.standard')}</option>
+                  <option value="Hanafi">{t('settings.asr.hanafi')}</option>
+                </select>
+              </div>
+            </>
+          )}
+          {activeTab === 'iqamah' && (
+            <>
+              {/* Auto-iqamah toggle + per-prayer buffers.
               When enabled, iqamah times are computed daily from adhan +
               buffer minutes, rounded to the NEAREST quarter-hour, with a
               safety floor (iqamah never before adhan). When the toggle is
               OFF, the manual "Iqamah Offset" section below is active. When
               ON, manual offsets are hidden (avoids confusion). */}
-          <div className="sgrp">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#111', border:'1px solid var(--t-border)', borderRadius:4, padding:'10px 14px' }}>
-              <div>
-                <div style={{ fontSize:14, color:'var(--t-text)', fontWeight:600 }}>{t('settings.iqamahAuto')}</div>
-                <div style={{ fontSize:11, color:'var(--t-text-dim)', letterSpacing:'.05em', marginTop:2, lineHeight:1.4, maxWidth:'48ch' }}>
-                  {t('settings.iqamahAuto.note')}
+              <div className="sgrp">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.iqamahAuto')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                        maxWidth: '48ch',
+                      }}
+                    >
+                      {t('settings.iqamahAuto.note')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDraftIqamahAutoCalc((v) => !v)}
+                    style={{
+                      width: 46,
+                      height: 24,
+                      borderRadius: 12,
+                      background: draftIqamahAutoCalc ? 'var(--t-accent)' : '#333',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background .2s',
+                      flexShrink: 0,
+                    }}
+                    aria-pressed={draftIqamahAutoCalc}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftIqamahAutoCalc ? 24 : 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
                 </div>
-              </div>
-              <button
-                onClick={() => setDraftIqamahAutoCalc(v => !v)}
-                style={{
-                  width:46, height:24, borderRadius:12,
-                  background: draftIqamahAutoCalc ? 'var(--t-accent)' : '#333',
-                  border:'none', cursor:'pointer', position:'relative',
-                  transition:'background .2s', flexShrink:0,
-                }}
-                aria-pressed={draftIqamahAutoCalc}
-              >
-                <div style={{ position:'absolute', top:2, left: draftIqamahAutoCalc ? 24 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
-              </button>
-            </div>
 
-            {/* Per-prayer buffer inputs — visible only when auto is enabled.
+                {/* Per-prayer buffer inputs — visible only when auto is enabled.
                 Each row shows: prayer name, today's adhan time, buffer +
                 minutes input, computed iqamah preview (rounded to quarter). */}
-            {draftIqamahAutoCalc && (() => {
-              // Defensive default — if a user upgraded from a build before
-              // iqamahAutoBuffers existed in DEFAULTS, the field may be
-              // briefly undefined on first render. Fall back to sensible
-              // values so the inputs always render.
-              const buffers = draftIqamahAutoBuffers || { fajr:30, dhuhr:15, asr:15, maghrib:0, isha:10 };
-              return (
-              <div style={{ marginTop:8 }}>
-                <label className="slbl">{t('settings.iqamahAuto.buffer')}</label>
-                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                  {['fajr','dhuhr','asr','maghrib','isha'].map(key => {
-                    const adhanTime = todayTimes[key];
-                    const buf = Math.min(60, Math.max(0, Number(buffers[key]) || 0));
-                    // Preview — MUST match App.jsx's effective-iqamah memo
-                    // logic exactly. Rule: nearest quarter-hour, floored at
-                    // adhan (iqamah can never be before adhan). Special case
-                    // buf=0 → iqamah=adhan exactly.
-                    let previewIqamah = null;
-                    if (adhanTime) {
-                      if (buf === 0) {
-                        previewIqamah = adhanTime;
-                      } else {
-                        const target = new Date(adhanTime.getTime() + buf * 60 * 1000);
-                        target.setSeconds(0, 0);
-                        const totalMin = target.getHours() * 60 + target.getMinutes();
-                        let roundedMin = Math.round(totalMin / 15) * 15;
-                        const rounded = new Date(target);
-                        rounded.setHours(0, 0, 0, 0);
-                        rounded.setMinutes(roundedMin);
-                        // Floor: if nearest-rounding put iqamah before adhan,
-                        // bump forward to next quarter-hour ≥ adhan.
-                        while (rounded < adhanTime) {
-                          roundedMin += 15;
-                          rounded.setHours(0, 0, 0, 0);
-                          rounded.setMinutes(roundedMin);
-                        }
-                        previewIqamah = rounded;
-                      }
-                    }
+                {draftIqamahAutoCalc &&
+                  (() => {
+                    // Defensive default — if a user upgraded from a build before
+                    // iqamahAutoBuffers existed in DEFAULTS, the field may be
+                    // briefly undefined on first render. Fall back to sensible
+                    // values so the inputs always render.
+                    const buffers = draftIqamahAutoBuffers || {
+                      fajr: 30,
+                      dhuhr: 15,
+                      asr: 15,
+                      maghrib: 0,
+                      isha: 10,
+                    };
                     return (
-                      <div key={key} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'7px 12px' }}>
-                        <span style={{ width:62, fontSize:13, color:'#9A8B6E', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0 }}>{t(`prayer.${key}`)}</span>
-                        <span style={{ width:72, fontSize:14, color:'#F5EDD8', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>
+                      <div style={{ marginTop: 8 }}>
+                        <label className="slbl">{t('settings.iqamahAuto.buffer')}</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((key) => {
+                            const adhanTime = todayTimes[key];
+                            const buf = Math.min(60, Math.max(0, Number(buffers[key]) || 0));
+                            // Preview — MUST match App.jsx's effective-iqamah memo
+                            // logic exactly. Rule: nearest quarter-hour, floored at
+                            // adhan (iqamah can never be before adhan). Special case
+                            // buf=0 → iqamah=adhan exactly.
+                            let previewIqamah = null;
+                            if (adhanTime) {
+                              if (buf === 0) {
+                                previewIqamah = adhanTime;
+                              } else {
+                                const target = new Date(adhanTime.getTime() + buf * 60 * 1000);
+                                target.setSeconds(0, 0);
+                                const totalMin = target.getHours() * 60 + target.getMinutes();
+                                let roundedMin = Math.round(totalMin / 15) * 15;
+                                const rounded = new Date(target);
+                                rounded.setHours(0, 0, 0, 0);
+                                rounded.setMinutes(roundedMin);
+                                // Floor: if nearest-rounding put iqamah before adhan,
+                                // bump forward to next quarter-hour ≥ adhan.
+                                while (rounded < adhanTime) {
+                                  roundedMin += 15;
+                                  rounded.setHours(0, 0, 0, 0);
+                                  rounded.setMinutes(roundedMin);
+                                }
+                                previewIqamah = rounded;
+                              }
+                            }
+                            return (
+                              <div
+                                key={key}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  background: '#111',
+                                  border: '1px solid rgba(201,168,76,.15)',
+                                  borderRadius: 4,
+                                  padding: '7px 12px',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 62,
+                                    fontSize: 13,
+                                    color: '#9A8B6E',
+                                    letterSpacing: '.08em',
+                                    textTransform: 'uppercase',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {t(`prayer.${key}`)}
+                                </span>
+                                <span
+                                  style={{
+                                    width: 72,
+                                    fontSize: 14,
+                                    color: '#F5EDD8',
+                                    fontVariantNumeric: 'tabular-nums',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'rgba(201,168,76,.4)',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  +
+                                </span>
+                                <NumberStepper
+                                  value={buffers[key] ?? 0}
+                                  onChange={(v) =>
+                                    setDraftIqamahAutoBuffers((prev) => ({
+                                      ...(prev || {}),
+                                      [key]: v,
+                                    }))
+                                  }
+                                  min={0}
+                                  max={60}
+                                  step={5}
+                                  width={40}
+                                />
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'rgba(201,168,76,.4)',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {t('unit.min')}
+                                </span>
+                                <span
+                                  style={{
+                                    fontSize: 13,
+                                    color: 'rgba(201,168,76,.3)',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  →
+                                </span>
+                                <span
+                                  style={{
+                                    flex: 1,
+                                    fontSize: 15,
+                                    fontWeight: 700,
+                                    color: '#C9A84C',
+                                    fontVariantNumeric: 'tabular-nums',
+                                    textAlign: 'right',
+                                  }}
+                                >
+                                  {previewIqamah ? fmt12(previewIqamah, cityTz) : '--:--'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'iqamah' && !draftIqamahAutoCalc && (
+            <>
+              {/* Iqamah offsets — manual mode. Hidden when auto is on. */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.iqamahOffset')}</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((key) => {
+                    const label = t(`prayer.${key}`);
+                    const adhanTime = todayTimes[key];
+                    const offsetMins = Math.min(60, Math.max(0, Number(draftIqamah[key]) || 0));
+                    const iqamahTime = adhanTime ? addMins(adhanTime, offsetMins) : null;
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: '#111',
+                          border: '1px solid rgba(201,168,76,.15)',
+                          borderRadius: 4,
+                          padding: '7px 12px',
+                        }}
+                      >
+                        {/* Prayer name */}
+                        <span
+                          style={{
+                            width: 62,
+                            fontSize: 13,
+                            color: '#9A8B6E',
+                            letterSpacing: '.08em',
+                            textTransform: 'uppercase',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {label}
+                        </span>
+                        {/* Adhan time */}
+                        <span
+                          style={{
+                            width: 72,
+                            fontSize: 14,
+                            color: '#F5EDD8',
+                            fontVariantNumeric: 'tabular-nums',
+                            flexShrink: 0,
+                          }}
+                        >
                           {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
                         </span>
-                        <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>+</span>
+                        {/* Offset input — step=1 so admins can dial in exact
+                        minutes (e.g. 18 to go from 4:12 → 4:30). Auto mode
+                        uses larger steps + rounding; manual mode is for
+                        precision. */}
+                        <span style={{ fontSize: 11, color: 'rgba(201,168,76,.4)', flexShrink: 0 }}>
+                          +
+                        </span>
                         <NumberStepper
-                          value={buffers[key] ?? 0}
-                          onChange={v => setDraftIqamahAutoBuffers(prev => ({ ...(prev || {}), [key]: v }))}
-                          min={0} max={60} step={5} width={40}
+                          value={draftIqamah[key]}
+                          onChange={(v) => setDraftIqamah((prev) => ({ ...prev, [key]: v }))}
+                          min={0}
+                          max={60}
+                          step={1}
+                          width={40}
                         />
-                        <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
-                        <span style={{ fontSize:13, color:'rgba(201,168,76,.3)', flexShrink:0 }}>→</span>
-                        <span style={{ flex:1, fontSize:15, fontWeight:700, color:'#C9A84C', fontVariantNumeric:'tabular-nums', textAlign:'right' }}>
-                          {previewIqamah ? fmt12(previewIqamah, cityTz) : '--:--'}
+                        <span style={{ fontSize: 11, color: 'rgba(201,168,76,.4)', flexShrink: 0 }}>
+                          {t('unit.min')}
+                        </span>
+                        {/* Arrow + resulting iqamah time */}
+                        <span style={{ fontSize: 13, color: 'rgba(201,168,76,.3)', flexShrink: 0 }}>
+                          →
+                        </span>
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: '#C9A84C',
+                            fontVariantNumeric: 'tabular-nums',
+                            textAlign: 'right',
+                          }}
+                        >
+                          {iqamahTime ? fmt12(iqamahTime, cityTz) : '--:--'}
                         </span>
                       </div>
                     );
                   })}
                 </div>
               </div>
-              );
-            })()}
-          </div>
-          </>)}
+            </>
+          )}
 
-          {activeTab === 'iqamah' && !draftIqamahAutoCalc && (<>
-          {/* Iqamah offsets — manual mode. Hidden when auto is on. */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.iqamahOffset')}</label>
-            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
-              {['fajr','dhuhr','asr','maghrib','isha'].map(key => {
-                const label      = t(`prayer.${key}`);
-                const adhanTime  = todayTimes[key];
-                const offsetMins = Math.min(60, Math.max(0, Number(draftIqamah[key]) || 0));
-                const iqamahTime = adhanTime ? addMins(adhanTime, offsetMins) : null;
-                return (
-                  <div key={key} style={{ display:'flex', alignItems:'center', gap:'8px', background:'#111', border:'1px solid rgba(201,168,76,.15)', borderRadius:4, padding:'7px 12px' }}>
-                    {/* Prayer name */}
-                    <span style={{ width:62, fontSize:13, color:'#9A8B6E', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0 }}>{label}</span>
-                    {/* Adhan time */}
-                    <span style={{ width:72, fontSize:14, color:'#F5EDD8', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>
-                      {adhanTime ? fmt12(adhanTime, cityTz) : '--:--'}
-                    </span>
-                    {/* Offset input — step=1 so admins can dial in exact
-                        minutes (e.g. 18 to go from 4:12 → 4:30). Auto mode
-                        uses larger steps + rounding; manual mode is for
-                        precision. */}
-                    <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>+</span>
-                    <NumberStepper
-                      value={draftIqamah[key]}
-                      onChange={v => setDraftIqamah(prev => ({ ...prev, [key]: v }))}
-                      min={0} max={60} step={1} width={40}
-                    />
-                    <span style={{ fontSize:11, color:'rgba(201,168,76,.4)', flexShrink:0 }}>{t('unit.min')}</span>
-                    {/* Arrow + resulting iqamah time */}
-                    <span style={{ fontSize:13, color:'rgba(201,168,76,.3)', flexShrink:0 }}>→</span>
-                    <span style={{ flex:1, fontSize:15, fontWeight:700, color:'#C9A84C', fontVariantNumeric:'tabular-nums', textAlign:'right' }}>
-                      {iqamahTime ? fmt12(iqamahTime, cityTz) : '--:--'}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          </>)}
-
-          {activeTab === 'iqamah' && (<>
-          {/* Jumu'ah congregations */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.jumuah')}</label>
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {draftJumuah.map((j, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:`1px solid ${j.enabled ? 'rgba(61,200,120,.3)' : 'rgba(201,168,76,.1)'}`, borderRadius:4, padding:'8px 10px' }}>
-                  {/* Enable toggle */}
-                  <button
-                    onClick={() => setDraftJumuah(prev => prev.map((x,xi) => xi===i ? {...x, enabled:!x.enabled} : x))}
-                    style={{ width:28, height:16, borderRadius:8, border:'none', cursor:'pointer', background: j.enabled ? '#3DC878' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
-                  >
-                    <span style={{ position:'absolute', top:2, left: j.enabled ? 14 : 2, width:12, height:12, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
-                  </button>
-                  <span style={{ fontSize:12, color: j.enabled ? '#3DC878' : '#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', width:28 }}>
-                    {['1st','2nd','3rd','4th'][i] || (i+1)+'th'}
-                  </span>
-                  {/* Time picker */}
-                  <input
-                    type="time"
-                    value={j.time}
-                    disabled={!j.enabled}
-                    onChange={e => setDraftJumuah(prev => prev.map((x,xi) => xi===i ? {...x, time:e.target.value} : x))}
-                    style={{ background:'#0A0A0A', border:'1px solid rgba(201,168,76,.25)', borderRadius:3, padding:'4px 8px', color: j.enabled ? '#F0C96A' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:15, fontWeight:700, outline:'none', flex:1, opacity: j.enabled ? 1 : .4, colorScheme:'dark' }}
-                  />
-                  {/* Iqamah offset */}
-                  <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('label.iqamah')}</span>
-                  <NumberStepper
-                    value={j.iqamah}
-                    onChange={v => setDraftJumuah(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:v} : x))}
-                    min={0} max={60} step={5} width={40}
-                    disabled={!j.enabled}
-                  />
-                  <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.min')}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          </>)}
-
-          {activeTab === 'iqamah' && (<>
-          {/* Eid prayers — separate Fitr / Adha schedules.
-              Auto-detection via Hijri calendar picks which one's active
-              when Eid approaches; no manual toggle needed. Each schedule
-              has 3 slot rows — leave `time` blank to skip that slot. */}
-          <div className="sgrp">
-            <label className="slbl">{t('settings.eid')}</label>
-
-            {/* Days-before-Eid banner setting */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14, background:'#111', border:'1px solid rgba(201,168,76,.12)', borderRadius:4, padding:'8px 12px' }}>
-              <span style={{ flex:1, fontSize:13, color:'#9A8B6E', letterSpacing:'.06em' }}>{t('settings.eid.banner')}</span>
-              <NumberStepper
-                value={draftEidDays}
-                onChange={v => setDraftEidDays(v)}
-                min={0} max={30} step={1} width={44}
-              />
-              <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.days')}</span>
-            </div>
-
-            {/* Two side-by-side schedule sections — Fitr on the left,
-                Adha on the right. Renders a compact 3-row table per Eid.
-                Each row: ordinal label, time input, iqamah NumberStepper. */}
-            {[
-              { key:'fitr', label:'Eid ul-Fitr', draft:draftEidFitr, setter:setDraftEidFitr },
-              { key:'adha', label:'Eid ul-Adha', draft:draftEidAdha, setter:setDraftEidAdha },
-            ].map(({ key, label, draft, setter }) => (
-              <div key={key} style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, color:'#c49eff', letterSpacing:'.12em', textTransform:'uppercase', fontWeight:600, marginBottom:6 }}>
-                  {label}
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                  {draft.map((slot, i) => (
-                    <div key={i} style={{ display:'flex', alignItems:'center', gap:8, background:'#111', border:`1px solid ${slot.enabled ? 'rgba(180,120,255,.3)' : 'rgba(201,168,76,.08)'}`, borderRadius:4, padding:'7px 10px' }}>
-                      {/* Enable toggle — matches Jumu'ah pattern. Disabled
-                          slots are hidden in the banner regardless of time. */}
+          {activeTab === 'iqamah' && (
+            <>
+              {/* Jumu'ah congregations */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.jumuah')}</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {draftJumuah.map((j, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: '#111',
+                        border: `1px solid ${j.enabled ? 'rgba(61,200,120,.3)' : 'rgba(201,168,76,.1)'}`,
+                        borderRadius: 4,
+                        padding: '8px 10px',
+                      }}
+                    >
+                      {/* Enable toggle */}
                       <button
-                        onClick={() => setter(prev => prev.map((x,xi) => xi===i ? {...x, enabled:!x.enabled} : x))}
-                        style={{ width:28, height:16, borderRadius:8, border:'none', cursor:'pointer', background: slot.enabled ? '#b47cff' : '#333', position:'relative', flexShrink:0, transition:'background .2s' }}
-                        aria-label={slot.enabled ? 'Disable slot' : 'Enable slot'}
+                        onClick={() =>
+                          setDraftJumuah((prev) =>
+                            prev.map((x, xi) => (xi === i ? { ...x, enabled: !x.enabled } : x))
+                          )
+                        }
+                        style={{
+                          width: 28,
+                          height: 16,
+                          borderRadius: 8,
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: j.enabled ? '#3DC878' : '#333',
+                          position: 'relative',
+                          flexShrink: 0,
+                          transition: 'background .2s',
+                        }}
                       >
-                        <span style={{ position:'absolute', top:2, left: slot.enabled ? 14 : 2, width:12, height:12, borderRadius:'50%', background:'#fff', transition:'left .2s' }}/>
+                        <span
+                          style={{
+                            position: 'absolute',
+                            top: 2,
+                            left: j.enabled ? 14 : 2,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            background: '#fff',
+                            transition: 'left .2s',
+                          }}
+                        />
                       </button>
-                      <span style={{ fontSize:12, color: slot.enabled ? '#c49eff' : '#9A8B6E', letterSpacing:'.1em', textTransform:'uppercase', width:28, flexShrink:0 }}>
-                        {['1st','2nd','3rd','4th'][i] || (i+1)+'th'}
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: j.enabled ? '#3DC878' : '#9A8B6E',
+                          letterSpacing: '.1em',
+                          textTransform: 'uppercase',
+                          width: 28,
+                        }}
+                      >
+                        {['1st', '2nd', '3rd', '4th'][i] || i + 1 + 'th'}
                       </span>
+                      {/* Time picker */}
                       <input
                         type="time"
-                        value={slot.time}
-                        disabled={!slot.enabled}
-                        onChange={ev => setter(prev => prev.map((x,xi) => xi===i ? {...x, time:ev.target.value} : x))}
-                        style={{ background:'#0A0A0A', border:'1px solid rgba(180,120,255,.25)', borderRadius:3, padding:'4px 8px', color: slot.enabled ? '#c49eff' : '#555', fontFamily:'Rajdhani,sans-serif', fontSize:14, fontWeight:700, outline:'none', flex:1, opacity: slot.enabled ? 1 : .4, colorScheme:'dark' }}
+                        value={j.time}
+                        disabled={!j.enabled}
+                        onChange={(e) =>
+                          setDraftJumuah((prev) =>
+                            prev.map((x, xi) => (xi === i ? { ...x, time: e.target.value } : x))
+                          )
+                        }
+                        style={{
+                          background: '#0A0A0A',
+                          border: '1px solid rgba(201,168,76,.25)',
+                          borderRadius: 3,
+                          padding: '4px 8px',
+                          color: j.enabled ? '#F0C96A' : '#555',
+                          fontFamily: 'Rajdhani,sans-serif',
+                          fontSize: 15,
+                          fontWeight: 700,
+                          outline: 'none',
+                          flex: 1,
+                          opacity: j.enabled ? 1 : 0.4,
+                          colorScheme: 'dark',
+                        }}
                       />
-                      <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('label.iqamah')}</span>
+                      {/* Iqamah offset */}
+                      <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
+                        {t('label.iqamah')}
+                      </span>
                       <NumberStepper
-                        value={slot.iqamah}
-                        onChange={v => setter(prev => prev.map((x,xi) => xi===i ? {...x, iqamah:v} : x))}
-                        min={0} max={60} step={5} width={40}
-                        disabled={!slot.enabled}
+                        value={j.iqamah}
+                        onChange={(v) =>
+                          setDraftJumuah((prev) =>
+                            prev.map((x, xi) => (xi === i ? { ...x, iqamah: v } : x))
+                          )
+                        }
+                        min={0}
+                        max={60}
+                        step={5}
+                        width={40}
+                        disabled={!j.enabled}
                       />
-                      <span style={{ fontSize:11, color:'#9A8B6E', flexShrink:0 }}>{t('unit.min')}</span>
+                      <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
+                        {t('unit.min')}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
-            ))}
-            <p style={{ fontSize:11, color:'#9A8B6E', marginTop:6, lineHeight:1.4 }}>
-              {t('settings.eid.note')}
-            </p>
-          </div>
-          </>)}
+            </>
+          )}
 
-          </div>{/* end sbox-body */}
+          {activeTab === 'iqamah' && (
+            <>
+              {/* Eid prayers — separate Fitr / Adha schedules.
+              Auto-detection via Hijri calendar picks which one's active
+              when Eid approaches; no manual toggle needed. Each schedule
+              has 3 slot rows — leave `time` blank to skip that slot. */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.eid')}</label>
 
-          {/* Sticky data-actions footer — Export / Import / Reset.
+                {/* Days-before-Eid banner setting */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginBottom: 14,
+                    background: '#111',
+                    border: '1px solid rgba(201,168,76,.12)',
+                    borderRadius: 4,
+                    padding: '8px 12px',
+                  }}
+                >
+                  <span style={{ flex: 1, fontSize: 13, color: '#9A8B6E', letterSpacing: '.06em' }}>
+                    {t('settings.eid.banner')}
+                  </span>
+                  <NumberStepper
+                    value={draftEidDays}
+                    onChange={(v) => setDraftEidDays(v)}
+                    min={0}
+                    max={30}
+                    step={1}
+                    width={44}
+                  />
+                  <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
+                    {t('unit.days')}
+                  </span>
+                </div>
+
+                {/* Two side-by-side schedule sections — Fitr on the left,
+                Adha on the right. Renders a compact 3-row table per Eid.
+                Each row: ordinal label, time input, iqamah NumberStepper. */}
+                {[
+                  {
+                    key: 'fitr',
+                    label: 'Eid ul-Fitr',
+                    draft: draftEidFitr,
+                    setter: setDraftEidFitr,
+                  },
+                  {
+                    key: 'adha',
+                    label: 'Eid ul-Adha',
+                    draft: draftEidAdha,
+                    setter: setDraftEidAdha,
+                  },
+                ].map(({ key, label, draft, setter }) => (
+                  <div key={key} style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: '#c49eff',
+                        letterSpacing: '.12em',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {draft.map((slot, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            background: '#111',
+                            border: `1px solid ${slot.enabled ? 'rgba(180,120,255,.3)' : 'rgba(201,168,76,.08)'}`,
+                            borderRadius: 4,
+                            padding: '7px 10px',
+                          }}
+                        >
+                          {/* Enable toggle — matches Jumu'ah pattern. Disabled
+                          slots are hidden in the banner regardless of time. */}
+                          <button
+                            onClick={() =>
+                              setter((prev) =>
+                                prev.map((x, xi) => (xi === i ? { ...x, enabled: !x.enabled } : x))
+                              )
+                            }
+                            style={{
+                              width: 28,
+                              height: 16,
+                              borderRadius: 8,
+                              border: 'none',
+                              cursor: 'pointer',
+                              background: slot.enabled ? '#b47cff' : '#333',
+                              position: 'relative',
+                              flexShrink: 0,
+                              transition: 'background .2s',
+                            }}
+                            aria-label={slot.enabled ? 'Disable slot' : 'Enable slot'}
+                          >
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: 2,
+                                left: slot.enabled ? 14 : 2,
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                background: '#fff',
+                                transition: 'left .2s',
+                              }}
+                            />
+                          </button>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: slot.enabled ? '#c49eff' : '#9A8B6E',
+                              letterSpacing: '.1em',
+                              textTransform: 'uppercase',
+                              width: 28,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {['1st', '2nd', '3rd', '4th'][i] || i + 1 + 'th'}
+                          </span>
+                          <input
+                            type="time"
+                            value={slot.time}
+                            disabled={!slot.enabled}
+                            onChange={(ev) =>
+                              setter((prev) =>
+                                prev.map((x, xi) =>
+                                  xi === i ? { ...x, time: ev.target.value } : x
+                                )
+                              )
+                            }
+                            style={{
+                              background: '#0A0A0A',
+                              border: '1px solid rgba(180,120,255,.25)',
+                              borderRadius: 3,
+                              padding: '4px 8px',
+                              color: slot.enabled ? '#c49eff' : '#555',
+                              fontFamily: 'Rajdhani,sans-serif',
+                              fontSize: 14,
+                              fontWeight: 700,
+                              outline: 'none',
+                              flex: 1,
+                              opacity: slot.enabled ? 1 : 0.4,
+                              colorScheme: 'dark',
+                            }}
+                          />
+                          <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
+                            {t('label.iqamah')}
+                          </span>
+                          <NumberStepper
+                            value={slot.iqamah}
+                            onChange={(v) =>
+                              setter((prev) =>
+                                prev.map((x, xi) => (xi === i ? { ...x, iqamah: v } : x))
+                              )
+                            }
+                            min={0}
+                            max={60}
+                            step={5}
+                            width={40}
+                            disabled={!slot.enabled}
+                          />
+                          <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
+                            {t('unit.min')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <p style={{ fontSize: 11, color: '#9A8B6E', marginTop: 6, lineHeight: 1.4 }}>
+                  {t('settings.eid.note')}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+        {/* end sbox-body */}
+
+        {/* Sticky data-actions footer — Export / Import / Reset.
               Sits at the very bottom of the panel, always visible regardless
               of which tab is active or how far the user has scrolled within
               a tab. Less prominent than Cancel/Apply (different button class)
               since these are meta-operations on the WHOLE config, not part
               of the regular edit flow. */}
-          <div className="sbox-data-footer">
-            <button
-              className="sbtn-meta"
-              onClick={onExportSettings}
-              title={t('settings.export')}
-            >⬇ {t('settings.export')}</button>
-            <button
-              className="sbtn-meta"
-              onClick={() => fileInputRef.current?.click()}
-              title={t('settings.import')}
-            >⬆ {t('settings.import')}</button>
-            <button
-              className={'sbtn-meta sbtn-meta-danger' + (resetConfirming ? ' confirming' : '')}
-              onClick={handleResetClick}
-              title={t('settings.reset')}
-            >↺ {resetConfirming ? t('settings.reset.confirm') : t('settings.reset')}</button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json,.json"
-              style={{ display: 'none' }}
-              onChange={handleFilePick}
-            />
-            {/* Import feedback message — appears briefly after a load.
+        <div className="sbox-data-footer">
+          <button className="sbtn-meta" onClick={onExportSettings} title={t('settings.export')}>
+            ⬇ {t('settings.export')}
+          </button>
+          <button
+            className="sbtn-meta"
+            onClick={() => fileInputRef.current?.click()}
+            title={t('settings.import')}
+          >
+            ⬆ {t('settings.import')}
+          </button>
+          <button
+            className={'sbtn-meta sbtn-meta-danger' + (resetConfirming ? ' confirming' : '')}
+            onClick={handleResetClick}
+            title={t('settings.reset')}
+          >
+            ↺ {resetConfirming ? t('settings.reset.confirm') : t('settings.reset')}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            style={{ display: 'none' }}
+            onChange={handleFilePick}
+          />
+          {/* Import feedback message — appears briefly after a load.
                 Green for success, red for parse error. */}
-            {importMsg && (
-              <span style={{
+          {importMsg && (
+            <span
+              style={{
                 fontSize: 11,
                 color: importMsg.ok ? '#3DC878' : '#ff6b6b',
                 letterSpacing: '.04em',
                 marginLeft: 'auto',
                 alignSelf: 'center',
-              }}>{importMsg.text}</span>
-            )}
-          </div>
+              }}
+            >
+              {importMsg.text}
+            </span>
+          )}
         </div>
       </div>
+    </div>
   );
 }

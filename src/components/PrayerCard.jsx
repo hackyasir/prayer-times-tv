@@ -28,7 +28,7 @@ export default function PrayerCard({
     <div className={`pcard${isActive ? ' active' : ''}${isPassed ? ' passed' : ''}`}>
       {prayerKey && (
         <div className="pcard-icon" aria-hidden="true">
-          <PrayerIcon prayerKey={prayerKey}/>
+          <PrayerIcon prayerKey={prayerKey} />
         </div>
       )}
       <div className="pcard-name">
@@ -37,7 +37,7 @@ export default function PrayerCard({
       </div>
       {isActive && (
         <div className="abadge">
-          <span className="abadge-dot"/>
+          <span className="abadge-dot" />
         </div>
       )}
       <div className="pcard-times">

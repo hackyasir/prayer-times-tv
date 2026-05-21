@@ -9,7 +9,10 @@
 import { HIJRI_MONTHS } from './constants.js';
 
 function julianDate(y, m, d) {
-  if (m <= 2) { y--; m += 12; }
+  if (m <= 2) {
+    y--;
+    m += 12;
+  }
   const A = Math.floor(y / 100);
   const B = 2 - A + Math.floor(A / 4);
   return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + d + B - 1524.5;
@@ -40,15 +43,18 @@ export function toHijri(date) {
  *   y = Hijri year
  */
 export function toHijriParts(date) {
-  const jd  = Math.floor(julianDate(date.getFullYear(), date.getMonth() + 1, date.getDate()) + 0.5);
-  const l   = jd - 1948440 + 10632;
-  const n   = Math.floor((l - 1) / 10631);
-  const ll  = l - 10631 * n + 354;
-  const j   = Math.floor((10985 - ll) / 5316) * Math.floor((50 * ll) / 17719) +
-              Math.floor(ll / 5670) * Math.floor((43 * ll) / 15238);
-  const ll2 = ll
-    - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50)
-    - Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+  const jd = Math.floor(julianDate(date.getFullYear(), date.getMonth() + 1, date.getDate()) + 0.5);
+  const l = jd - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  const ll = l - 10631 * n + 354;
+  const j =
+    Math.floor((10985 - ll) / 5316) * Math.floor((50 * ll) / 17719) +
+    Math.floor(ll / 5670) * Math.floor((43 * ll) / 15238);
+  const ll2 =
+    ll -
+    Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+    Math.floor(j / 16) * Math.floor((15238 * j) / 43) +
+    29;
   const m = Math.floor((24 * ll2) / 709);
   const d = ll2 - Math.floor((709 * m) / 24);
   const y = 30 * n + j - 30;
@@ -103,16 +109,18 @@ export function findUpcomingEid(now, hijriOffset = 0, maxDays = 7) {
   for (let i = 0; i <= maxDays; i++) {
     const probe = new Date(now.getTime() + i * offsetDay);
     const { d, m } = toHijriParts(probe);
-    const userDay = d + hijriOffset;  // what THIS date reads on the user's calendar
+    const userDay = d + hijriOffset; // what THIS date reads on the user's calendar
 
     // Eid ul-Fitr — 1 Shawwal (month 10)
     if (m === 10 && userDay === 1) {
-      const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+      const eidDate = new Date(probe);
+      eidDate.setHours(0, 0, 0, 0);
       return { kind: 'fitr', eidDate, daysUntil: i };
     }
     // Eid ul-Adha — 10 Dhu al-Hijjah (month 12)
     if (m === 12 && userDay === 10) {
-      const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+      const eidDate = new Date(probe);
+      eidDate.setHours(0, 0, 0, 0);
       return { kind: 'adha', eidDate, daysUntil: i };
     }
     // Handle negative-offset wrap into PREVIOUS month: if hijriOffset is
@@ -124,13 +132,15 @@ export function findUpcomingEid(now, hijriOffset = 0, maxDays = 7) {
     if (hijriOffset < 0) {
       // tabular says we're still in month (m-1), but user considers it month m
       const userMonth = userDay <= 0 ? (m === 1 ? 12 : m - 1) : m;
-      const userDayAdj = userDay <= 0 ? userDay + 30 : userDay;  // approximate
+      const userDayAdj = userDay <= 0 ? userDay + 30 : userDay; // approximate
       if (userMonth === 10 && userDayAdj === 1) {
-        const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+        const eidDate = new Date(probe);
+        eidDate.setHours(0, 0, 0, 0);
         return { kind: 'fitr', eidDate, daysUntil: i };
       }
       if (userMonth === 12 && userDayAdj === 10) {
-        const eidDate = new Date(probe); eidDate.setHours(0, 0, 0, 0);
+        const eidDate = new Date(probe);
+        eidDate.setHours(0, 0, 0, 0);
         return { kind: 'adha', eidDate, daysUntil: i };
       }
     }

@@ -195,8 +195,8 @@ prayer-times-tv/
 
 ### Environment variables
 
-| Variable | Default | Description |
-|---|---|---|
+| Variable            | Default  | Description                                                                     |
+| ------------------- | -------- | ------------------------------------------------------------------------------- |
 | `VITE_SETTINGS_PIN` | _(none)_ | If set, requires this PIN to open the Settings panel. Useful for public kiosks. |
 
 Create a `.env.local` file at project root:
@@ -222,15 +222,15 @@ Settings include: location, calculation method, madhab, high-latitude rule, iqam
 
 ### Available scripts
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start Vite dev server at `http://localhost:5173` |
-| `npm run build` | Production build → `./dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint on `src/` |
-| `npm test` | Run the full test suite once |
-| `npm run test:watch` | Re-run tests on file changes |
-| `npm run test:coverage` | Generate a coverage report in `./coverage/` |
+| Command                 | What it does                                     |
+| ----------------------- | ------------------------------------------------ |
+| `npm run dev`           | Start Vite dev server at `http://localhost:5173` |
+| `npm run build`         | Production build → `./dist/`                     |
+| `npm run preview`       | Preview the production build locally             |
+| `npm run lint`          | Run ESLint on `src/`                             |
+| `npm test`              | Run the full test suite once                     |
+| `npm run test:watch`    | Re-run tests on file changes                     |
+| `npm run test:coverage` | Generate a coverage report in `./coverage/`      |
 
 ### Testing
 
@@ -274,16 +274,17 @@ chromium-browser --kiosk --noerrdialogs --disable-infobars \
 
 ## Browser support
 
-| Browser | Status |
-|---|---|
-| Chrome / Edge ≥ 110 | ✅ Full support |
-| Firefox ≥ 110 | ✅ Full support |
-| Safari ≥ 16 | ✅ Full support |
-| Silk (Fire OS 7+) | ✅ Tested |
-| Vewd (Samsung Tizen 5+) | ✅ Tested |
+| Browser                  | Status                                         |
+| ------------------------ | ---------------------------------------------- |
+| Chrome / Edge ≥ 110      | ✅ Full support                                |
+| Firefox ≥ 110            | ✅ Full support                                |
+| Safari ≥ 16              | ✅ Full support                                |
+| Silk (Fire OS 7+)        | ✅ Tested                                      |
+| Vewd (Samsung Tizen 5+)  | ✅ Tested                                      |
 | Older smart TVs (≤ 2018) | ⚠️ May need `npm run build -- --target es2018` |
 
 The app uses:
+
 - ES2020+ features
 - CSS Grid + custom properties
 - `Intl.DateTimeFormat` with timezone support

@@ -55,18 +55,18 @@ export default [
       // ── React recommended rules ──────────────────────────────────────
       ...react.configs.recommended.rules,
       // ── React Hooks rules ────────────────────────────────────────────
-      'react-hooks/rules-of-hooks':   'error',
-      'react-hooks/exhaustive-deps':  'warn',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
 
       // ── Project-specific overrides ───────────────────────────────────
       // React 17+ JSX transform — no need to `import React from 'react'`
       // just to use JSX. Disables the legacy rule that would warn about it.
-      'react/react-in-jsx-scope':    'off',
-      'react/jsx-uses-react':        'off',
+      'react/react-in-jsx-scope': 'off',
+      'react/jsx-uses-react': 'off',
 
       // We don't use PropTypes (most of the project predates a TS migration);
       // disable the warning rather than add prop-types to every component.
-      'react/prop-types':            'off',
+      'react/prop-types': 'off',
 
       // Unescaped entities like apostrophes inside JSX are intentional in
       // many places (e.g. "Jumu'ah", "Eid ul-Fitr"). Disable rather than
@@ -75,10 +75,13 @@ export default [
 
       // Allow unused function args prefixed with _ (common pattern for
       // "this param exists by convention but isn't read").
-      'no-unused-vars': ['warn', {
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-      }],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
     },
   },
 
@@ -111,8 +114,8 @@ export default [
       'dist/**',
       'coverage/**',
       'node_modules/**',
-      'public/sw.js',          // Hand-crafted service worker; intentionally
-                               // skips lint rules that don't apply to SWs.
+      'public/sw.js', // Hand-crafted service worker; intentionally
+      // skips lint rules that don't apply to SWs.
       '.vite/**',
       '.vitest-cache/**',
     ],

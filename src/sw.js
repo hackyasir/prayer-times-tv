@@ -10,8 +10,8 @@
  * • All prayer calculations are done client-side → always available offline
  */
 
-const CACHE_NAME  = 'prayer-times-v1';
-const FONT_CACHE  = 'prayer-times-fonts-v1';
+const CACHE_NAME = 'prayer-times-v1';
+const FONT_CACHE = 'prayer-times-fonts-v1';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -24,22 +24,20 @@ const PRECACHE_ASSETS = [
 
 // ── Install: pre-cache shell ──────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)));
   self.skipWaiting();
 });
 
 // ── Activate: remove stale caches ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(k => k !== CACHE_NAME && k !== FONT_CACHE)
-          .map(k  => caches.delete(k))
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys.filter((k) => k !== CACHE_NAME && k !== FONT_CACHE).map((k) => caches.delete(k))
+        )
       )
-    )
   );
   self.clients.claim();
 });
@@ -52,7 +50,7 @@ self.addEventListener('fetch', (event) => {
   // Google Fonts → stale-while-revalidate with dedicated cache
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
     event.respondWith(
-      caches.open(FONT_CACHE).then(async cache => {
+      caches.open(FONT_CACHE).then(async (cache) => {
         const cached = await cache.match(request);
         if (cached) return cached;
         const response = await fetch(request);
@@ -66,11 +64,11 @@ self.addEventListener('fetch', (event) => {
   // Same-origin assets → cache-first
   if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(request).then(cached => {
+      caches.match(request).then((cached) => {
         if (cached) return cached;
-        return fetch(request).then(response => {
+        return fetch(request).then((response) => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
           }
           return response;
         });

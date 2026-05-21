@@ -18,13 +18,13 @@ import { computeIqamah } from '../iqamah.js';
 // purely on the time-of-day; the calendar date is irrelevant as long as
 // adhan and iqamah share the same one.
 const at = (hh, mm) => {
-  const d = new Date(2026, 4, 18, 0, 0, 0, 0);  // 2026-05-18, fixed
+  const d = new Date(2026, 4, 18, 0, 0, 0, 0); // 2026-05-18, fixed
   d.setHours(hh, mm, 0, 0);
   return d;
 };
 
 // Convenience — read HH:MM back out for asserting.
-const hm = (d) => d ? `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}` : null;
+const hm = (d) => (d ? `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}` : null);
 
 describe('computeIqamah — manual mode', () => {
   it('adds offsetMinutes to adhan time', () => {

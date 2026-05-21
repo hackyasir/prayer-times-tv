@@ -19,9 +19,9 @@
 *,
 *::before,
 *::after {
-   box-sizing: border-box;
-   margin: 0;
-   padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Root font-size: explicit 16px baseline so rem-based clamps are predictable.
@@ -29,7 +29,7 @@
    since rem is relative to root. This means our font-size:clamp(2.75rem,9vw,16.25rem)
    for the main clock will scale with user zoom while still being viewport-fluid. */
 html {
-   font-size: 16px;
+  font-size: 16px;
 }
 
 /* ── Design tokens ────────────────────────────────────────────────────────
@@ -49,11 +49,11 @@ html {
 :root {
   /* Corner radii — used by cards, buttons, badges, panels */
   --radius-xs: 2px;
-  --radius-sm: 4px;     /* default for prayer cards, widget cards */
+  --radius-sm: 4px; /* default for prayer cards, widget cards */
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-xl: 12px;
-  --radius-full: 9999px;  /* pills, circles */
+  --radius-full: 9999px; /* pills, circles */
 
   /* Spacing scale — for padding, gap, margin (when not viewport-relative).
      Keep using vh/vw for major layout sizes; use these for finer control
@@ -67,9 +67,9 @@ html {
   --space-8: 2rem;
 
   /* Shadows — subtle dark-mode-appropriate elevations */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .25);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, .35);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, .45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Global focus styling ─────────────────────────────────────────────────
@@ -79,7 +79,7 @@ html {
  * or accessibility tools. The ring uses the theme accent so it adapts to
  * whichever theme is active. */
 :focus-visible {
-  outline: 2px solid var(--t-accent, #C9A84C);
+  outline: 2px solid var(--t-accent, #c9a84c);
   outline-offset: 2px;
   border-radius: var(--radius-xs);
 }
@@ -87,75 +87,72 @@ html {
 html,
 body,
 #root {
-   width: 100%;
-   height: 100%;
-   background: var(--t-bg);
-   overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background: var(--t-bg);
+  overflow: hidden;
 }
 
 body {
-   font-family: 'Rajdhani', sans-serif;
-   color: var(--t-text);
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--t-text);
 }
 
 /* Shared animations (used across multiple components) */
 @keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 
-   0%,
-   100% {
-      opacity: 1;
-      transform: scale(1)
-   }
-
-   50% {
-      opacity: .4;
-      transform: scale(.7)
-   }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
 }
 
 @keyframes cardpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--t-accent-rgb), 0);
+  }
 
-   0%,
-   100% {
-      box-shadow: 0 0 0 0 rgba(var(--t-accent-rgb), 0)
-   }
-
-   50% {
-      box-shadow: 0 0 0 3px var(--t-card-pulse)
-   }
+  50% {
+    box-shadow: 0 0 0 3px var(--t-card-pulse);
+  }
 }
 
 @keyframes ablink {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 transparent;
+  }
 
-   0%,
-   100% {
-      opacity: 1;
-      transform: scale(1);
-      box-shadow: 0 0 0 0 transparent
-   }
-
-   50% {
-      opacity: .5;
-      transform: scale(.65);
-      box-shadow: 0 0 8px 4px var(--t-dot-glow)
-   }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.65);
+    box-shadow: 0 0 8px 4px var(--t-dot-glow);
+  }
 }
 
 @keyframes secondtick {
-   0% {
-      transform: scale(1.08);
-      opacity: 1
-   }
+  0% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
 
-   30% {
-      transform: scale(1);
-      opacity: 1
-   }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
 
-   100% {
-      transform: scale(1);
-      opacity: .92
-   }
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
 }
 
 /* ── Reduced motion — accessibility override ────────────────────────────────
@@ -186,14 +183,13 @@ body {
  *     and small, not a flicker pattern.
  */
 @media (prefers-reduced-motion: reduce) {
-
-   *,
-   *::before,
-   *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-   }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 /* ── Floating Settings button ─────────────────────────────────────────────
  * Fixed position top-right, always reachable. Icon-only. Touch-target
@@ -209,13 +205,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, .5);
-  border: 1px solid rgba(201, 168, 76, .3);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(201, 168, 76, 0.3);
   border-radius: var(--radius-full);
-  color: var(--t-accent, #C9A84C);
+  color: var(--t-accent, #c9a84c);
   cursor: pointer;
   z-index: 50;
-  transition: all .2s ease;
+  transition: all 0.2s ease;
   /* Prevent iOS double-tap highlight + selection on rapid tapping */
   -webkit-tap-highlight-color: transparent;
   -webkit-user-select: none;
@@ -226,9 +222,9 @@ body {
 }
 .settings-fab:hover,
 .settings-fab:focus-visible {
-  background: rgba(0, 0, 0, .75);
-  border-color: var(--t-accent, #C9A84C);
-  color: var(--t-accent-hi, #F0C96A);
+  background: rgba(0, 0, 0, 0.75);
+  border-color: var(--t-accent, #c9a84c);
+  color: var(--t-accent-hi, #f0c96a);
   transform: rotate(45deg);
 }
 
@@ -237,13 +233,13 @@ body {
  * clip the visible digits inside narrow fields. NumberStepper now uses
  * type="text" so this is mostly moot, but the rules below catch any
  * lingering type="number" inputs elsewhere in the app. */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   appearance: none;
   margin: 0;
 }
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }

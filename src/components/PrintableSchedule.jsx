@@ -25,15 +25,24 @@
 
 import { useMemo, useState } from 'react';
 import { PRAYERS, METHOD_LABELS } from '../lib/constants.js';
-import { calcTimes }  from '../lib/prayerCalc.js';
+import { calcTimes } from '../lib/prayerCalc.js';
 import { fmt12 } from '../lib/formatters.js';
 import { toHijriParts, findUpcomingEid } from '../lib/hijri.js';
 import { computeIqamah } from '../lib/iqamah.js';
 
 const HIJRI_MONTHS = [
-  'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
-  'Jumada al-Awwal', 'Jumada al-Thani', 'Rajab', 'Shaban',
-  'Ramadan', 'Shawwal', 'Dhu al-Qidah', 'Dhu al-Hijjah',
+  'Muharram',
+  'Safar',
+  'Rabi al-Awwal',
+  'Rabi al-Thani',
+  'Jumada al-Awwal',
+  'Jumada al-Thani',
+  'Rajab',
+  'Shaban',
+  'Ramadan',
+  'Shawwal',
+  'Dhu al-Qidah',
+  'Dhu al-Hijjah',
 ];
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -63,8 +72,8 @@ export default function PrintableSchedule({
   // buttons let the user step through months without leaving the view
   // (useful when prepping next month's bulletin ahead of time).
   const today = new Date();
-  const [year,  setYear]  = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth());  // 0..11
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth()); // 0..11
 
   // Compute the table data: one row per day of the selected month.
   // useMemo so changing month doesn't re-recompute on unrelated re-renders.
@@ -73,7 +82,7 @@ export default function PrintableSchedule({
     // First enabled Jumu'ah slot — used to substitute the Dhuhr cell on
     // Fridays. Multi-slot mosques get all their slots listed in the
     // footer; the table cell shows just the first to keep it scannable.
-    const firstJumuah = (jumuah || []).find(j => j.enabled && j.time);
+    const firstJumuah = (jumuah || []).find((j) => j.enabled && j.time);
 
     const result = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -92,11 +101,12 @@ export default function PrintableSchedule({
       // Apply iqamah (auto-buffer mode or manual offsets). Delegated
       // to lib/iqamah.js so the printed schedule uses the EXACT same
       // logic as the live dashboard — no risk of drift.
-      const iqamahFor = (key) => computeIqamah(times[key], {
-        autoCalc:      !!iqamahAutoCalc,
-        bufferMinutes: iqamahAutoBuffers?.[key] ?? 0,
-        offsetMinutes: iqamah?.[key] ?? 0,
-      });
+      const iqamahFor = (key) =>
+        computeIqamah(times[key], {
+          autoCalc: !!iqamahAutoCalc,
+          bufferMinutes: iqamahAutoBuffers?.[key] ?? 0,
+          offsetMinutes: iqamah?.[key] ?? 0,
+        });
 
       // ── Jumu'ah substitution on Friday rows ───────────────────────────
       // Mosques replace Dhuhr with Jumu'ah on Fridays. The table cell
@@ -112,32 +122,32 @@ export default function PrintableSchedule({
         const jt = new Date(probe);
         jt.setHours(hh, mm, 0, 0);
         return {
-          adhan:  jt,
+          adhan: jt,
           iqamah: new Date(jt.getTime() + (firstJumuah.iqamah || 0) * 60_000),
         };
       };
       const jumuahCell = buildJumuahDate();
 
       result.push({
-        date:    d,
+        date: d,
         weekday: WEEKDAYS[probe.getDay()],
-        hijri:   `${userHijriDay} ${HIJRI_MONTHS[hijri.m - 1]}`,
+        hijri: `${userHijriDay} ${HIJRI_MONTHS[hijri.m - 1]}`,
         // For each prayer key, store adhan + iqamah times. Sunrise has
         // no iqamah (observational only). On Fridays, the Dhuhr cell is
         // swapped for the Jumu'ah time + iqamah and flagged so the
         // renderer can label it visually.
-        prayers: PRAYERS.map(p => {
+        prayers: PRAYERS.map((p) => {
           if (p.key === 'dhuhr' && jumuahCell) {
             return {
-              key:    'dhuhr',
-              adhan:  jumuahCell.adhan,
+              key: 'dhuhr',
+              adhan: jumuahCell.adhan,
               iqamah: jumuahCell.iqamah,
               isJumuah: true,
             };
           }
           return {
-            key:    p.key,
-            adhan:  times[p.key],
+            key: p.key,
+            adhan: times[p.key],
             iqamah: p.key === 'sunrise' ? null : iqamahFor(p.key),
           };
         }),
@@ -161,22 +171,34 @@ export default function PrintableSchedule({
     // cityTz intentionally omitted — used only by fmt12 during render,
     // not in the row computation itself; including it would cause needless
     // recomputes on timezone-related state changes that don't affect data.
-  }, [year, month, lat, lng, method, shadow, highLatRule,
-      iqamah, iqamahAutoCalc, iqamahAutoBuffers, hijriOffset, jumuah]);
+  }, [
+    year,
+    month,
+    lat,
+    lng,
+    method,
+    shadow,
+    highLatRule,
+    iqamah,
+    iqamahAutoCalc,
+    iqamahAutoBuffers,
+    hijriOffset,
+    jumuah,
+  ]);
 
   // Month display string e.g. "May 2026"
-  const monthName = new Date(year, month, 1).toLocaleString('en-US',
-    { month: 'long', year: 'numeric' });
+  const monthName = new Date(year, month, 1).toLocaleString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
 
   // Hijri month span — usually one Gregorian month covers 1-2 Hijri months
   const firstHijri = rows[0]?.hijri.split(' ').slice(1).join(' ');
-  const lastHijri  = rows[rows.length - 1]?.hijri.split(' ').slice(1).join(' ');
-  const hijriRange = firstHijri === lastHijri
-    ? firstHijri
-    : `${firstHijri} – ${lastHijri}`;
+  const lastHijri = rows[rows.length - 1]?.hijri.split(' ').slice(1).join(' ');
+  const hijriRange = firstHijri === lastHijri ? firstHijri : `${firstHijri} – ${lastHijri}`;
 
   // Active Jumu'ah slots — listed in the footer as a quick reference.
-  const activeJumuah = (jumuah || []).filter(j => j.enabled && j.time);
+  const activeJumuah = (jumuah || []).filter((j) => j.enabled && j.time);
 
   // ── Eid auto-detection within the displayed month ────────────────────
   // findUpcomingEid scans forward from a given date looking for the next
@@ -202,11 +224,11 @@ export default function PrintableSchedule({
     if (found.eidDate.getMonth() !== month || found.eidDate.getFullYear() !== year) {
       return null;
     }
-    const slots = found.kind === 'fitr' ? (eidFitr || []) : (eidAdha || []);
-    const enabledSlots = slots.filter(s => s.enabled && s.time);
+    const slots = found.kind === 'fitr' ? eidFitr || [] : eidAdha || [];
+    const enabledSlots = slots.filter((s) => s.enabled && s.time);
     return {
-      kind:  found.kind,
-      date:  found.eidDate,
+      kind: found.kind,
+      date: found.eidDate,
       slots: enabledSlots,
     };
   }, [year, month, hijriOffset, eidFitr, eidAdha]);
@@ -214,8 +236,14 @@ export default function PrintableSchedule({
   const navMonth = (delta) => {
     let m = month + delta;
     let y = year;
-    if (m < 0)  { m = 11; y--; }
-    if (m > 11) { m = 0;  y++; }
+    if (m < 0) {
+      m = 11;
+      y--;
+    }
+    if (m > 11) {
+      m = 0;
+      y++;
+    }
     setMonth(m);
     setYear(y);
   };
@@ -228,9 +256,13 @@ export default function PrintableSchedule({
           ← Back to Dashboard
         </button>
         <div className="ps-month-nav">
-          <button onClick={() => navMonth(-1)} aria-label="Previous month">‹</button>
+          <button onClick={() => navMonth(-1)} aria-label="Previous month">
+            ‹
+          </button>
           <span className="ps-month-label">{monthName}</span>
-          <button onClick={() => navMonth(1)} aria-label="Next month">›</button>
+          <button onClick={() => navMonth(1)} aria-label="Next month">
+            ›
+          </button>
         </div>
         <button onClick={() => window.print()} className="ps-print-btn">
           🖨 Print / Save PDF
@@ -241,13 +273,9 @@ export default function PrintableSchedule({
       <div className="ps-page">
         {/* Header */}
         <div className="ps-header">
-          {logoDataUrl && (
-            <img src={logoDataUrl} alt="" className="ps-logo"/>
-          )}
+          {logoDataUrl && <img src={logoDataUrl} alt="" className="ps-logo" />}
           <div className="ps-header-text">
-            <h1 className="ps-title">
-              {masjidName || 'Prayer Times'}
-            </h1>
+            <h1 className="ps-title">{masjidName || 'Prayer Times'}</h1>
             <div className="ps-subtitle">{locName}</div>
             <div className="ps-month">
               {monthName} · {hijriRange} AH
@@ -264,15 +292,13 @@ export default function PrintableSchedule({
                * "Date" label that just showed a number column. */}
               <th>Day</th>
               <th>Hijri</th>
-              {PRAYERS.map(p => {
+              {PRAYERS.map((p) => {
                 // Fajr and Maghrib have meaningful Ramadan-context aliases:
                 // - Fajr = the end-of-Suhoor cutoff (last moment to eat).
                 // - Maghrib = Iftaar time (first moment to break fast).
                 // Stacked label so the secondary name sits below the primary
                 // without widening the column.
-                const alias = p.key === 'fajr'    ? 'Suhoor'
-                            : p.key === 'maghrib' ? 'Iftaar'
-                            : null;
+                const alias = p.key === 'fajr' ? 'Suhoor' : p.key === 'maghrib' ? 'Iftaar' : null;
                 return (
                   <th key={p.key} className={`ps-prayer-col ps-${p.key}`}>
                     <span className="ps-col-primary">{p.en}</span>
@@ -283,15 +309,14 @@ export default function PrintableSchedule({
             </tr>
           </thead>
           <tbody>
-            {rows.map(row => {
+            {rows.map((row) => {
               // Row background priority: Friday wins (yellow), then Mon/Thu
               // (green). Both are visible because they're different colors;
               // we never need to merge. White days are NOT a row color —
               // they get the ✦ icon attached to the Hijri date instead.
-              const rowClasses = [
-                row.isFriday    && 'ps-friday',
-                row.isSunnahFast && 'ps-sunnah',
-              ].filter(Boolean).join(' ');
+              const rowClasses = [row.isFriday && 'ps-friday', row.isSunnahFast && 'ps-sunnah']
+                .filter(Boolean)
+                .join(' ');
               return (
                 <tr key={row.date} className={rowClasses}>
                   <td className="ps-day-cell">
@@ -310,24 +335,21 @@ export default function PrintableSchedule({
                       </span>
                     )}
                   </td>
-                {row.prayers.map(p => (
-                  <td key={p.key}
+                  {row.prayers.map((p) => (
+                    <td
+                      key={p.key}
                       className={`ps-time-cell${p.isJumuah ? ' ps-jumuah-cell' : ''}`}
-                  >
-                    {/* On Friday rows, the Dhuhr column shows the Jumu'ah
-                     * time instead. A small "JUMU'AH" caption above the
-                     * times makes the substitution explicit on print so
-                     * readers don't think there's a typo in the column. */}
-                    {p.isJumuah && (
-                      <div className="ps-jumuah-label">Jumu&apos;ah</div>
-                    )}
-                    <div className="ps-adhan">{fmt12(p.adhan, cityTz)}</div>
-                    {p.iqamah && (
-                      <div className="ps-iqamah">{fmt12(p.iqamah, cityTz)}</div>
-                    )}
-                  </td>
-                ))}
-              </tr>
+                    >
+                      {/* On Friday rows, the Dhuhr column shows the Jumu'ah
+                       * time instead. A small "JUMU'AH" caption above the
+                       * times makes the substitution explicit on print so
+                       * readers don't think there's a typo in the column. */}
+                      {p.isJumuah && <div className="ps-jumuah-label">Jumu&apos;ah</div>}
+                      <div className="ps-adhan">{fmt12(p.adhan, cityTz)}</div>
+                      {p.iqamah && <div className="ps-iqamah">{fmt12(p.iqamah, cityTz)}</div>}
+                    </td>
+                  ))}
+                </tr>
               );
             })}
           </tbody>
@@ -340,8 +362,7 @@ export default function PrintableSchedule({
         <div className="ps-footer">
           <div className="ps-footer-col">
             <div className="ps-footer-row">
-              <strong>Calculation:</strong>
-              {' '}{METHOD_LABELS[method] || method}
+              <strong>Calculation:</strong> {METHOD_LABELS[method] || method}
               {shadow === 2 ? ' · Hanafi Asr' : ' · Shafi Asr'}
               {iqamahAutoCalc ? ' · Auto iqamah (smart)' : ' · Manual iqamah offsets'}
             </div>
@@ -350,11 +371,8 @@ export default function PrintableSchedule({
              * year so it doesn't visually clutter normal months. */}
             {eidInMonth && eidInMonth.slots.length > 0 && (
               <div className="ps-footer-row">
-                <strong>
-                  {eidInMonth.kind === 'fitr' ? 'Eid ul-Fitr' : 'Eid ul-Adha'}:
-                </strong>
-                {' '}{eidInMonth.date.toLocaleDateString('en-US',
-                    { month: 'short', day: 'numeric' })}
+                <strong>{eidInMonth.kind === 'fitr' ? 'Eid ul-Fitr' : 'Eid ul-Adha'}:</strong>{' '}
+                {eidInMonth.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 {' · '}
                 {eidInMonth.slots.map((s, i) => (
                   <span key={i} className="ps-footer-jumuah">
@@ -372,8 +390,8 @@ export default function PrintableSchedule({
           <div className="ps-footer-col">
             {activeJumuah.length > 0 && (
               <div className="ps-footer-row">
-                <strong>Jumu&apos;ah:</strong>
-                {' '}{activeJumuah.map((j, i) => (
+                <strong>Jumu&apos;ah:</strong>{' '}
+                {activeJumuah.map((j, i) => (
                   <span key={i} className="ps-footer-jumuah">
                     {i > 0 && ' · '}
                     {j.time} (Iqamah +{j.iqamah}m)
@@ -386,11 +404,11 @@ export default function PrintableSchedule({
              * is the FIRST thing they see on the wall poster. */}
             <div className="ps-footer-row ps-footer-legend">
               <span className="ps-legend-item">
-                <span className="ps-legend-swatch ps-legend-friday"/>
+                <span className="ps-legend-swatch ps-legend-friday" />
                 Friday (Jumu&apos;ah)
               </span>
               <span className="ps-legend-item">
-                <span className="ps-legend-swatch ps-legend-sunnah"/>
+                <span className="ps-legend-swatch ps-legend-sunnah" />
                 Mon/Thu (recommended fasting)
               </span>
               <span className="ps-legend-item">

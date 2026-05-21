@@ -12,11 +12,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  workflow_dispatch:           # allow manual trigger from Actions tab
+  workflow_dispatch: # allow manual trigger from Actions tab
 
 permissions:
   contents: read
-  pages:    write
+  pages: write
   id-token: write
 
 concurrency:
@@ -52,7 +52,7 @@ jobs:
           # Set the base path to your repo name for GitHub Pages:
           # e.g. if your repo is github.com/you/prayer-times-tv → /prayer-times-tv/
           VITE_BASE_URL: /${{ github.event.repository.name }}/
-          VITE_SETTINGS_PIN:      ${{ secrets.VITE_SETTINGS_PIN }}
+          VITE_SETTINGS_PIN: ${{ secrets.VITE_SETTINGS_PIN }}
           VITE_SHOW_TEST_BUTTONS: ${{ vars.VITE_SHOW_TEST_BUTTONS || 'true' }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

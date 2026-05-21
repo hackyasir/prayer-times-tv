@@ -17,13 +17,13 @@ import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Header({
   masjidName,
-  logoDataUrl,           // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
+  logoDataUrl, // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
   locName,
   hijri,
   method,
   activePrayerKey,
   lunarPhase,
-  centerSlot,            // optional: replaces the decorative Arabic title
+  centerSlot, // optional: replaces the decorative Arabic title
 }) {
   const { t } = useT();
   return (
@@ -34,13 +34,9 @@ export default function Header({
           // MosqueIcon footprint so layout doesn't shift between modes.
           // object-fit: contain (set in CSS) keeps the user's logo aspect
           // ratio intact regardless of source dimensions.
-          <img
-            src={logoDataUrl}
-            alt={masjidName || 'Mosque logo'}
-            className="mosque-logo-custom"
-          />
+          <img src={logoDataUrl} alt={masjidName || 'Mosque logo'} className="mosque-logo-custom" />
         ) : (
-          <MosqueIcon activePrayer={activePrayerKey} lunarPhase={lunarPhase}/>
+          <MosqueIcon activePrayer={activePrayerKey} lunarPhase={lunarPhase} />
         )}
         <div>
           {masjidName ? (
@@ -65,9 +61,18 @@ export default function Header({
         <div className="loc">
           {/* Location pin SVG — replaces the previous pulsating green dot.
               Uses currentColor so it inherits .loc's text-dim colour. */}
-          <svg className="loc-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 22s-7-7.5-7-13a7 7 0 0 1 14 0c0 5.5-7 13-7 13z"/>
-            <circle cx="12" cy="9" r="2.5"/>
+          <svg
+            className="loc-pin"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 22s-7-7.5-7-13a7 7 0 0 1 14 0c0 5.5-7 13-7 13z" />
+            <circle cx="12" cy="9" r="2.5" />
           </svg>
           {locName}
         </div>
