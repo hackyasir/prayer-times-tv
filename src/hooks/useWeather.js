@@ -32,13 +32,19 @@ export default function useWeather(lat, lng) {
           `&forecast_days=1` +
           `&wind_speed_unit=kmh&timezone=auto`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`weather http ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
         const c = data.current;
         const d = data.daily;
+        const temp = Number(c?.temperature_2m);
+        const feelsLike = Number(c?.apparent_temperature);
+        if (!Number.isFinite(temp) || !Number.isFinite(feelsLike)) {
+          throw new Error('weather payload missing numeric temperature fields');
+        }
         setWeather({
-          temp: Math.round(c.temperature_2m),
-          feelsLike: Math.round(c.apparent_temperature),
+          temp: Math.round(temp),
+          feelsLike: Math.round(feelsLike),
           humidity: c.relative_humidity_2m,
           wind: Math.round(c.wind_speed_10m),
           windDir: c.wind_direction_10m,

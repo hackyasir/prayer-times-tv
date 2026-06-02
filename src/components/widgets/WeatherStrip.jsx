@@ -29,7 +29,7 @@ export default function WeatherStrip({ weather, weatherState }) {
   const hasHiLo = weather.tempMax != null && weather.tempMin != null;
 
   return (
-    <div className="weather-strip" aria-label="Current weather">
+    <div className="weather-strip" aria-label={t('widget.weather.current')}>
       <span className="weather-strip-temp">
         {weather.temp}
         {weather.unit}
@@ -49,7 +49,9 @@ export default function WeatherStrip({ weather, weatherState }) {
           Hidden when daily forecast values aren't available. */}
       {hasHiLo && (
         <span className="weather-strip-hilo">
-          H {weather.tempMax}° · L {weather.tempMin}°
+          {t('widget.weather.hi')} {weather.tempMax}
+          {weather.unit} · {t('widget.weather.lo')} {weather.tempMin}
+          {weather.unit}
         </span>
       )}
     </div>
