@@ -1187,14 +1187,14 @@ export default function SettingsPanel({
                       {Number(draftHijri) === 0
                         ? t('settings.hijri.none')
                         : fmtStr(
-                            t(
-                              Number(draftHijri) > 0 ? 'settings.hijri.fwd' : 'settings.hijri.back'
-                            ),
-                            {
-                              days: Math.abs(Number(draftHijri)),
-                              plural: Math.abs(Number(draftHijri)) !== 1 ? 's' : '',
-                            }
-                          )}
+                          t(
+                            Number(draftHijri) > 0 ? 'settings.hijri.fwd' : 'settings.hijri.back'
+                          ),
+                          {
+                            days: Math.abs(Number(draftHijri)),
+                            plural: Math.abs(Number(draftHijri)) !== 1 ? 's' : '',
+                          }
+                        )}
                     </div>
                   </div>
                   <button
@@ -1554,7 +1554,7 @@ export default function SettingsPanel({
 
           {activeTab === 'iqamah' && (
             <>
-              {/* Jumu'ah congregations */}
+              {/* Jumu'ah congregations (single time per slot) */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.jumuah')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1639,26 +1639,6 @@ export default function SettingsPanel({
                           colorScheme: 'dark',
                         }}
                       />
-                      {/* Iqamah offset */}
-                      <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
-                        {t('label.iqamah')}
-                      </span>
-                      <NumberStepper
-                        value={j.iqamah}
-                        onChange={(v) =>
-                          setDraftJumuah((prev) =>
-                            prev.map((x, xi) => (xi === i ? { ...x, iqamah: v } : x))
-                          )
-                        }
-                        min={0}
-                        max={60}
-                        step={5}
-                        width={40}
-                        disabled={!j.enabled}
-                      />
-                      <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
-                        {t('unit.min')}
-                      </span>
                     </div>
                   ))}
                 </div>
@@ -1705,8 +1685,7 @@ export default function SettingsPanel({
                 </div>
 
                 {/* Two side-by-side schedule sections — Fitr on the left,
-                Adha on the right. Renders a compact 3-row table per Eid.
-                Each row: ordinal label, time input, iqamah NumberStepper. */}
+                Adha on the right. Each slot stores one congregation time. */}
                 {[
                   {
                     key: 'fitr',
@@ -1820,25 +1799,6 @@ export default function SettingsPanel({
                               colorScheme: 'dark',
                             }}
                           />
-                          <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
-                            {t('label.iqamah')}
-                          </span>
-                          <NumberStepper
-                            value={slot.iqamah}
-                            onChange={(v) =>
-                              setter((prev) =>
-                                prev.map((x, xi) => (xi === i ? { ...x, iqamah: v } : x))
-                              )
-                            }
-                            min={0}
-                            max={60}
-                            step={5}
-                            width={40}
-                            disabled={!slot.enabled}
-                          />
-                          <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
-                            {t('unit.min')}
-                          </span>
                         </div>
                       ))}
                     </div>

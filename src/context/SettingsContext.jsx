@@ -60,11 +60,13 @@ export const DEFAULTS = {
   // OPT-IN: default OFF so existing setups behave identically.
   iqamahAutoCalc: true,
   iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 },
+  // Jumu'ah slots are adhan-time-only (no separate iqamah field).
+  // The board shows a single congregational time per slot.
   jumuah: [
-    { time: '13:00', iqamah: 20, enabled: true },
-    { time: '13:45', iqamah: 20, enabled: false },
-    { time: '14:30', iqamah: 20, enabled: false },
-    { time: '15:15', iqamah: 20, enabled: false },
+    { time: '13:00', enabled: true },
+    { time: '13:45', enabled: false },
+    { time: '14:30', enabled: false },
+    { time: '15:15', enabled: false },
   ],
   // Eid prayer schedules. Two SEPARATE arrays for Fitr and Adha because
   // many mosques run different schedules for the two Eids (different times,
@@ -72,26 +74,25 @@ export const DEFAULTS = {
   // which set is active when Eid approaches — no manual on/off toggle needed
   // for the whole banner.
   //
-  // Each slot: { time, iqamah, enabled }
+  // Each slot: { time, enabled }
   //   - `enabled`: per-slot toggle (matches the Jumu'ah pattern). Disabled
   //     slots are hidden in the banner. Default: only 1st slot enabled
   //     (most mosques have 1 Eid jamaat; staff toggles more on if needed).
   //   - `time`: 'HH:MM' (24h). Greyed out when disabled.
-  //   - `iqamah`: minutes after adhan.
   //
   // No `label` field — banner label is auto-set from the upcoming Eid kind
   // (Fitr or Adha) via Hijri calendar detection.
   eidFitr: [
-    { time: '08:00', iqamah: 10, enabled: true },
-    { time: '09:00', iqamah: 10, enabled: false },
-    { time: '10:00', iqamah: 10, enabled: false },
-    { time: '11:00', iqamah: 10, enabled: false },
+    { time: '08:00', enabled: true },
+    { time: '09:00', enabled: false },
+    { time: '10:00', enabled: false },
+    { time: '11:00', enabled: false },
   ],
   eidAdha: [
-    { time: '07:30', iqamah: 10, enabled: true },
-    { time: '08:30', iqamah: 10, enabled: false },
-    { time: '09:30', iqamah: 10, enabled: false },
-    { time: '10:30', iqamah: 10, enabled: false },
+    { time: '07:30', enabled: true },
+    { time: '08:30', enabled: false },
+    { time: '09:30', enabled: false },
+    { time: '10:30', enabled: false },
   ],
   eidDaysBefore: 7, // show Eid banner this many days before the actual Eid
   hijriOffset: 0, // ±days adjustment for Hijri date display
@@ -166,7 +167,6 @@ function loadSettings() {
     ) {
       const cleanedSlots = stored.eid.map((e) => ({
         time: e.time || '',
-        iqamah: Number(e.iqamah) || 20,
         enabled: e.enabled !== false, // preserve original enabled flag
       }));
       const guessedKind = stored.eid[0]?.label?.toLowerCase().includes('adha') ? 'adha' : 'fitr';
@@ -177,6 +177,31 @@ function loadSettings() {
         stored.eidFitr = cleanedSlots;
         stored.eidAdha = DEFAULTS.eidAdha;
       }
+    }
+
+    // ── Legacy migration: jumuah slots with iqamah → time-only slots ─────
+    // New model stores only adhan/congregation time for Jumu'ah.
+    // Older saved shapes may include {iqamah}. Strip it while preserving
+    // enabled/time values and slot order.
+    if (Array.isArray(stored.jumuah)) {
+      stored.jumuah = stored.jumuah.map((slot) => ({
+        time: slot?.time || '',
+        enabled: slot?.enabled !== false,
+      }));
+    }
+
+    // ── Legacy migration: eidFitr/eidAdha slots with iqamah → time-only ──
+    if (Array.isArray(stored.eidFitr)) {
+      stored.eidFitr = stored.eidFitr.map((slot) => ({
+        time: slot?.time || '',
+        enabled: slot?.enabled !== false,
+      }));
+    }
+    if (Array.isArray(stored.eidAdha)) {
+      stored.eidAdha = stored.eidAdha.map((slot) => ({
+        time: slot?.time || '',
+        enabled: slot?.enabled !== false,
+      }));
     }
 
     return { ...DEFAULTS, ...stored };

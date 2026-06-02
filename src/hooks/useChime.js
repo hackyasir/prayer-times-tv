@@ -23,9 +23,9 @@
 //   todayTimes      — prayer times (from usePrayerTimes)
 //   iqamah          — { fajr: 45, dhuhr: 30, ... } minute offsets from adhan
 //   isFriday        — boolean
-//   activeJumuahSlots — list of { time:'HH:MM', iqamah:N } for the day
+//   activeJumuahSlots — list of { time:'HH:MM' } for the day
 //   showEidBanner   — whether Eid is in effect
-//   activeEidSlots  — list of { time:'HH:MM', iqamah:N, label } for the day
+//   activeEidSlots  — list of { time:'HH:MM' } for the day
 //   jumuahDate      — helper from parent: (timeStr) → Date
 //   eidDate         — helper from parent: (timeStr) → Date
 
@@ -67,17 +67,13 @@ export default function useChime({
     if (isFriday) {
       for (const j of activeJumuahSlots) {
         const jt = jumuahDate(j.time);
-        const jiq = addMins(jt, j.iqamah);
         checks.push({ key: `jumuah_${j.time}_adhan`, time: jt, kind: 'adhan' });
-        checks.push({ key: `jumuah_${j.time}_iqamah`, time: jiq, kind: 'iqamah' });
       }
     }
     if (showEidBanner) {
       for (const e of activeEidSlots) {
         const et = eidDate(e.time);
-        const eiq = addMins(et, e.iqamah);
         checks.push({ key: `eid_${e.time}_adhan`, time: et, kind: 'adhan' });
-        checks.push({ key: `eid_${e.time}_iqamah`, time: eiq, kind: 'iqamah' });
       }
     }
 

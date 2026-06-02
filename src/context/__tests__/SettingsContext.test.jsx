@@ -6,7 +6,7 @@
 // CRITICAL focus areas:
 //   - Legacy `chimeEnabled` → `chimeAdhan`/`chimeIqamah` migration
 //   - Legacy `eid` array → `eidFitr`/`eidAdha` migration (with label-based
-//     kind guessing)
+//     kind guessing, preserving time/enabled)
 //   - Draft/applied separation (drafts don't affect "live" settings until
 //     applyDrafts() is called)
 //   - localStorage persistence (settings survive a remount)
@@ -189,12 +189,10 @@ describe('SettingsProvider — legacy migrations', () => {
       // eidFitr should have the migrated values.
       expect(result.current.applied.eidFitr[0]).toEqual({
         time: '08:30',
-        iqamah: 25,
         enabled: true,
       });
       expect(result.current.applied.eidFitr[1]).toEqual({
         time: '09:30',
-        iqamah: 25,
         enabled: false,
       });
       // eidAdha should fall back to DEFAULTS (untouched).
@@ -213,7 +211,6 @@ describe('SettingsProvider — legacy migrations', () => {
       const { result } = renderHook(() => useSettings(), { wrapper });
       expect(result.current.applied.eidAdha[0]).toEqual({
         time: '07:00',
-        iqamah: 20,
         enabled: true,
       });
       // eidFitr falls back to DEFAULTS.
@@ -270,8 +267,8 @@ describe('SettingsProvider — legacy migrations', () => {
         ...DEFAULTS,
         eid: [{ time: '06:00', iqamah: 15, enabled: true, label: 'Eid ul-Fitr' }],
         // New fields present — should take precedence.
-        eidFitr: [{ time: '08:00', iqamah: 20, enabled: true }],
-        eidAdha: [{ time: '07:30', iqamah: 20, enabled: true }],
+        eidFitr: [{ time: '08:00', enabled: true }],
+        eidAdha: [{ time: '07:30', enabled: true }],
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(mixed));
 
@@ -287,7 +284,7 @@ describe('useSettings — outside provider', () => {
     // Capture console.error so the expected throw doesn't pollute test output.
     // (React logs the error before re-throwing.)
     const originalError = console.error;
-    console.error = () => {};
+    console.error = () => { };
     try {
       expect(() => renderHook(() => useSettings())).toThrow(/outside.*SettingsProvider/i);
     } finally {

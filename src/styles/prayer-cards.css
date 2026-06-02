@@ -281,21 +281,26 @@
 .jumuah-slots,
 .eid-slots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* fallback — overridden by [data-slots] below */
+  grid-template-columns: repeat(3, 1fr);
+  /* fallback — overridden by [data-slots] below */
   gap: clamp(4px, 0.8vw, 12px);
 }
+
 .jumuah-slots[data-slots='1'],
 .eid-slots[data-slots='1'] {
   grid-template-columns: 1fr;
 }
+
 .jumuah-slots[data-slots='2'],
 .eid-slots[data-slots='2'] {
   grid-template-columns: repeat(2, 1fr);
 }
+
 .jumuah-slots[data-slots='3'],
 .eid-slots[data-slots='3'] {
   grid-template-columns: repeat(3, 1fr);
 }
+
 .jumuah-slots[data-slots='4'],
 .eid-slots[data-slots='4'] {
   grid-template-columns: repeat(4, 1fr);
@@ -388,7 +393,7 @@
   animation: blink 1.4s ease-in-out infinite;
 }
 
-/* Times row — Adhan left, Iqamah right, side-by-side */
+/* Times row — default two-column layout used by Eid and legacy patterns. */
 .jumuah-slot-times {
   position: relative;
   z-index: 1;
@@ -397,6 +402,15 @@
   align-items: flex-end;
   gap: clamp(4px, 0.6vw, 10px);
   margin-top: clamp(10px, 1.4vh, 20px);
+}
+
+/* Jumu'ah now shows one congregation time per slot (no Adhan/Iqamah labels). */
+.jumuah-slot-times-single {
+  justify-content: center;
+}
+
+.jumuah-slot-times-single .jumuah-slot-col {
+  text-align: center;
 }
 
 .jumuah-slot-col {
@@ -587,6 +601,14 @@
   margin-top: clamp(10px, 1.4vh, 20px);
 }
 
+.eid-slot-times-single {
+  justify-content: center;
+}
+
+.eid-slot-times-single .eid-slot-col {
+  text-align: center;
+}
+
 .eid-slot-col {
   text-align: left;
   min-width: 0;
@@ -642,7 +664,7 @@
 
 /* When inside .pcol-wrap, .pcol no longer needs its own flex sizing;
  * the wrap holds it. Keep .pcol's internal structure intact. */
-.pcol-wrap > .pcol {
+.pcol-wrap>.pcol {
   flex: 0 1 auto;
   width: 100%;
 }
@@ -651,6 +673,6 @@
  * push to the bottom of the wrap so .pcol-wrap fills its row height without
  * empty space below the strip. margin-top:auto inside a flex column = shove
  * to the end of the cross-axis. */
-.pcol-wrap > .weather-strip {
+.pcol-wrap>.weather-strip {
   margin-top: auto;
 }

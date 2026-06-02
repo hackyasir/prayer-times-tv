@@ -113,18 +113,14 @@ export default function PrintableSchedule({
       // should show the actual Jumu'ah time, not the regular Dhuhr time
       // (which is what the live dashboard does). Parses "HH:MM" from
       // settings and builds a Date at noon to anchor it to this calendar
-      // day. Iqamah is adhan + slot.iqamah minutes (always manual for
-      // Jumu'ah — no auto-rounding makes sense for a scheduled khutbah).
+      // day. Jumu'ah uses one congregation time only (adhan-time display).
       const buildJumuahDate = () => {
         if (!isFriday || !firstJumuah) return null;
         const [hh, mm] = firstJumuah.time.split(':').map(Number);
         if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
         const jt = new Date(probe);
         jt.setHours(hh, mm, 0, 0);
-        return {
-          adhan: jt,
-          iqamah: new Date(jt.getTime() + (firstJumuah.iqamah || 0) * 60_000),
-        };
+        return jt;
       };
       const jumuahCell = buildJumuahDate();
 
@@ -134,14 +130,14 @@ export default function PrintableSchedule({
         hijri: `${userHijriDay} ${HIJRI_MONTHS[hijri.m - 1]}`,
         // For each prayer key, store adhan + iqamah times. Sunrise has
         // no iqamah (observational only). On Fridays, the Dhuhr cell is
-        // swapped for the Jumu'ah time + iqamah and flagged so the
+        // swapped for the Jumu'ah time and flagged so the
         // renderer can label it visually.
         prayers: PRAYERS.map((p) => {
           if (p.key === 'dhuhr' && jumuahCell) {
             return {
               key: 'dhuhr',
-              adhan: jumuahCell.adhan,
-              iqamah: jumuahCell.iqamah,
+              adhan: jumuahCell,
+              iqamah: null,
               isJumuah: true,
             };
           }
@@ -377,13 +373,14 @@ export default function PrintableSchedule({
                 {eidInMonth.slots.map((s, i) => (
                   <span key={i} className="ps-footer-jumuah">
                     {i > 0 && ' · '}
-                    {s.time} (Iqamah +{s.iqamah}m)
+                    {s.time}
                   </span>
                 ))}
               </div>
             )}
             <div className="ps-footer-row ps-footer-note">
-              Each cell shows <em>Adhan</em> above and <em>Iqamah</em> below.
+              Each daily prayer cell shows <em>Adhan</em> above and <em>Iqamah</em> below.
+              Jumu&apos;ah shows one congregation time.
             </div>
           </div>
 
@@ -394,7 +391,7 @@ export default function PrintableSchedule({
                 {activeJumuah.map((j, i) => (
                   <span key={i} className="ps-footer-jumuah">
                     {i > 0 && ' · '}
-                    {j.time} (Iqamah +{j.iqamah}m)
+                    {j.time}
                   </span>
                 ))}
               </div>

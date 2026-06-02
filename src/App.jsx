@@ -596,9 +596,7 @@ export default function App() {
   const lastEidTime = activeEidSlots.length
     ? eidDate(activeEidSlots[activeEidSlots.length - 1].time)
     : null;
-  const eidIqamahEnd = lastEidTime
-    ? addMins(lastEidTime, activeEidSlots[activeEidSlots.length - 1]?.iqamah ?? 20)
-    : null;
+  const eidEnd = lastEidTime;
   // Banner shows when:
   //   - An upcoming Eid was detected (kind !== null) AND
   //   - We have at least one configured slot for that Eid AND
@@ -612,9 +610,9 @@ export default function App() {
     activeEidSlots.length > 0 &&
     (() => {
       if (testEidKind) return true; // test mode — always show
-      if (!eidIqamahEnd) return false;
+      if (!eidEnd) return false;
       if (upcomingEid.daysUntil > 0) return true; // real Eid in lead-up
-      return addMins(eidIqamahEnd, 30) > now; // real Eid on its day
+      return addMins(eidEnd, 30) > now; // real Eid on its day
     })();
   const nextEid = showEidBanner
     ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > now) ?? null)
@@ -777,16 +775,16 @@ export default function App() {
       Object.entries(drafts.iqamah).map(([k, v]) => [k, Math.min(60, Math.max(0, Number(v) || 0))])
     );
     const sanitizedJumuah = drafts.jumuah.map((j) => ({
-      ...j,
-      iqamah: Math.min(60, Math.max(0, Number(j.iqamah) || 0)),
+      time: j.time || '',
+      enabled: j.enabled !== false,
     }));
     const sanitizedEidFitr = drafts.eidFitr.map((e) => ({
-      ...e,
-      iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
+      time: e.time || '',
+      enabled: e.enabled !== false,
     }));
     const sanitizedEidAdha = drafts.eidAdha.map((e) => ({
-      ...e,
-      iqamah: Math.min(60, Math.max(0, Number(e.iqamah) || 0)),
+      time: e.time || '',
+      enabled: e.enabled !== false,
     }));
     const sanitizedDays = Math.min(30, Math.max(0, Number(drafts.eidDaysBefore) || 0));
     const sanitizedHijri = Math.min(3, Math.max(-3, Number(drafts.hijriOffset) || 0));

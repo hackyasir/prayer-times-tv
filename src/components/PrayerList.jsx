@@ -21,10 +21,10 @@ export default function PrayerList({
   now, // current Date
   cityTz, // IANA timezone for fmt12 display
   isFriday, // boolean
-  activeJumuahSlots, // [{time:'HH:MM', iqamah:Number}, ...]
+  activeJumuahSlots, // [{time:'HH:MM'}, ...]
   nextJumuah, // next upcoming Jumu'ah Date | null
   jumuahDate, // (timeStr) → Date helper from parent
-  activeEidSlots, // [{time, iqamah, label}, ...]
+  activeEidSlots, // [{time}, ...]
   nextEid, // next upcoming Eid Date | null
   eidDate, // (timeStr) → Date helper from parent
   showEidBanner, // boolean — show the eid block at all
@@ -105,7 +105,6 @@ export default function PrayerList({
                 <div className="jumuah-slots" data-slots={activeJumuahSlots.length}>
                   {activeJumuahSlots.map((j, i) => {
                     const jt = jumuahDate(j.time);
-                    const jiq = addMins(jt, j.iqamah);
                     const isPast = jt < now;
                     const isNext = i === nextSlotIdx;
                     const statusKey = isPast ? 'done' : isNext ? 'next' : 'later';
@@ -120,15 +119,10 @@ export default function PrayerList({
                           {isNext && <span className="jumuah-slot-pulse" />}
                           {t(`jumuah.status.${statusKey}`)}
                         </span>
-                        {/* Adhan + Iqamah times side-by-side */}
-                        <div className="jumuah-slot-times">
+                        {/* Single Jumu'ah time (adhan/congregation time). */}
+                        <div className="jumuah-slot-times jumuah-slot-times-single">
                           <div className="jumuah-slot-col">
-                            <div className="jumuah-slot-col-lbl">{t('jumuah.adhan')}</div>
                             <div className="jumuah-slot-col-time">{fmt12(jt, cityTz)}</div>
-                          </div>
-                          <div className="jumuah-slot-col jumuah-slot-col-right">
-                            <div className="jumuah-slot-col-lbl">{t('jumuah.iqamah')}</div>
-                            <div className="jumuah-slot-col-time">{fmt12(jiq, cityTz)}</div>
                           </div>
                         </div>
                       </div>
@@ -203,7 +197,6 @@ export default function PrayerList({
                 <div className="eid-slots" data-slots={activeEidSlots.length}>
                   {activeEidSlots.map((e, i) => {
                     const et = eidDate(e.time);
-                    const eiq = addMins(et, e.iqamah);
                     const isPast = et < now;
                     const isNext = i === nextEidSlotIdx;
                     const statusKey = isPast ? 'done' : isNext ? 'next' : 'later';
@@ -216,14 +209,9 @@ export default function PrayerList({
                           {isNext && <span className="eid-slot-pulse" />}
                           {t(`jumuah.status.${statusKey}`)}
                         </span>
-                        <div className="eid-slot-times">
+                        <div className="eid-slot-times eid-slot-times-single">
                           <div className="eid-slot-col">
-                            <div className="eid-slot-col-lbl">{t('jumuah.adhan')}</div>
                             <div className="eid-slot-col-time">{fmt12(et, cityTz)}</div>
-                          </div>
-                          <div className="eid-slot-col eid-slot-col-right">
-                            <div className="eid-slot-col-lbl">{t('jumuah.iqamah')}</div>
-                            <div className="eid-slot-col-time">{fmt12(eiq, cityTz)}</div>
                           </div>
                         </div>
                       </div>
@@ -249,7 +237,6 @@ export default function PrayerList({
                 <div className="jumuah-slots" data-slots={activeJumuahSlots.length}>
                   {activeJumuahSlots.map((j, i) => {
                     const jt = jumuahDate(j.time);
-                    const jiq = addMins(jt, j.iqamah);
                     // Preview: all slots styled as "later" (no active highlight,
                     // no status badge — this is just a verification block on
                     // non-Fridays).
@@ -258,14 +245,9 @@ export default function PrayerList({
                         <span className="jumuah-slot-bg-num" aria-hidden="true">
                           {i + 1}
                         </span>
-                        <div className="jumuah-slot-times">
+                        <div className="jumuah-slot-times jumuah-slot-times-single">
                           <div className="jumuah-slot-col">
-                            <div className="jumuah-slot-col-lbl">{t('jumuah.adhan')}</div>
                             <div className="jumuah-slot-col-time">{fmt12(jt, cityTz)}</div>
-                          </div>
-                          <div className="jumuah-slot-col jumuah-slot-col-right">
-                            <div className="jumuah-slot-col-lbl">{t('jumuah.iqamah')}</div>
-                            <div className="jumuah-slot-col-time">{fmt12(jiq, cityTz)}</div>
                           </div>
                         </div>
                       </div>
