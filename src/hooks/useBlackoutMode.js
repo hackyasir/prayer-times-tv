@@ -98,18 +98,12 @@ export default function useBlackoutMode({
   }, [
     enabled,
     leadSeconds,
-    // Stable identity for the duration object — JSON.stringify is cheap here
-    // since durations is just 5 numbers and the hook re-derives once a second.
-    JSON.stringify(durations),
-    JSON.stringify(iqamah),
-    todayTimes?.fajr?.getTime(),
-    todayTimes?.dhuhr?.getTime(),
-    todayTimes?.asr?.getTime(),
-    todayTimes?.maghrib?.getTime(),
-    todayTimes?.isha?.getTime(),
-    yesterdayTimes?.isha?.getTime(),
-    now.getTime(),
-    dismissedAt?.getTime() || null,
-    forceUntil?.getTime() || null,
+    durations,
+    iqamah,
+    todayTimes,
+    yesterdayTimes,
+    now,
+    dismissedAt,
+    forceUntil,
   ]);
 }

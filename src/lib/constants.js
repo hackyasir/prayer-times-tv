@@ -163,7 +163,17 @@ export const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
 export const SETTINGS_PIN = import.meta.env.VITE_SETTINGS_PIN || '';
 
 // Show the "Test Pattern" / "Test Jumu'ah" buttons in the footer status strip?
-// Useful during initial setup to verify the prayer-context colour shifts and
-// Jumu'ah replacement render correctly. Disable in production deployments by
-// setting VITE_SHOW_TEST_BUTTONS=false in .env.
-export const SHOW_TEST_BTNS = import.meta.env.VITE_SHOW_TEST_BUTTONS !== 'false';
+// Default behavior:
+//   - ON in development and staging
+//   - OFF in production
+// Override anytime with VITE_SHOW_TEST_BUTTONS=true|false.
+const TEST_BTNS_OVERRIDE = String(import.meta.env.VITE_SHOW_TEST_BUTTONS || '').toLowerCase();
+const APP_ENV = String(import.meta.env.VITE_APP_ENV || '').toLowerCase();
+const IS_PRODUCTION = import.meta.env.PROD && APP_ENV !== 'staging';
+
+export const SHOW_TEST_BTNS =
+  TEST_BTNS_OVERRIDE === 'true'
+    ? true
+    : TEST_BTNS_OVERRIDE === 'false'
+      ? false
+      : !IS_PRODUCTION;

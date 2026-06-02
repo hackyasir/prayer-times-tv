@@ -3,6 +3,7 @@ import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS } from './lib/constants.
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, findUpcomingEid } from './lib/hijri.js';
 import { addMins } from './lib/formatters.js';
+import { computeIqamah } from './lib/iqamah.js';
 import { buildThemeVars } from './lib/themes.js';
 
 // Custom hooks — pure logic extracted to their own files
@@ -61,6 +62,14 @@ import HeaderQibla from './components/widgets/HeaderQibla.jsx';
 // (the SettingsProvider in main.jsx wraps the app and provides them via useSettings).
 
 import IslamicGeometryEngine from './IslamicGeometryEngine';
+
+function formatGeoLabel(latitude, longitude) {
+  const latAbs = Math.abs(latitude).toFixed(2);
+  const lngAbs = Math.abs(longitude).toFixed(2);
+  const latDir = latitude >= 0 ? 'N' : 'S';
+  const lngDir = longitude >= 0 ? 'E' : 'W';
+  return `${latAbs}°${latDir}  ${lngAbs}°${lngDir}`;
+}
 
 export default function App() {
   // ── Persistent settings via React Context ──────────────────────────────
@@ -344,11 +353,11 @@ export default function App() {
         updateApplied({
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-          locName: `${pos.coords.latitude.toFixed(2)}°N  ${pos.coords.longitude.toFixed(2)}°E`,
+          locName: formatGeoLabel(pos.coords.latitude, pos.coords.longitude),
           ...(tz ? { cityTz: tz } : {}),
         });
       },
-      () => {}
+      () => { }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -396,53 +405,23 @@ export default function App() {
     const out = {};
     for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
       const adhan = todayTimes?.[key];
-      const buf = Number(iqamahAutoBuffers?.[key] ?? 0);
       if (!adhan) {
         out[key] = rawIqamah[key] || 0;
         continue;
       }
 
-      // Special case: buf=0 means iqamah=adhan exactly. Don't round.
-      if (buf === 0) {
-        out[key] = 0;
-        continue;
-      }
-
-      // Step 1+2: shift adhan by buffer minutes
-      const target = new Date(adhan.getTime() + buf * 60 * 1000);
-
-      // Step 3: round to NEAREST quarter-hour
-      const rounded = new Date(target);
-      rounded.setSeconds(0, 0);
-      const totalMin = rounded.getHours() * 60 + rounded.getMinutes();
-      let roundedMin = Math.round(totalMin / 15) * 15;
-      rounded.setHours(0, 0, 0, 0);
-      rounded.setMinutes(roundedMin);
-
-      // Step 4: safety floor — if nearest-rounding pulled iqamah BEFORE
-      // adhan (e.g. adhan 4:17 + 1min buf = 4:18 → rounded down to 4:15),
-      // bump forward to the next quarter-hour ≥ adhan. Iqamah must never
-      // be before the call to prayer.
-      while (rounded < adhan) {
-        roundedMin += 15;
-        rounded.setHours(0, 0, 0, 0);
-        rounded.setMinutes(roundedMin);
-      }
-
-      // Step 5: convert back to a minute-offset from adhan
-      out[key] = Math.round((rounded - adhan) / 60000);
+      const iqamahTime = computeIqamah(adhan, {
+        autoCalc: true,
+        bufferMinutes: iqamahAutoBuffers?.[key] ?? 0,
+      });
+      out[key] = iqamahTime ? Math.round((iqamahTime - adhan) / 60000) : rawIqamah[key] || 0;
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     iqamahAutoCalc,
-    JSON.stringify(rawIqamah),
-    JSON.stringify(iqamahAutoBuffers),
-    todayTimes?.fajr?.getTime(),
-    todayTimes?.dhuhr?.getTime(),
-    todayTimes?.asr?.getTime(),
-    todayTimes?.maghrib?.getTime(),
-    todayTimes?.isha?.getTime(),
+    rawIqamah,
+    iqamahAutoBuffers,
+    todayTimes,
   ]);
 
   // Display helpers — recalc only when needed
@@ -461,7 +440,7 @@ export default function App() {
       toHijri(adjusted) +
       (hijriOffset !== 0 ? ` (${hijriOffset > 0 ? '+' : ''}${hijriOffset})` : '')
     );
-  }, [cityNow.toDateString(), hijriOffset]);
+  }, [hijriOffset, cityNow]);
   const qibla = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
 
   // ── Parametric inputs for IslamicGeometryEngine ──────────────────────────
@@ -510,8 +489,7 @@ export default function App() {
   // Same trick as calcTimes: Date.UTC(...) - cityTzOffset_ms.
   const cityTzOff = useMemo(
     () => tzOffsetHours(cityTz, now),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cityTz, now.toDateString()]
+    [cityTz, now]
   );
   function makeCityDateAt(hh, mm) {
     const Y = cityNow.getFullYear();
@@ -580,7 +558,7 @@ export default function App() {
     () => findUpcomingEid(now, hijriOffset, eidDaysBefore),
     // Re-evaluate when the day changes (cheap — runs at most once per minute
     // but result only changes once per day in practice).
-    [now.toDateString(), hijriOffset, eidDaysBefore]
+    [now, hijriOffset, eidDaysBefore]
   );
   // Apply test override: if `testEidKind` is set, force-show that Eid's
   // banner with eidDate = today and daysUntil = 0. Lets the dev/admin
@@ -588,18 +566,18 @@ export default function App() {
   // waiting for actual Eid.
   const upcomingEid = testEidKind
     ? {
-        kind: testEidKind,
-        eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-        daysUntil: 0,
-      }
+      kind: testEidKind,
+      eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+      daysUntil: 0,
+    }
     : upcomingEidReal;
 
   // Pick the right schedule (eidFitr or eidAdha) and filter out disabled or
   // empty-time slots. Slot is active when enabled=true AND time is set.
   const activeEidSlots = upcomingEid.kind
     ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha).filter(
-        (e) => e.enabled && e.time && e.time.length > 0
-      )
+      (e) => e.enabled && e.time && e.time.length > 0
+    )
     : [];
   // Auto-generated label based on detected Eid kind
   const eidLabelAuto =
@@ -875,7 +853,7 @@ export default function App() {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           cityTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          locName: `${pos.coords.latitude.toFixed(2)}°N  ${pos.coords.longitude.toFixed(2)}°E`,
+          locName: formatGeoLabel(pos.coords.latitude, pos.coords.longitude),
         });
         setShowSett(false);
       },
@@ -935,8 +913,8 @@ export default function App() {
             mobile/iPhone admin use. */}
         <button
           onClick={openSettings}
-          aria-label="Settings"
-          title="Settings"
+          aria-label={t('app.openSettings')}
+          title={t('app.openSettings')}
           className="settings-fab"
         >
           {/* Gear icon — pure SVG, inherits currentColor for theming */}

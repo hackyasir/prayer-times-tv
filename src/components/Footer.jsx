@@ -14,15 +14,15 @@ import { useT } from '../i18n/I18nContext.jsx';
 /** Short label for a moon phase test value. null = real-phase (auto from
  * suncalc); 0..1 = forced phase. Used by the Test Phase footer button. */
 function phaseLabel(phaseValue) {
-  if (phaseValue == null) return 'Phase: Auto';
-  if (phaseValue === 0) return 'New';
-  if (phaseValue === 0.125) return 'Wax. Cres.';
-  if (phaseValue === 0.25) return '1st Qtr';
-  if (phaseValue === 0.375) return 'Wax. Gibb.';
-  if (phaseValue === 0.5) return 'Full';
-  if (phaseValue === 0.625) return 'Wan. Gibb.';
-  if (phaseValue === 0.75) return 'Last Qtr';
-  if (phaseValue === 0.875) return 'Wan. Cres.';
+  if (phaseValue == null) return 'phase.auto';
+  if (phaseValue === 0) return 'phase.new';
+  if (phaseValue === 0.125) return 'phase.waxingCrescent';
+  if (phaseValue === 0.25) return 'phase.firstQuarter';
+  if (phaseValue === 0.375) return 'phase.waxingGibbous';
+  if (phaseValue === 0.5) return 'phase.full';
+  if (phaseValue === 0.625) return 'phase.waningGibbous';
+  if (phaseValue === 0.75) return 'phase.lastQuarter';
+  if (phaseValue === 0.875) return 'phase.waningCrescent';
   return `${(phaseValue * 100).toFixed(0)}%`;
 }
 
@@ -90,7 +90,7 @@ export default function Footer({
               disabled={testBlackoutActive}
               className={`test-btn test-btn--neutral${testBlackoutActive ? ' is-active is-disabled' : ''}`}
             >
-              ⬛ {testBlackoutActive ? 'Active' : 'Test Blackout'}
+              ⬛ {testBlackoutActive ? t('test.active') : t('test.blackout')}
             </button>
             {/* Test Countdown — forces a 60-second window so Clock renders
                 the giant pulsing seconds digit (.countdown-big mode auto-
@@ -101,7 +101,7 @@ export default function Footer({
               disabled={testCountdownActive}
               className={`test-btn test-btn--neutral${testCountdownActive ? ' is-active is-disabled' : ''}`}
             >
-              ⏱ {testCountdownActive ? 'Active' : t('test.countdown')}
+              ⏱ {testCountdownActive ? t('test.active') : t('test.countdown')}
             </button>
             {/* Test Moon — forces the centre arc to render MoonArc with
                 phase visualization regardless of whether the sun is up.
@@ -122,7 +122,7 @@ export default function Footer({
               onClick={onCyclePhase}
               className={`test-btn test-btn--moon${testMoonPhaseValue != null ? ' is-active' : ''}`}
             >
-              ☾ {phaseLabel(testMoonPhaseValue)}
+              ☾ {t(phaseLabel(testMoonPhaseValue))}
             </button>
             {/* Test Fitr — force-show Eid ul-Fitr banner regardless of
                 whether the Hijri calendar has detected an upcoming Eid. */}
@@ -130,14 +130,16 @@ export default function Footer({
               onClick={onToggleTestFitr}
               className={`test-btn test-btn--eid${testEidKind === 'fitr' ? ' is-active' : ''}`}
             >
-              🕌 Fitr{testEidKind === 'fitr' ? ' ✓' : ''}
+              🕌 {t('test.fitr')}
+              {testEidKind === 'fitr' ? ' ✓' : ''}
             </button>
             {/* Test Adha — force-show Eid ul-Adha banner. */}
             <button
               onClick={onToggleTestAdha}
               className={`test-btn test-btn--eid${testEidKind === 'adha' ? ' is-active' : ''}`}
             >
-              🕋 Adha{testEidKind === 'adha' ? ' ✓' : ''}
+              🕋 {t('test.adha')}
+              {testEidKind === 'adha' ? ' ✓' : ''}
             </button>
           </>
         )}
