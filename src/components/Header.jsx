@@ -12,7 +12,6 @@
 // lunar phase via its activePrayer + lunarPhase props.
 
 import MosqueIcon from './MosqueIcon.jsx';
-import { METHOD_LABELS } from '../lib/constants.js';
 import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Header({
@@ -20,7 +19,7 @@ export default function Header({
   logoDataUrl, // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
   locName,
   hijri,
-  method,
+  onOpenSettings,
   activePrayerKey,
   lunarPhase,
   centerSlot, // optional: replaces the decorative Arabic title
@@ -77,7 +76,28 @@ export default function Header({
           {locName}
         </div>
         <div className="hijri">{hijri}</div>
-        <div className="method-badge">{METHOD_LABELS[method]}</div>
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          aria-label={t('app.openSettings')}
+          title={t('app.openSettings')}
+          className="hdr-settings-btn"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
       </div>
     </div>
   );

@@ -23,7 +23,7 @@
 // The result: SettingsContext owns persistence + applied/drafts lifecycle;
 // this component owns the form UI.
 
-import { useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { THEMES } from '../../lib/themes.js';
 import { METHOD_LABELS } from '../../lib/constants.js';
 import { fmt12, addMins } from '../../lib/formatters.js';
@@ -35,8 +35,9 @@ import { findNonAscendingSlot, buildOrderErrorMessage } from '../../lib/schedule
 import NumberStepper from '../NumberStepper.jsx';
 import LogoUploader from './LogoUploader.jsx';
 
+const TAB_ORDER = ['display', 'location', 'prayerTimes', 'iqamah', 'behaviour'];
+
 export default function SettingsPanel({
-  visible,
   // Lifecycle
   onCancel,
   onApply,
@@ -110,17 +111,72 @@ export default function SettingsPanel({
   // Today's prayer times — used by the iqamah offset preview ("Fajr 4:19 → 4:39")
   todayTimes,
 }) {
-  // NOTE: hooks must run unconditionally on every render. The early
-  // `if (!visible) return null` previously sat above these hook calls,
-  // which violates react-hooks/rules-of-hooks: skipping the hooks on
-  // some renders desyncs React's hook order and can corrupt state.
-  // The hooks run on every render now; visibility is checked AFTER.
+  // NOTE: this component is now mounted conditionally by App.jsx only when
+  // the settings dialog is visible, so hooks can run normally without a
+  // visibility guard.
   const { t } = useT();
+  const dialogRef = useRef(null);
 
   // Active tab — local component state. Resets to 'display' each time the
-  // panel opens (since the component unmounts on close via if(!visible)).
+  // panel opens (the component unmounts when the dialog is closed).
   // Drafts persist across tab switches because they live in the parent.
   const [activeTab, setActiveTab] = useState('display');
+  const tabButtonRefs = useRef([]);
+
+  function handleTabKeyDown(event, index) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+
+    const lastIndex = TAB_ORDER.length - 1;
+    const nextIndex =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? lastIndex
+          : event.key === 'ArrowRight'
+            ? (index + 1) % TAB_ORDER.length
+            : (index - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+
+    setActiveTab(TAB_ORDER[nextIndex]);
+    tabButtonRefs.current[nextIndex]?.focus();
+  }
+
+  useEffect(() => {
+    tabButtonRefs.current[TAB_ORDER.indexOf(activeTab)]?.focus();
+  }, [activeTab]);
+
+  useEffect(() => {
+    const node = dialogRef.current;
+    if (!node) return;
+
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel?.();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusables = Array.from(node.querySelectorAll(focusableSelector));
+      if (!focusables.length) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    node.addEventListener('keydown', onKeyDown);
+    return () => node.removeEventListener('keydown', onKeyDown);
+  }, [onCancel]);
 
   // Hidden <input type="file"> used by the Import button — we click it
   // programmatically since the default file picker UI is ugly. `importMsg`
@@ -191,15 +247,20 @@ export default function SettingsPanel({
   const handleSelectCity = onSelectCity;
   const geolocate = onGeolocate;
 
-  // Now that hooks are done, we can safely short-circuit when hidden.
-  if (!visible) return null;
-
   return (
     <div className="overlay">
-      <div className="sbox">
+      <div
+        ref={dialogRef}
+        className="sbox"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-dialog-title"
+      >
         {/* Fixed header with title + action buttons */}
         <div className="sbox-hdr">
-          <div className="stitle">{t('settings.title')}</div>
+          <div className="stitle" id="settings-dialog-title">
+            {t('settings.title')}
+          </div>
           <div className="sbtn-row">
             <button className="sbtn" onClick={() => setShowSett(false)}>
               {t('settings.cancel')}
@@ -223,26 +284,40 @@ export default function SettingsPanel({
               ordered by usage frequency: Display first (most-tweaked), then
               Location, Prayer Times, Iqamah, and Behaviour. On narrow widths
               the tab buttons wrap to a second row (flex-wrap in CSS). */}
-        <div className="stab-strip">
-          {[
-            ['display', t('settings.tab.display')],
-            ['location', t('settings.tab.location')],
-            ['prayerTimes', t('settings.tab.prayerTimes')],
-            ['iqamah', t('settings.tab.iqamah')],
-            ['behaviour', t('settings.tab.behaviour')],
-          ].map(([key, label]) => (
+        <div className="stab-strip" role="tablist" aria-label={t('settings.title')}>
+          {TAB_ORDER.map((key, index) => {
+            const label =
+              key === 'display'
+                ? t('settings.tab.display')
+                : key === 'location'
+                  ? t('settings.tab.location')
+                  : key === 'prayerTimes'
+                    ? t('settings.tab.prayerTimes')
+                    : key === 'iqamah'
+                      ? t('settings.tab.iqamah')
+                      : t('settings.tab.behaviour');
+            return (
             <button
               key={key}
+              ref={(node) => {
+                tabButtonRefs.current[index] = node;
+              }}
+              id={`settings-tab-${key}`}
+              role="tab"
+              aria-selected={activeTab === key}
+              aria-controls="settings-panel"
+              tabIndex={activeTab === key ? 0 : -1}
               className={'stab' + (activeTab === key ? ' active' : '')}
               onClick={() => setActiveTab(key)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
             >
               {label}
             </button>
-          ))}
+          );})}
         </div>
 
         {/* Scrollable content */}
-        <div className="sbox-body">
+        <div className="sbox-body" id="settings-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`}>
           {activeTab === 'display' && (
             <>
               {/* Language picker — first setting, since it changes everything else.
@@ -684,7 +759,7 @@ export default function SettingsPanel({
               {/* Progress Style picker */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.progressStyle')}</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                   {[
                     {
                       key: 'ring',
@@ -710,6 +785,11 @@ export default function SettingsPanel({
                       key: 'hero',
                       label: t('settings.progress.hero'),
                       desc: t('settings.progress.hero.sub'),
+                    },
+                    {
+                      key: 'orbit',
+                      label: t('settings.progress.orbit'),
+                      desc: t('settings.progress.orbit.sub'),
                     },
                   ].map((opt) => (
                     <button
@@ -1889,6 +1969,9 @@ export default function SettingsPanel({
                 Green for success, red for parse error. */}
           {importMsg && (
             <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
               style={{
                 fontSize: 11,
                 color: importMsg.ok ? '#3DC878' : '#ff6b6b',

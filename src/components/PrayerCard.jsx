@@ -25,7 +25,7 @@ export default function PrayerCard({
   prayerKey,
 }) {
   return (
-    <div className={`pcard${isActive ? ' active' : ''}${isPassed ? ' passed' : ''}`}>
+    <div className={`pcard${isActive ? ' active' : ''}${isPassed ? ' passed' : ''}`} role="listitem">
       {prayerKey && (
         <div className="pcard-icon" aria-hidden="true">
           <PrayerIcon prayerKey={prayerKey} />

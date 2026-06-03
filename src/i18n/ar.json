@@ -86,6 +86,8 @@
   "settings.progress.hero.sub": "العد التنازلي فقط",
   "settings.progress.line": "خط",
   "settings.progress.line.sub": "شريط رفيع + نسبة",
+  "settings.progress.orbit": "مدار",
+  "settings.progress.orbit.sub": "حلقة بعلامات الصلوات",
   "settings.beep": "تنبيه الصلاة",
   "settings.beep.test": "اختبار التنبيه",
   "settings.beep.desc": "يصدر صوتاً عند الأذان والإقامة لكل صلاة",

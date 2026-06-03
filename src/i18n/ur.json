@@ -86,6 +86,8 @@
   "settings.progress.hero.sub": "صرف کاؤنٹ ڈاؤن",
   "settings.progress.line": "لکیر",
   "settings.progress.line.sub": "باریک پٹی + فیصد",
+  "settings.progress.orbit": "مدار",
+  "settings.progress.orbit.sub": "نماز مارکرز کی رنگ",
   "settings.beep": "نماز کی گھنٹی",
   "settings.beep.test": "گھنٹی ٹیسٹ",
   "settings.beep.desc": "ہر نماز کی اذان اور اقامت پر بجتی ہے",

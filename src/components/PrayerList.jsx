@@ -52,7 +52,7 @@ export default function PrayerList({
 
   return (
     <div className="pcol-wrap">
-      <div className="pcol">
+      <div className="pcol" role="list" aria-label={t('label.prayer')}>
         {/* Column headers */}
         <div className="pheader">
           <div className="pheader-name">{t('label.prayer')}</div>
@@ -82,7 +82,7 @@ export default function PrayerList({
             const nextSlotIdx = activeJumuahSlots.findIndex((j) => jumuahDate(j.time) > now);
             const ordWord = (i) => ['1st', '2nd', '3rd', '4th'][i] || `${i + 1}th`;
             return (
-              <div key="jumuah-friday" className="jumuah-banner">
+              <div key="jumuah-friday" className="jumuah-banner" role="listitem" aria-label={t('prayer.jumuah')}>
                 <div className="jumuah-banner-head">
                   <div className="jumuah-title">
                     {t('prayer.jumuah')} <span className="jumuah-arabic">صلاة الجمعة</span>
@@ -160,7 +160,7 @@ export default function PrayerList({
             const nextEidSlotIdx = activeEidSlots.findIndex((e) => eidDate(e.time) > now);
             const eidOrdWord = (i) => ['1st', '2nd', '3rd', '4th'][i] || `${i + 1}th`;
             return (
-              <div className="eid-banner">
+              <div className="eid-banner" role="listitem" aria-label={eidLabel}>
                 <div className="eid-banner-head">
                   <div className="eid-title">
                     {eidLabel} <span className="eid-arabic">صلاة العيد</span>
@@ -228,7 +228,7 @@ export default function PrayerList({
           !isFriday &&
           (() => {
             return (
-              <div className="jumuah-banner jumuah-dim">
+              <div className="jumuah-banner jumuah-dim" role="listitem" aria-label={t('prayer.jumuah')}>
                 <div className="jumuah-banner-head">
                   <div className="jumuah-title">
                     {t('prayer.jumuah')} <span className="jumuah-arabic">الجمعة</span>
