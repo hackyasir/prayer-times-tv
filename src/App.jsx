@@ -7,6 +7,8 @@ import { computeIqamah } from './lib/iqamah.js';
 import { findNonAscendingSlot, buildOrderErrorMessage } from './lib/scheduleValidation.js';
 import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
+import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
+import { fastReasonsFor, buildFastLine } from './lib/sunnahFasts.js';
 
 // Custom hooks — pure logic extracted to their own files
 import useCityTime from './hooks/useCityTime.js';
@@ -111,6 +113,9 @@ export default function App() {
     chimeAdhan,
     chimeIqamah,
     fontScale,
+    viewingMode,
+    viewingDistance,
+    viewingCalibrated,
     progressStyle,
     autoAnnouncements,
     announcements,
@@ -146,6 +151,9 @@ export default function App() {
   const draftChimeAdhan = drafts.chimeAdhan;
   const draftChimeIqamah = drafts.chimeIqamah;
   const draftFontScale = drafts.fontScale;
+  const draftViewingMode = drafts.viewingMode;
+  const draftViewingDistance = drafts.viewingDistance;
+  const draftViewingCalibrated = drafts.viewingCalibrated;
   const draftProgress = drafts.progressStyle;
   const draftLang = drafts.lang;
   const draftAutoAnnouncements = drafts.autoAnnouncements;
@@ -221,6 +229,21 @@ export default function App() {
     updateDrafts((prev) => ({
       ...prev,
       fontScale: typeof v === 'function' ? v(prev.fontScale) : v,
+    }));
+  const setDraftViewingMode = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      viewingMode: typeof v === 'function' ? v(prev.viewingMode) : v,
+    }));
+  const setDraftViewingDistance = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      viewingDistance: typeof v === 'function' ? v(prev.viewingDistance) : v,
+    }));
+  const setDraftViewingCalibrated = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      viewingCalibrated: typeof v === 'function' ? v(prev.viewingCalibrated) : v,
     }));
   const setDraftProgress = (v) =>
     updateDrafts((prev) => ({
@@ -686,58 +709,55 @@ export default function App() {
     const todayWeekday = cityNow.getDay();
     const tomorrowWeekday = (todayWeekday + 1) % 7;
 
-    const isWhiteDay = todayHijri.d >= 13 && todayHijri.d <= 15;
-    const isTomorrowWhiteDay = tomorrowHijri.d >= 13 && tomorrowHijri.d <= 15;
-    if (isWhiteDay) {
-      pushLine(
-        fmtStr(t('auto.announcement.whiteDaysToday'), {
-          day: String(todayHijri.d),
-        })
-      );
-    } else if (isTomorrowWhiteDay) {
-      pushLine(
-        fmtStr(t('auto.announcement.whiteDaysTomorrow'), {
-          day: String(tomorrowHijri.d),
-        })
-      );
+    // ── Sunnah fast awareness — unified, ranked, with a forbidden-day gate ──
+    //
+    // Multiple recommended fasts often coincide (e.g. a Thursday that is also a
+    // White Day, or Arafah falling on a Monday). Per authentic narrations these
+    // overlap into ONE fast with a combined intention (tashreek) — they are not
+    // separate fasts. So we emit a SINGLE announcement that leads with the most
+    // significant reason and notes the others as "also …".
+    //
+    // Ranking (by reward/significance): Arafah > Ashura > Tasu'a > White Days
+    //   > Monday/Thursday.
+    //
+    // SAFETY GATE: fasting is PROHIBITED on Eid al-Fitr (1 Shawwal), Eid al-Adha
+    // (10 Dhul-Hijjah) and the days of Tashreeq (11–13 Dhul-Hijjah). On those
+    // days we suggest no fast at all, even if it is also a Mon/Thu/White Day.
+    // Sunnah-fast reasons come from the shared lib (single source of truth,
+    // also used by the printable calendar). Here we only handle PRESENTATION:
+    // map each reason to a localized tag and compose the "lead + also" line.
+    const reasonTag = (r) => {
+      switch (r.key) {
+        case 'arafah': return t('auto.fast.tag.arafah');
+        case 'ashura': return t('auto.fast.tag.ashura');
+        case 'tasua': return t('auto.fast.tag.tasua');
+        case 'shawwal': return t('auto.fast.tag.shawwal');
+        case 'white': return fmtStr(t('auto.fast.tag.white'), { day: String(r.day) });
+        case 'monday': return t('auto.fast.tag.monday');
+        case 'thursday': return t('auto.fast.tag.thursday');
+        default: return '';
+      }
+    };
+    const fastPhrases = {
+      lead: (when, fast) => fmtStr(t(`auto.fast.${when}`), { fast }),
+      also: (list) => fmtStr(t('auto.fast.also'), { list }),
+      sep: t('auto.fast.alsoSep'),
+    };
+
+    // Prefer TODAY if it has a fast; otherwise look at TOMORROW (lead-up notice).
+    const todayReasons = fastReasonsFor(todayHijri, todayWeekday);
+    const tomorrowReasons = fastReasonsFor(tomorrowHijri, tomorrowWeekday);
+    if (todayReasons.length > 0) {
+      pushLine(buildFastLine(todayReasons, 'today', reasonTag, fastPhrases));
+    } else if (tomorrowReasons.length > 0) {
+      pushLine(buildFastLine(tomorrowReasons, 'tomorrow', reasonTag, fastPhrases));
     }
 
-    // Monday/Thursday Sunnah fast awareness (city-local weekday)
-    if (todayWeekday === 1) {
-      pushLine(t('auto.announcement.sunnahMondayToday'));
-    } else if (todayWeekday === 4) {
-      pushLine(t('auto.announcement.sunnahThursdayToday'));
-    } else if (tomorrowWeekday === 1) {
-      pushLine(t('auto.announcement.sunnahMondayTomorrow'));
-    } else if (tomorrowWeekday === 4) {
-      pushLine(t('auto.announcement.sunnahThursdayTomorrow'));
-    }
-
-    // Key annual Sunnah fast awareness by Hijri date (with local offset)
-    // Arafah: 9 Dhu al-Hijjah (month 12)
-    if (todayHijri.m === 12 && todayHijri.d === 9) {
-      pushLine(`! ${t('auto.announcement.arafahToday')}`);
-    } else if (tomorrowHijri.m === 12 && tomorrowHijri.d === 9) {
-      pushLine(`! ${t('auto.announcement.arafahTomorrow')}`);
-    }
-
-    // Ashura / Tasu'a: 10 and 9 Muharram (month 1)
-    if (todayHijri.m === 1 && todayHijri.d === 9) {
-      pushLine(t('auto.announcement.tasuaToday'));
-    } else if (todayHijri.m === 1 && todayHijri.d === 10) {
-      pushLine(`! ${t('auto.announcement.ashuraToday')}`);
-    } else if (tomorrowHijri.m === 1 && tomorrowHijri.d === 9) {
-      pushLine(t('auto.announcement.tasuaTomorrow'));
-    } else if (tomorrowHijri.m === 1 && tomorrowHijri.d === 10) {
-      pushLine(`! ${t('auto.announcement.ashuraTomorrow')}`);
-    }
-
-    // Shawwal six voluntary fasts reminder: month 10 after Eid day
-    if (todayHijri.m === 10 && todayHijri.d >= 2 && todayHijri.d <= 29) {
-      pushLine(t('auto.announcement.shawwalWindow'));
-    }
-
-    if (active?.key) {
+    // Sunrise is the END of Fajr's window and a boundary, not a congregational
+    // prayer — "Now in Sunrise" is misleading (and prayer is makruh at sunrise).
+    // Skip the "now in prayer" line for it; the forenoon until Dhuhr has no
+    // active congregation to announce.
+    if (active?.key && active.key !== 'sunrise') {
       const prayerLabel = t(`prayer.${active.key}`) || active.en || '';
       pushLine(fmtStr(t('auto.announcement.nowInPrayer'), { prayer: prayerLabel }));
     }
@@ -1076,6 +1096,13 @@ export default function App() {
       screenLabel: (drafts.screenLabel || '').slice(0, 60),
       hijriOffset: sanitizedHijri,
       fontScale: sanitizedFont,
+      viewingMode: ['manual', 'distance', 'calibrate'].includes(drafts.viewingMode)
+        ? drafts.viewingMode
+        : 'manual',
+      viewingDistance: ['close', 'medium', 'large', 'grand'].includes(drafts.viewingDistance)
+        ? drafts.viewingDistance
+        : 'medium',
+      viewingCalibrated: clampCalibration(drafts.viewingCalibrated),
       blackoutDurations: sanitizedBlackoutDur,
       blackoutOpacity: sanitizedBlackoutOpacity,
       iqamahAutoBuffers: sanitizedAutoBuf,
@@ -1181,7 +1208,17 @@ export default function App() {
 
   return (
     <>
-      <div className={`app${ecoMode ? ' app--eco' : ''}`} style={{ '--t-fs': fontScale / 100 }}>
+      <div
+        className={`app${ecoMode ? ' app--eco' : ''}`}
+        style={{
+          '--t-fs': resolveTypeScale({
+            fontScale,
+            mode: viewingMode,
+            distance: viewingDistance,
+            calibrated: viewingCalibrated,
+          }),
+        }}
+      >
         {/* Islamic Geometry Engine — parametric, real-time */}
         <IslamicGeometryEngine
           activePrayer={testPrayer || active?.key || 'fajr'}
@@ -1288,13 +1325,15 @@ export default function App() {
 
         {/* App footer — outside .grid, always at bottom of .app */}
         <div className="app-footer">
-          <Ticker
-            announcements={mergedAnnouncements}
-            mode={tickerMode}
-            staticSeconds={tickerStaticSeconds}
-            cityNow={cityNow}
-          />
           <Footer
+            ticker={
+              <Ticker
+                announcements={mergedAnnouncements}
+                mode={tickerMode}
+                staticSeconds={tickerStaticSeconds}
+                cityNow={cityNow}
+              />
+            }
             showTestBtns={SHOW_TEST_BTNS}
             testFriday={testFriday}
             testPrayer={testPrayer}
@@ -1414,6 +1453,12 @@ export default function App() {
           setDraftChimeIqamah={setDraftChimeIqamah}
           draftFontScale={draftFontScale}
           setDraftFontScale={setDraftFontScale}
+          draftViewingMode={draftViewingMode}
+          setDraftViewingMode={setDraftViewingMode}
+          draftViewingDistance={draftViewingDistance}
+          setDraftViewingDistance={setDraftViewingDistance}
+          draftViewingCalibrated={draftViewingCalibrated}
+          setDraftViewingCalibrated={setDraftViewingCalibrated}
           draftProgress={draftProgress}
           setDraftProgress={setDraftProgress}
           draftMasjid={draftMasjid}

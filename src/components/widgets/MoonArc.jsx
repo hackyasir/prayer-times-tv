@@ -25,7 +25,7 @@ import { useT } from '../../i18n/I18nContext.jsx';
 // when swapped. See SunArc.jsx for full geometry explanation.
 const ARC_W = 400;
 const ARC_H = 84; // matches SunArc — accommodates larger labels
-const PAD_X = 22;
+const PAD_X = 44; // wide enough that centre-anchored end labels stay in viewBox
 const ARC_Y0 = 46;
 const ARC_Y1 = 8;
 

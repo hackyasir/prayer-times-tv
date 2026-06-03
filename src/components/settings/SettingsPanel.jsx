@@ -124,6 +124,12 @@ export default function SettingsPanel({
   setDraftChimeIqamah,
   draftFontScale,
   setDraftFontScale,
+  draftViewingMode,
+  setDraftViewingMode,
+  draftViewingDistance,
+  setDraftViewingDistance,
+  draftViewingCalibrated,
+  setDraftViewingCalibrated,
   draftProgress,
   setDraftProgress,
   draftMasjid,
@@ -1015,33 +1021,24 @@ export default function SettingsPanel({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 10,
+                    gap: 12,
                     background: '#111',
                     border: '1px solid var(--t-border)',
                     borderRadius: 4,
-                    padding: '10px 14px',
+                    padding: '12px 14px',
                   }}
                 >
-                  <button
-                    onClick={() => setDraftFontScale((v) => Math.max(70, v - 5))}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 4,
-                      border: '1px solid rgba(var(--t-accent-rgb),.3)',
-                      background: 'transparent',
-                      color: 'var(--t-accent)',
-                      fontSize: 18,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    A−
-                  </button>
-                  <div style={{ flex: 1, textAlign: 'center' }}>
+                  <input
+                    type="range"
+                    min={70}
+                    max={130}
+                    step={1}
+                    value={draftFontScale}
+                    onChange={(e) => setDraftFontScale(Number(e.target.value))}
+                    style={{ flex: 1, accentColor: 'var(--t-accent)', cursor: 'pointer' }}
+                    aria-label={t('settings.size')}
+                  />
+                  <div style={{ minWidth: 92, textAlign: 'right' }}>
                     <div
                       style={{
                         fontSize: 16,
@@ -1067,25 +1064,6 @@ export default function SettingsPanel({
                           : t('settings.size.larger')}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setDraftFontScale((v) => Math.min(130, v + 5))}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 4,
-                      border: '1px solid rgba(var(--t-accent-rgb),.3)',
-                      background: 'transparent',
-                      color: 'var(--t-accent)',
-                      fontSize: 18,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    A+
-                  </button>
                   {draftFontScale !== 100 && (
                     <button
                       onClick={() => setDraftFontScale(100)}
@@ -1100,6 +1078,7 @@ export default function SettingsPanel({
                         fontWeight: 600,
                         letterSpacing: '.08em',
                         cursor: 'pointer',
+                        flexShrink: 0,
                       }}
                     >
                       {t('settings.size.reset')}
@@ -1117,12 +1096,174 @@ export default function SettingsPanel({
                   {t('settings.size.note')}
                 </div>
               </div>
+
+              {/* ── Viewing distance / legibility ──────────────────────────
+                  Three ways to scale type for distance. Manual = slider only.
+                  Distance = one-tap "how far is the furthest viewer". Calibrate
+                  = walk to the far point and tune by eye. All feed one global
+                  multiplier combined with the font-size slider above. */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.viewing')}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                  {[
+                    { key: 'manual', label: t('settings.viewing.manual') },
+                    { key: 'distance', label: t('settings.viewing.distance') },
+                    { key: 'calibrate', label: t('settings.viewing.calibrate') },
+                  ].map((opt) => {
+                    const on = (draftViewingMode || 'manual') === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        onClick={() => setDraftViewingMode(opt.key)}
+                        style={{
+                          padding: '8px 6px',
+                          borderRadius: 4,
+                          border: `1px solid ${on ? 'var(--t-accent)' : 'var(--t-border)'}`,
+                          background: on ? 'rgba(var(--t-accent-rgb),.12)' : 'transparent',
+                          color: on ? 'var(--t-accent)' : 'var(--t-text)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                        aria-pressed={on}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Distance picker — four buckets the admin recognises instantly */}
+                {draftViewingMode === 'distance' && (
+                  <div style={{ marginTop: 8, display: 'grid', gap: 6 }}>
+                    {[
+                      { key: 'close', label: t('settings.viewing.close'), ft: '~15 ft' },
+                      { key: 'medium', label: t('settings.viewing.medium'), ft: '~30 ft' },
+                      { key: 'large', label: t('settings.viewing.large'), ft: '~50 ft' },
+                      { key: 'grand', label: t('settings.viewing.grand'), ft: '~80 ft' },
+                    ].map((opt) => {
+                      const on = (draftViewingDistance || 'medium') === opt.key;
+                      return (
+                        <button
+                          key={opt.key}
+                          onClick={() => setDraftViewingDistance(opt.key)}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '10px 14px',
+                            borderRadius: 4,
+                            border: `1px solid ${on ? 'var(--t-accent)' : 'var(--t-border)'}`,
+                            background: on ? 'rgba(var(--t-accent-rgb),.12)' : '#111',
+                            color: on ? 'var(--t-accent)' : 'var(--t-text)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                          aria-pressed={on}
+                        >
+                          <span>{opt.label}</span>
+                          <span style={{ fontSize: 11, color: 'var(--t-text-dim)' }}>{opt.ft}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Calibrate — big sample word + bigger/smaller, tune by eye */}
+                {draftViewingMode === 'calibrate' && (
+                  <div style={{ marginTop: 8 }}>
+                    <div
+                      style={{
+                        background: '#000',
+                        border: '1px solid var(--t-border)',
+                        borderRadius: 4,
+                        padding: '18px 12px',
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: `${(draftViewingCalibrated || 1) * 28}px`,
+                          fontWeight: 700,
+                          color: 'var(--t-accent)',
+                          lineHeight: 1.1,
+                          letterSpacing: '.02em',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        FAJR 4:45
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 6,
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.04em',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {t('settings.viewing.calibrate.note')}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        background: '#111',
+                        border: '1px solid var(--t-border)',
+                        borderRadius: 4,
+                        padding: '12px 14px',
+                      }}
+                    >
+                      <input
+                        type="range"
+                        min={80}
+                        max={300}
+                        step={1}
+                        value={Math.round((draftViewingCalibrated || 1) * 100)}
+                        onChange={(e) =>
+                          setDraftViewingCalibrated(Number(e.target.value) / 100)
+                        }
+                        style={{ flex: 1, accentColor: 'var(--t-accent)', cursor: 'pointer' }}
+                        aria-label={t('settings.viewing.calibrate')}
+                      />
+                      <div
+                        style={{
+                          minWidth: 56,
+                          textAlign: 'right',
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: 'var(--t-text)',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
+                        {Math.round((draftViewingCalibrated || 1) * 100)}%
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    marginTop: 5,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.05em',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {t('settings.viewing.note')}
+                </div>
+              </div>
             </>
           )}
 
           {activeTab === 'display' && (
             <>
-              {/* Progress Style picker */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.progressStyle')}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>

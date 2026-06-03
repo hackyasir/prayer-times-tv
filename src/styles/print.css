@@ -114,6 +114,37 @@
   padding: 36px 32px;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Subtle ornamental background (real arabesque image, faded) ─────── */
+.ps-bg-ornament {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Cover the upper portion of the page so the ornate top sits behind the
+   * header and fades down over the first rows. */
+  height: 320px;
+  background-image: url('/ornament.jpg');
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% auto;
+  opacity: 0.16;
+  pointer-events: none;
+  z-index: 0;
+  /* Fade the bottom edge into white so there's no hard cut over the table. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+}
+
+/* Header, table, footer sit above the ornament. */
+.ps-header,
+.ps-table,
+.ps-footer {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Header (mosque branding) ───────────────────────────────────────── */
@@ -239,7 +270,8 @@
   background: #f0f7e8;
 }
 
-.ps-table tr.ps-sunnah .ps-day {
+.ps-table tr.ps-sunnah .ps-weekday,
+.ps-table tr.ps-sunnah .ps-date {
   color: #4f7a2e;
   font-weight: 700;
 }
@@ -256,6 +288,28 @@
  * (Friday, Mon/Thu); the monthly white-day marker rides separately. */
 .ps-white-day {
   color: #c9a84c;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* Special annual fast marker (★) — Arafah / Ashura / Tasu'a. Deep gold,
+ * slightly larger than the white-day sparkle to signal higher reward. */
+.ps-special-day {
+  color: #b8860b;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Special-fast row tint — a faint warm highlight so the highest-reward
+ * days stand out even on a black-and-white-leaning print. */
+.ps-table tr.ps-special-fast td {
+  background: #fdf3e3;
+}
+
+/* Six-of-Shawwal marker (◦) — subtle, since it applies to any day of the
+ * month and shouldn't dominate. */
+.ps-shawwal-day {
+  color: #7a7a7a;
   font-weight: 700;
   font-size: 11px;
 }
@@ -413,6 +467,15 @@
  * so the printed page looks like a clean document. */
 @media print {
 
+  /* Force the whole page surface white. Without this, html/body/#root keep
+   * the dark dashboard background (var(--t-bg)) and any area BELOW the table
+   * (short months, or the gap under the footer) prints as a black band. */
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+  }
+
   /* Hide the on-screen controls — back button, month nav, print button */
   .no-print {
     display: none;
@@ -560,6 +623,12 @@
 
   .ps-table tr.ps-friday td {
     background: #fff4d6;
+  }
+
+  /* Print-safe special-fast tint — must come after friday/sunnah so the
+   * highest-reward annual days keep their distinct background in print. */
+  .ps-table tr.ps-special-fast td {
+    background: #fdf3e3;
   }
 
   .ps-jumuah-label {

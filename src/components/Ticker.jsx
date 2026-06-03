@@ -82,7 +82,7 @@ export default function Ticker({
   staticSeconds = 8,
   cityNow,
 }) {
-  const { isRTL, t } = useT();
+  const { isRTL } = useT();
   const [index, setIndex] = useState(0);
 
   // City-local calendar day as a YYYYMMDD integer. cityNow is the timezone-
@@ -129,7 +129,6 @@ export default function Ticker({
     return (
       <div className="ticker ticker--static" data-dir={isRTL ? 'rtl' : 'ltr'}>
         <div className={`ticker-static-item${current.urgent ? ' is-urgent' : ''}`}>
-          {current.urgent && <span className="ticker-flag">{t('ticker.urgent')}</span>}
           <span>{current.text}</span>
         </div>
       </div>
@@ -141,7 +140,6 @@ export default function Ticker({
       {items.map((item, itemIdx) => (
         <span key={`${segmentKey}-item-${itemIdx}`}>
           <span className={`ticker-item${item.urgent ? ' is-urgent' : ''}`}>
-            {item.urgent && <span className="ticker-flag">{t('ticker.urgent')}</span>}
             <span>{item.text}</span>
           </span>
           <span className="ticker-sep" aria-hidden="true">

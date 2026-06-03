@@ -25,7 +25,7 @@
 .pheader {
   display: flex;
   align-items: center;
-  gap: 0.5vw;
+  gap: 1.2vw;
   padding: clamp(6px, 0.9vh, 12px) clamp(8px, 1.1vw, 18px) clamp(4px, 0.6vh, 8px);
   margin-bottom: clamp(2px, 0.4vh, 6px);
   border-bottom: 1px solid rgba(var(--t-accent-rgb), 0.15);
@@ -43,8 +43,8 @@
 }
 
 .pheader-col {
-  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
-  text-align: right;
+  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  text-align: center;
   white-space: nowrap;
   font-size: calc(clamp(0.75rem, 2.4cqi, 1.125rem) * var(--t-fs, 1));
   letter-spacing: 0.22em;
@@ -68,7 +68,7 @@
   min-height: clamp(24px, 5vh, 56px);
   max-height: clamp(32px, 8vh, 72px);
   overflow: hidden;
-  gap: 0.5vw;
+  gap: 1.2vw;
 }
 
 .pcard-name {
@@ -107,7 +107,7 @@
 
 /* ── Prayer name ─────────────────────────────────────────────────────────── */
 .pen {
-  font-size: calc(clamp(0.688rem, 4.5cqi, 1.438rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.8rem, 5cqi, 1.9rem) * var(--t-fs, 1));
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -131,10 +131,10 @@
 
 /* ── Time columns ────────────────────────────────────────────────────────── */
 .ptime {
-  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
-  text-align: right;
+  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  text-align: center;
   white-space: nowrap;
-  font-size: calc(clamp(0.75rem, 5.2cqi, 1.625rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.05rem, 6.5cqi, 2.5rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-text);
   letter-spacing: 0.03em;
@@ -142,10 +142,10 @@
 }
 
 .ptime-iqamah {
-  width: calc(clamp(48px, 22cqi, 130px) * var(--t-fs, 1));
-  text-align: right;
+  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  text-align: center;
   white-space: nowrap;
-  font-size: calc(clamp(0.75rem, 5.2cqi, 1.625rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.05rem, 6.5cqi, 2.5rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-accent);
   letter-spacing: 0.03em;
@@ -169,7 +169,7 @@
  * of the time block; it never participates in the flex flow. */
 .abadge {
   position: absolute;
-  right: calc((clamp(48px, 22cqi, 130px) * var(--t-fs, 1)) * 2 + 0.5vw + 0.5vw);
+  right: calc((clamp(56px, 26cqi, 160px) * var(--t-fs, 1)) * 2 + 1.2vw + 1.2vw);
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -349,11 +349,11 @@
 }
 
 .jumuah-slot-next .jumuah-slot-bg-num {
-  color: rgba(var(--jumuah-rgb), 0.22);
+  color: rgba(var(--jumuah-rgb), 0.15);
 }
 
 .jumuah-slot-later .jumuah-slot-bg-num {
-  color: rgba(var(--jumuah-rgb), 0.16);
+  color: rgba(var(--jumuah-rgb), 0.11);
 }
 
 /* Status badge — top-right corner, small uppercase label */
@@ -436,7 +436,7 @@
 }
 
 .jumuah-slot-col-time {
-  font-size: calc(clamp(1.1rem, 2.2vw, 2rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.25rem, 2.6vw, 2.6rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--jumuah-accent);
   font-variant-numeric: tabular-nums;
@@ -444,13 +444,13 @@
 }
 
 .jumuah-slot-next .jumuah-slot-col-time {
-  font-size: calc(clamp(1.25rem, 2.6vw, 2.4rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.4rem, 3vw, 3.1rem) * var(--t-fs, 1));
   color: var(--jumuah-accent-hi);
 }
 
 .jumuah-dim {
-  opacity: 0.45;
-  filter: saturate(0.4);
+  opacity: 0.62;
+  filter: saturate(0.65);
 }
 
 /* ── Eid banner ──────────────────────────────────────────────────────────── */
@@ -656,7 +656,7 @@
 }
 
 .eid-slot-col-time {
-  font-size: calc(clamp(1.1rem, 2.2vw, 2rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.25rem, 2.6vw, 2.6rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--eid-accent);
   font-variant-numeric: tabular-nums;
@@ -664,7 +664,7 @@
 }
 
 .eid-slot-next .eid-slot-col-time {
-  font-size: calc(clamp(1.25rem, 2.6vw, 2.4rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.4rem, 3vw, 3.1rem) * var(--t-fs, 1));
   color: var(--eid-accent-hi);
 }
 

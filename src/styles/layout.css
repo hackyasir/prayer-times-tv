@@ -203,6 +203,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.4vh;
+  padding: 0 1vw;
+  box-sizing: border-box;
 }
 
 /* ── App footer ──────────────────────────────────────────────────────────── */

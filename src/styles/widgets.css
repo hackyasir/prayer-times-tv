@@ -18,6 +18,19 @@
   gap: 1vw;
 }
 
+/* Ticker now occupies the footer strip — fills all space left of the
+ * (dev-only) test buttons. In production the test cluster is empty, so the
+ * ticker spans the full width. */
+.ftr-ticker {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ftr-section--tests {
+  flex-shrink: 0;
+}
+
 .ftr-txt {
   font-size: calc(clamp(0.438rem, 0.75vw, 0.75rem) * var(--t-fs, 1));
   letter-spacing: 0.15em;
@@ -306,7 +319,17 @@
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   width: 100%;
-  max-width: 520px;
+  max-width: inherit;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Fast-bar inner text should not force overflow — let the track/labels
+ * shrink rather than clip "9h 12m" at the column edge. */
+.fast-bar-times,
+.fast-bar-endpoint,
+.fast-bar-track {
+  min-width: 0;
 }
 
 /* "FAST" label — anchors the bar so users know what it represents.
@@ -361,12 +384,12 @@
 }
 
 .fast-bar-track {
-  flex: 1;
+  flex: 1 1 0;
   height: 4px;
   background: rgba(var(--t-accent-rgb), 0.12);
   border-radius: var(--radius-xs);
   overflow: hidden;
-  min-width: 40px;
+  min-width: 12px;
 }
 
 .fast-bar-fill {
