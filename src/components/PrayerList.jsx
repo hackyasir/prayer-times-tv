@@ -29,6 +29,7 @@ export default function PrayerList({
   eidDate, // (timeStr) → Date helper from parent
   showEidBanner, // boolean — show the eid block at all
   eidLabelAuto, // string — auto-generated Eid label ("Eid ul-Fitr" / "Eid ul-Adha")
+  eidLocation, // optional venue/address string shown in the Eid banner
   footerSlot, // optional: rendered below all prayer cards (embedded
   //   layout uses this for the compact WeatherStrip)
 }) {
@@ -162,8 +163,16 @@ export default function PrayerList({
             return (
               <div className="eid-banner" role="listitem" aria-label={eidLabel}>
                 <div className="eid-banner-head">
-                  <div className="eid-title">
-                    {eidLabel} <span className="eid-arabic">صلاة العيد</span>
+                  <div className="eid-title-group">
+                    <div className="eid-title">
+                      {eidLabel} <span className="eid-arabic">صلاة العيد</span>
+                    </div>
+                    {eidLocation && (
+                      <div className="eid-location" aria-label="venue">
+                        <span className="eid-location-pin" aria-hidden="true">📍</span>
+                        {eidLocation}
+                      </div>
+                    )}
                   </div>
                   {(() => {
                     const firstEidTime = eidDate(activeEidSlots[0].time);

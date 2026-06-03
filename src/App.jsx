@@ -91,6 +91,7 @@ export default function App() {
     lng,
     locName,
     masjidName,
+    screenLabel,
     logoDataUrl,
     cityTz,
     method,
@@ -101,6 +102,7 @@ export default function App() {
     eidFitr,
     eidAdha,
     eidDaysBefore,
+    eidLocation,
     iqamahAutoCalc,
     iqamahAutoBuffers,
     hijriOffset,
@@ -178,6 +180,18 @@ export default function App() {
     updateDrafts((prev) => ({
       ...prev,
       eidDaysBefore: typeof v === 'function' ? v(prev.eidDaysBefore) : v,
+    }));
+  const draftEidLocation = drafts.eidLocation;
+  const setDraftEidLocation = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      eidLocation: typeof v === 'function' ? v(prev.eidLocation) : v,
+    }));
+  const draftScreenLabel = drafts.screenLabel;
+  const setDraftScreenLabel = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      screenLabel: typeof v === 'function' ? v(prev.screenLabel) : v,
     }));
   const setDraftHijri = (v) =>
     updateDrafts((prev) => ({
@@ -808,6 +822,7 @@ export default function App() {
     }
 
     if (showEidBanner && upcomingEid?.kind) {
+      const venue = eidLocation ? ` — ${eidLocation}` : '';
       if (upcomingEid.daysUntil > 0) {
         const eidLabel =
           upcomingEid.kind === 'fitr' ? t('auto.eid.fitr') : t('auto.eid.adha');
@@ -815,13 +830,13 @@ export default function App() {
           fmtStr(t('auto.announcement.eidInDays'), {
             eid: eidLabel,
             days: String(upcomingEid.daysUntil),
-          })
+          }) + venue
         );
       } else {
         const times = activeEidSlots
           .map((slot) => fmt12(eidDate(slot.time), cityTz))
           .join(' • ');
-        pushLine(fmtStr(t('auto.announcement.eidToday'), { times }));
+        pushLine(fmtStr(t('auto.announcement.eidToday'), { times }) + venue);
       }
     }
 
@@ -1057,6 +1072,8 @@ export default function App() {
       eidFitr: sanitizedEidFitr,
       eidAdha: sanitizedEidAdha,
       eidDaysBefore: sanitizedDays,
+      eidLocation: (drafts.eidLocation || '').slice(0, 120),
+      screenLabel: (drafts.screenLabel || '').slice(0, 60),
       hijriOffset: sanitizedHijri,
       fontScale: sanitizedFont,
       blackoutDurations: sanitizedBlackoutDur,
@@ -1182,6 +1199,7 @@ export default function App() {
         {/* Header */}
         <Header
           masjidName={masjidName}
+          screenLabel={screenLabel}
           logoDataUrl={logoDataUrl}
           locName={locName}
           hijri={hijri}
@@ -1211,6 +1229,7 @@ export default function App() {
               eidDate={eidDate}
               showEidBanner={showEidBanner}
               eidLabelAuto={eidLabelAuto}
+              eidLocation={eidLocation}
               footerSlot={<WeatherStrip weather={weather} weatherState={weatherState} />}
             />
 
@@ -1273,6 +1292,7 @@ export default function App() {
             announcements={mergedAnnouncements}
             mode={tickerMode}
             staticSeconds={tickerStaticSeconds}
+            cityNow={cityNow}
           />
           <Footer
             showTestBtns={SHOW_TEST_BTNS}
@@ -1378,6 +1398,8 @@ export default function App() {
           setDraftEidAdha={setDraftEidAdha}
           draftEidDays={draftEidDays}
           setDraftEidDays={setDraftEidDays}
+          draftEidLocation={draftEidLocation}
+          setDraftEidLocation={setDraftEidLocation}
           draftHijri={draftHijri}
           setDraftHijri={setDraftHijri}
           draftHighLat={draftHighLat}
@@ -1396,6 +1418,8 @@ export default function App() {
           setDraftProgress={setDraftProgress}
           draftMasjid={draftMasjid}
           setDraftMasjid={setDraftMasjid}
+          draftScreenLabel={draftScreenLabel}
+          setDraftScreenLabel={setDraftScreenLabel}
           draftLogo={draftLogo}
           setDraftLogo={setDraftLogo}
           draftLang={draftLang}

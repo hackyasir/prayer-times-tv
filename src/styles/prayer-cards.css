@@ -25,6 +25,7 @@
 .pheader {
   display: flex;
   align-items: center;
+  gap: 0.5vw;
   padding: clamp(6px, 0.9vh, 12px) clamp(8px, 1.1vw, 18px) clamp(4px, 0.6vh, 8px);
   margin-bottom: clamp(2px, 0.4vh, 6px);
   border-bottom: 1px solid rgba(var(--t-accent-rgb), 0.15);
@@ -77,15 +78,6 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-}
-
-.pcard-times {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4vw;
-  flex-shrink: 0;
-  position: relative;
 }
 
 .pcard::before {
@@ -171,19 +163,28 @@
 }
 
 /* ── Active pulsing dot ──────────────────────────────────────────────────── */
+/* ── Active pulsing dot ───────────────────────────────────────────────────
+ * Positioned ABSOLUTELY so the active row's time columns stay aligned with
+ * every other row (and with the Adhan/Iqamah header). The dot sits just left
+ * of the time block; it never participates in the flex flow. */
 .abadge {
+  position: absolute;
+  right: calc((clamp(48px, 22cqi, 130px) * var(--t-fs, 1)) * 2 + 0.5vw + 0.5vw);
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: clamp(16px, 1.8vw, 30px);
+  pointer-events: none;
 }
 
 .abadge-dot {
-  width: clamp(9px, 0.9vw, 15px);
-  height: clamp(9px, 0.9vw, 15px);
+  width: clamp(11px, 1.2vw, 20px);
+  height: clamp(11px, 1.2vw, 20px);
   border-radius: 50%;
   background: var(--t-dot-color);
+  box-shadow: 0 0 6px 1px var(--t-dot-glow);
   animation: ablink 1.4s ease-in-out infinite;
 }
 
@@ -490,6 +491,30 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--eid-accent);
+}
+
+.eid-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.3vh, 5px);
+  min-width: 0;
+}
+
+.eid-location {
+  font-size: calc(clamp(0.6rem, 0.85vw, 0.95rem) * var(--t-fs, 1));
+  color: rgba(var(--eid-rgb), 0.85);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eid-location-pin {
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .eid-arabic {

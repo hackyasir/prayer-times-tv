@@ -218,5 +218,10 @@
   "auto.announcement.eidToday": "صلوات العيد اليوم: {times}",
   "auto.announcement.eidGreeting": "عيد مبارك — {eid}",
   "auto.eid.fitr": "عيد الفطر",
-  "auto.eid.adha": "عيد الأضحى"
+  "auto.eid.adha": "عيد الأضحى",
+  "settings.eid.location": "مكان / عنوان صلاة العيد (اختياري)",
+  "settings.eid.location.placeholder": "مثال: المركز المجتمعي، 123 الشارع الرئيسي",
+  "settings.screenLabel": "تسمية الشاشة (اختياري)",
+  "settings.screenLabel.placeholder": "مثال: القاعة الرئيسية، قسم النساء",
+  "settings.screenLabel.note": "يستبدل العنوان الفرعي \"مواقيت الصلاة\". اتركه فارغًا للافتراضي."
 }

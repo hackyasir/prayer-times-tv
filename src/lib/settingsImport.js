@@ -101,6 +101,7 @@ export function normalizeImportedSettings(raw, defaults) {
     locName: toStringValue(source.locName) ?? defaults.locName,
     cityTz: toStringValue(source.cityTz) ?? defaults.cityTz,
     masjidName: toStringValue(source.masjidName) ?? defaults.masjidName,
+    screenLabel: toStringValue(source.screenLabel) ?? defaults.screenLabel,
     logoDataUrl: toStringValue(source.logoDataUrl) ?? defaults.logoDataUrl,
     method: toStringValue(source.method) && ALLOWED_METHODS.has(source.method) ? source.method : defaults.method,
     shadow: source.shadow === 2 || source.shadow === 1 ? source.shadow : defaults.shadow,
@@ -112,6 +113,7 @@ export function normalizeImportedSettings(raw, defaults) {
     eidFitr: normalizeSlotArray(source.eidFitr ?? legacyEid.eidFitr, defaults.eidFitr),
     eidAdha: normalizeSlotArray(source.eidAdha ?? legacyEid.eidAdha, defaults.eidAdha),
     eidDaysBefore: Math.min(30, Math.max(0, toFiniteNumber(source.eidDaysBefore) ?? defaults.eidDaysBefore)),
+    eidLocation: toStringValue(source.eidLocation) ?? defaults.eidLocation,
     hijriOffset: Math.min(3, Math.max(-3, toFiniteNumber(source.hijriOffset) ?? defaults.hijriOffset)),
     highLatRule:
       toStringValue(source.highLatRule) && ALLOWED_HIGH_LAT_RULES.has(source.highLatRule)
