@@ -19,7 +19,8 @@ import { useT } from '../../i18n/I18nContext.jsx';
 // Compact viewBox: width 400, height tight to arc + 2 lines of labels.
 const ARC_W = 400;
 const ARC_H = 84; // increased from 74 to give labels (13px) + times (14px) breathing room
-const PAD_X = 22;
+const PAD_X = 44; // inset for arc endpoints — wide enough that centre-anchored
+//                   end labels (Sunrise/Sunset + times) stay inside the viewBox
 const ARC_Y0 = 46; // arc endpoints (low)
 const ARC_Y1 = 8; // arc apex (high — solar noon)
 

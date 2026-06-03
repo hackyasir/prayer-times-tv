@@ -115,7 +115,18 @@ export const DEFAULTS = {
   // a stored true value sets BOTH new flags true; false sets both false.
   chimeAdhan: false,
   chimeIqamah: true,
-  fontScale: 100, // % — 100 = default, 70..130 adjustable in settings
+  fontScale: 100, // % — 100 = default, 70..130 manual fine-tune in settings
+  // ── Viewing-distance scaling ─────────────────────────────────────────────
+  // Legibility at distance is governed by ANGULAR size (cap-height ÷ distance),
+  // not screen size — so the app cannot auto-detect it from the panel alone.
+  // Instead we offer three ways to set one scale multiplier (viewingScale),
+  // which combines with fontScale to drive the global --t-fs.
+  //   'manual'    → viewingScale = 1, user uses the fontScale slider only
+  //   'distance'  → pick how far the furthest viewer is (one tap)
+  //   'calibrate' → walk to the far point, tune by eye, store the result
+  viewingMode: 'manual', // 'manual' | 'distance' | 'calibrate'
+  viewingDistance: 'medium', // 'close' | 'medium' | 'large' | 'grand'
+  viewingCalibrated: 1.0, // custom multiplier from calibrate mode (0.8..3.0)
   progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
   lang: 'en', // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
   autoAnnouncements: false, // prepend basic computed notices to ticker

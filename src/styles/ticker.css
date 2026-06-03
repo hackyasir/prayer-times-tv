@@ -22,11 +22,9 @@
  * loop with no visible jump. */
 
 .ticker {
-  /* Slim strip with thin top/bottom dividers */
+  /* Lives inside the footer strip now — no standalone borders. */
   width: 100%;
   padding: 4px 0;
-  border-top: 1px solid var(--t-border);
-  border-bottom: 1px solid var(--t-border);
   overflow: hidden;
   /* clip the second copy during scroll */
   flex-shrink: 0;

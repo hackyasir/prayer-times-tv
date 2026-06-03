@@ -29,6 +29,7 @@ import { calcTimes } from '../lib/prayerCalc.js';
 import { fmt12 } from '../lib/formatters.js';
 import { toHijriParts, findUpcomingEid } from '../lib/hijri.js';
 import { computeIqamah } from '../lib/iqamah.js';
+import { fastReasonsFor } from '../lib/sunnahFasts.js';
 
 const HIJRI_MONTHS = [
   'Muharram',
@@ -128,6 +129,7 @@ export default function PrintableSchedule({
         date: d,
         weekday: WEEKDAYS[probe.getDay()],
         hijri: `${userHijriDay} ${HIJRI_MONTHS[hijri.m - 1]}`,
+        hijriYear: hijri.y,
         // For each prayer key, store adhan + iqamah times. Sunrise has
         // no iqamah (observational only). On Fridays, the Dhuhr cell is
         // swapped for the Jumu'ah time and flagged so the
@@ -148,19 +150,27 @@ export default function PrintableSchedule({
           };
         }),
         isFriday,
-        // ── Sunnah-fasting day markers ─────────────────────────────────
-        // Monday and Thursday: the Prophet ﷺ encouraged weekly fasting on
-        // these days. Marked with a pale-green row background so admins
-        // and worshippers can see them at a glance without having to
-        // mentally compute weekdays.
-        isSunnahFast: probe.getDay() === 1 || probe.getDay() === 4,
-        // White days (al-ayyam al-beed): Hijri 13, 14, 15 of every month,
-        // also recommended for sunnah fasting. Distinct from weekly Mon/Thu
-        // because they're monthly. Marked with a small ✦ icon next to the
-        // Hijri date so they remain visible even when the row is also a
-        // Friday (yellow) or Mon/Thu (green) — the icon attaches to the
-        // Hijri column, separate from row background.
-        isWhiteDay: userHijriDay >= 13 && userHijriDay <= 15,
+        // ── Sunnah-fasting day markers (single source of truth) ──────────
+        // Derived from the SAME lib the on-screen announcements use, so the
+        // calendar and the live display can never disagree. fastReasonsFor
+        // already applies the forbidden-day gate (Eid + Tashreeq → no fast).
+        ...(() => {
+          const reasons = fastReasonsFor({ m: hijri.m, d: userHijriDay }, probe.getDay());
+          const has = (k) => reasons.some((r) => r.key === k);
+          const special = has('arafah')
+            ? 'arafah'
+            : has('ashura')
+              ? 'ashura'
+              : has('tasua')
+                ? 'tasua'
+                : null;
+          return {
+            isSunnahFast: has('monday') || has('thursday'),
+            isWhiteDay: has('white'),
+            fastSpecial: special,
+            isShawwalFast: has('shawwal'),
+          };
+        })(),
       });
     }
     return result;
@@ -188,10 +198,30 @@ export default function PrintableSchedule({
     year: 'numeric',
   });
 
-  // Hijri month span — usually one Gregorian month covers 1-2 Hijri months
-  const firstHijri = rows[0]?.hijri.split(' ').slice(1).join(' ');
-  const lastHijri = rows[rows.length - 1]?.hijri.split(' ').slice(1).join(' ');
-  const hijriRange = firstHijri === lastHijri ? firstHijri : `${firstHijri} – ${lastHijri}`;
+  // Hijri month span — usually one Gregorian month covers 1-2 Hijri months.
+  // Include the Hijri YEAR; if the span crosses a year boundary, show both.
+  const firstRow = rows[0];
+  const lastRow = rows[rows.length - 1];
+  const firstHijriMonth = firstRow?.hijri.split(' ').slice(1).join(' ');
+  const lastHijriMonth = lastRow?.hijri.split(' ').slice(1).join(' ');
+  const firstYear = firstRow?.hijriYear;
+  const lastYear = lastRow?.hijriYear;
+  const hijriRange = (() => {
+    if (!firstRow || !lastRow) return '';
+    if (firstHijriMonth === lastHijriMonth && firstYear === lastYear) {
+      return `${firstHijriMonth} ${firstYear}`;
+    }
+    if (firstYear === lastYear) {
+      return `${firstHijriMonth} – ${lastHijriMonth} ${lastYear}`;
+    }
+    return `${firstHijriMonth} ${firstYear} – ${lastHijriMonth} ${lastYear}`;
+  })();
+
+  // Which fast-legend rows are relevant THIS month (so we don't show the
+  // Shawwal/special legend in months that have none).
+  const monthHasSpecialFast = rows.some((r) => r.fastSpecial);
+  const monthHasShawwal = rows.some((r) => r.isShawwalFast);
+  const monthHasWhite = rows.some((r) => r.isWhiteDay);
 
   // Active Jumu'ah slots — listed in the footer as a quick reference.
   const activeJumuah = (jumuah || []).filter((j) => j.enabled && j.time);
@@ -267,6 +297,13 @@ export default function PrintableSchedule({
 
       {/* Printable content */}
       <div className="ps-page">
+        {/* Subtle ornamental background — the real arabesque image, faded via
+            CSS opacity so it sits behind the calendar without hurting the
+            prayer-time legibility. The ornate top of the image lands in the
+            header zone; it fades into white over the table area. Decorative
+            only (aria-hidden). */}
+        <div className="ps-bg-ornament" aria-hidden="true" />
+
         {/* Header */}
         <div className="ps-header">
           {logoDataUrl && <img src={logoDataUrl} alt="" className="ps-logo" />}
@@ -310,9 +347,23 @@ export default function PrintableSchedule({
               // (green). Both are visible because they're different colors;
               // we never need to merge. White days are NOT a row color —
               // they get the ✦ icon attached to the Hijri date instead.
-              const rowClasses = [row.isFriday && 'ps-friday', row.isSunnahFast && 'ps-sunnah']
+              const rowClasses = [
+                row.isFriday && 'ps-friday',
+                row.isSunnahFast && 'ps-sunnah',
+                row.fastSpecial && 'ps-special-fast',
+              ]
                 .filter(Boolean)
                 .join(' ');
+              // Marker glyphs next to the Hijri date. ✦ = White day,
+              // ★ = special annual fast (Arafah/Ashura/Tasu'a), ◦ = Shawwal.
+              const specialTitle =
+                row.fastSpecial === 'arafah'
+                  ? 'Day of Arafah (highest reward)'
+                  : row.fastSpecial === 'ashura'
+                    ? 'Ashura (10 Muharram)'
+                    : row.fastSpecial === 'tasua'
+                      ? "Tasu'a (9 Muharram)"
+                      : '';
               return (
                 <tr key={row.date} className={rowClasses}>
                   <td className="ps-day-cell">
@@ -321,13 +372,19 @@ export default function PrintableSchedule({
                   </td>
                   <td className="ps-hijri">
                     {row.hijri}
-                    {/* White-day marker (al-ayyam al-beed) — Hijri 13/14/15.
-                     * Small gold sparkle next to the Hijri date so the marker
-                     * stays visible regardless of row background color.
-                     * Cycle-aware: appears on roughly 3 rows per month. */}
+                    {row.fastSpecial && (
+                      <span className="ps-special-day" title={specialTitle}>
+                        {' ★'}
+                      </span>
+                    )}
                     {row.isWhiteDay && (
                       <span className="ps-white-day" title="White day (al-ayyam al-beed)">
                         {' ✦'}
+                      </span>
+                    )}
+                    {row.isShawwalFast && (
+                      <span className="ps-shawwal-day" title="Six of Shawwal (any six days this month)">
+                        {' ◦'}
                       </span>
                     )}
                   </td>
@@ -408,10 +465,24 @@ export default function PrintableSchedule({
                 <span className="ps-legend-swatch ps-legend-sunnah" />
                 Mon/Thu (recommended fasting)
               </span>
-              <span className="ps-legend-item">
-                <span className="ps-legend-icon">✦</span>
-                White days, 13–15 Hijri (recommended fasting)
-              </span>
+              {monthHasWhite && (
+                <span className="ps-legend-item">
+                  <span className="ps-legend-icon">✦</span>
+                  White days, 13–15 Hijri (recommended fasting)
+                </span>
+              )}
+              {monthHasSpecialFast && (
+                <span className="ps-legend-item">
+                  <span className="ps-legend-icon">★</span>
+                  Arafah / Ashura / Tasu&apos;a (highest-reward fasts)
+                </span>
+              )}
+              {monthHasShawwal && (
+                <span className="ps-legend-item">
+                  <span className="ps-legend-icon">◦</span>
+                  Six of Shawwal (any six days that month)
+                </span>
+              )}
             </div>
           </div>
         </div>

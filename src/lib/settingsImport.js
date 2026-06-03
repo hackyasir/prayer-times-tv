@@ -124,6 +124,13 @@ export function normalizeImportedSettings(raw, defaults) {
     chimeAdhan: toBoolean(source.chimeAdhan) ?? defaults.chimeAdhan,
     chimeIqamah: toBoolean(source.chimeIqamah) ?? defaults.chimeIqamah,
     fontScale: Math.min(130, Math.max(70, toFiniteNumber(source.fontScale) ?? defaults.fontScale)),
+    viewingMode: ['manual', 'distance', 'calibrate'].includes(source.viewingMode)
+      ? source.viewingMode
+      : defaults.viewingMode,
+    viewingDistance: ['close', 'medium', 'large', 'grand'].includes(source.viewingDistance)
+      ? source.viewingDistance
+      : defaults.viewingDistance,
+    viewingCalibrated: Math.min(3.0, Math.max(0.8, toFiniteNumber(source.viewingCalibrated) ?? defaults.viewingCalibrated)),
     progressStyle:
       toStringValue(source.progressStyle) && ALLOWED_PROGRESS.has(source.progressStyle)
         ? source.progressStyle

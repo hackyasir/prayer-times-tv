@@ -27,6 +27,7 @@ function phaseLabel(phaseValue) {
 }
 
 export default function Footer({
+  ticker,
   showTestBtns,
   testFriday,
   testPrayer,
@@ -49,15 +50,8 @@ export default function Footer({
   const { t } = useT();
   return (
     <div className="ftr">
-      <div className="ftr-section">
-        <div className="ftr-txt">{t('footer.offline')}</div>
-      </div>
-      <div className="ftr-dots">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="ftr-dot" />
-        ))}
-      </div>
-      <div className="ftr-section">
+      <div className="ftr-ticker">{ticker}</div>
+      <div className="ftr-section ftr-section--tests">
         {showTestBtns && (
           <>
             <button
@@ -140,7 +134,6 @@ export default function Footer({
             </button>
           </>
         )}
-        <div className="ftr-txt">{t('footer.updated')}</div>
       </div>
     </div>
   );
