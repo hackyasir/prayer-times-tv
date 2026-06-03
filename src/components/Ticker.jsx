@@ -23,7 +23,7 @@ const SEP = '\u2003\u2003·\u2003\u2003'; // em-space × 2 + bullet + em-space �
 
 const EXP_TOKEN = /^@(\d{4}-\d{2}-\d{2})$/;
 
-function parseLine(raw) {
+export function parseLine(raw) {
   const line = (raw || '').trim();
   if (!line) return null;
 
@@ -54,26 +54,57 @@ function parseLine(raw) {
   return { text, urgent, expiresOn };
 }
 
-function isActive(item, now) {
-  if (!item?.expiresOn) return true;
-  const [y, m, d] = item.expiresOn.split('-').map(Number);
-  if (![y, m, d].every(Number.isFinite)) return true;
-  const expiresAt = new Date(y, m - 1, d, 23, 59, 59, 999);
-  return now <= expiresAt;
+// Turn a y/m/d triple into a comparable integer (YYYYMMDD). Comparing these
+// is a pure calendar-day comparison — no timezone math, no DST edge cases.
+export function ymdKey(y, m, d) {
+  return y * 10000 + m * 100 + d;
 }
 
-export default function Ticker({ announcements, mode = 'scroll', staticSeconds = 8 }) {
+// An announcement with `@YYYY-MM-DD` stays visible THROUGH that whole day in
+// the MASJID's timezone, then disappears when the city rolls to the next day.
+// `cityToday` is the {y,m,d} of "now" in the city's wall-clock (see useCityTime)
+// — NOT the device's local day. A London-hosted box driving a Karachi masjid
+// must expire announcements on Karachi's calendar, not London's.
+export function isActive(item, cityToday) {
+  if (!item?.expiresOn) return true;
+  const [y, m, d] = item.expiresOn.split('-').map(Number);
+  // Fail-safe: any malformed or out-of-range date keeps the announcement
+  // visible rather than silently hiding it. A volunteer's typo should never
+  // make a notice vanish without explanation.
+  if (![y, m, d].every(Number.isFinite)) return true;
+  if (m < 1 || m > 12 || d < 1 || d > 31) return true;
+  return cityToday <= ymdKey(y, m, d);
+}
+
+export default function Ticker({
+  announcements,
+  mode = 'scroll',
+  staticSeconds = 8,
+  cityNow,
+}) {
   const { isRTL, t } = useT();
   const [index, setIndex] = useState(0);
 
+  // City-local calendar day as a YYYYMMDD integer. cityNow is the timezone-
+  // aware anchor whose LOCAL fields match the city's wall-clock, so reading
+  // getFullYear/getMonth/getDate off it gives the city's today. Fall back to
+  // device time only if no anchor was passed.
+  const anchor = cityNow instanceof Date && !Number.isNaN(cityNow.getTime())
+    ? cityNow
+    : new Date();
+  const cityToday = ymdKey(
+    anchor.getFullYear(),
+    anchor.getMonth() + 1,
+    anchor.getDate()
+  );
+
   const items = useMemo(() => {
-    const now = new Date();
     return (announcements || '')
       .split('\n')
       .map(parseLine)
       .filter(Boolean)
-      .filter((item) => isActive(item, now));
-  }, [announcements]);
+      .filter((item) => isActive(item, cityToday));
+  }, [announcements, cityToday]);
 
   const safeSeconds = Number.isFinite(Number(staticSeconds))
     ? Math.min(30, Math.max(3, Number(staticSeconds)))

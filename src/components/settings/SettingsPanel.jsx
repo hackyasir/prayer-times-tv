@@ -108,6 +108,8 @@ export default function SettingsPanel({
   setDraftEidAdha,
   draftEidDays,
   setDraftEidDays,
+  draftEidLocation,
+  setDraftEidLocation,
   draftHijri,
   setDraftHijri,
   draftHighLat,
@@ -126,6 +128,8 @@ export default function SettingsPanel({
   setDraftProgress,
   draftMasjid,
   setDraftMasjid,
+  draftScreenLabel,
+  setDraftScreenLabel,
   draftLogo,
   setDraftLogo,
   draftLang,
@@ -527,74 +531,6 @@ export default function SettingsPanel({
                   </button>
                 </div>
 
-                <div className="ann-preview">
-                  <div className="ann-preview-head">
-                    <div className="ann-preview-title">{t('settings.announcements.previewEditable')}</div>
-                    <button
-                      type="button"
-                      className="ann-preview-add"
-                      onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
-                      aria-label={t('settings.announcements.addRow')}
-                      title={t('settings.announcements.addRow')}
-                    >
-                      +
-                    </button>
-                  </div>
-                  {announcementPreviewItems.map((item, idx) => (
-                    <div
-                      key={`${idx}-${item.text}-${item.expiresOn}`}
-                      className={`ann-editor-row${item.expired ? ' is-expired' : ''}`}
-                    >
-                      <div className="ann-row-meta">
-                        <button
-                          type="button"
-                          className={`ann-icon-toggle${item.urgent ? ' is-on' : ''}`}
-                          onClick={() => patchAnnouncementRow(idx, { urgent: !item.urgent })}
-                          aria-label={t('settings.announcements.preview.urgent')}
-                          title={t('settings.announcements.preview.urgent')}
-                        >
-                          !
-                        </button>
-
-                        <div className={`ann-expiry-wrap${item.expired ? ' is-expired' : ''}`}>
-                          <span className="ann-expiry-icon">@</span>
-                          <input
-                            type="date"
-                            className="ann-date ann-row-date"
-                            value={item.expiresOn || ''}
-                            onChange={(e) => patchAnnouncementRow(idx, { expiresOn: e.target.value })}
-                            aria-label={t('settings.announcements.insertDate')}
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          className="ann-row-remove"
-                          onClick={() => removeAnnouncementRow(idx)}
-                          aria-label={t('settings.announcements.removeRow')}
-                          title={t('settings.announcements.removeRow')}
-                        >
-                          ×
-                        </button>
-                      </div>
-
-                      <input
-                        className="sinput ann-row-input"
-                        value={item.text}
-                        placeholder={t('settings.announcements.placeholder')}
-                        onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
-                      />
-
-                      <div className="ann-preview-tags">
-                        {item.expiresOn && !item.expired && (
-                          <span className="ann-tag">{fmtStr(t('settings.announcements.preview.expires'), { date: item.expiresOn })}</span>
-                        )}
-                        {item.expired && <span className="ann-tag ann-tag-expired">{t('settings.announcements.preview.expired')}</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
                 <div
                   style={{
                     marginTop: 5,
@@ -666,6 +602,7 @@ export default function SettingsPanel({
                 <div
                   style={{
                     marginTop: 8,
+                    marginBottom: 12,
                     fontSize: 11,
                     color: 'var(--t-text-dim)',
                     letterSpacing: '.03em',
@@ -673,6 +610,74 @@ export default function SettingsPanel({
                   }}
                 >
                   {t('settings.announcements.format')}
+                </div>
+
+                <div className="ann-preview">
+                  <div className="ann-preview-head">
+                    <div className="ann-preview-title">{t('settings.announcements.previewEditable')}</div>
+                    <button
+                      type="button"
+                      className="ann-preview-add"
+                      onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
+                      aria-label={t('settings.announcements.addRow')}
+                      title={t('settings.announcements.addRow')}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {announcementPreviewItems.map((item, idx) => (
+                    <div
+                      key={`${idx}-${item.text}-${item.expiresOn}`}
+                      className={`ann-editor-row${item.expired ? ' is-expired' : ''}`}
+                    >
+                      <div className="ann-row-meta">
+                        <button
+                          type="button"
+                          className={`ann-icon-toggle${item.urgent ? ' is-on' : ''}`}
+                          onClick={() => patchAnnouncementRow(idx, { urgent: !item.urgent })}
+                          aria-label={t('settings.announcements.preview.urgent')}
+                          title={t('settings.announcements.preview.urgent')}
+                        >
+                          !
+                        </button>
+
+                        <div className={`ann-expiry-wrap${item.expired ? ' is-expired' : ''}`}>
+                          <span className="ann-expiry-icon">@</span>
+                          <input
+                            type="date"
+                            className="ann-date ann-row-date"
+                            value={item.expiresOn || ''}
+                            onChange={(e) => patchAnnouncementRow(idx, { expiresOn: e.target.value })}
+                            aria-label={t('settings.announcements.insertDate')}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          className="ann-row-remove"
+                          onClick={() => removeAnnouncementRow(idx)}
+                          aria-label={t('settings.announcements.removeRow')}
+                          title={t('settings.announcements.removeRow')}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <input
+                        className="sinput ann-row-input"
+                        value={item.text}
+                        placeholder={t('settings.announcements.placeholder')}
+                        onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
+                      />
+
+                      <div className="ann-preview-tags">
+                        {item.expiresOn && !item.expired && (
+                          <span className="ann-tag">{fmtStr(t('settings.announcements.preview.expires'), { date: item.expiresOn })}</span>
+                        )}
+                        {item.expired && <span className="ann-tag ann-tag-expired">{t('settings.announcements.preview.expired')}</span>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </>
@@ -1412,6 +1417,26 @@ export default function SettingsPanel({
                     Shown in header · leave blank to show "Prayer Times"
                   </div>
                 )}
+              </div>
+
+              {/* Screen label — optional per-screen subtitle. Replaces the
+                  "Prayer Times · Digital Display" line. Useful when one masjid
+                  runs several screens (Main Hall, Women's Section, etc.). */}
+              <div className="sgrp">
+                <label className="slbl">{t('settings.screenLabel')}</label>
+                <input
+                  className="sinput"
+                  type="text"
+                  placeholder={t('settings.screenLabel.placeholder')}
+                  value={draftScreenLabel}
+                  onChange={(e) => setDraftScreenLabel(e.target.value)}
+                  maxLength={60}
+                />
+                <div
+                  style={{ marginTop: 5, fontSize: 11, color: '#9A8B6E', letterSpacing: '.05em' }}
+                >
+                  {t('settings.screenLabel.note')}
+                </div>
               </div>
 
               {/* Mosque logo upload — optional branding.
@@ -2158,6 +2183,40 @@ export default function SettingsPanel({
                   <span style={{ fontSize: 11, color: '#9A8B6E', flexShrink: 0 }}>
                     {t('unit.days')}
                   </span>
+                </div>
+
+                {/* Optional Eid venue/address — e.g. when Eid prayer is held
+                    at a community center rather than the masjid. Shown in the
+                    Eid banner and auto-announcements when set. */}
+                <div style={{ marginBottom: 14 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: 13,
+                      color: '#9A8B6E',
+                      letterSpacing: '.06em',
+                      marginBottom: 6,
+                    }}
+                  >
+                    {t('settings.eid.location')}
+                  </label>
+                  <input
+                    type="text"
+                    value={draftEidLocation}
+                    onChange={(e) => setDraftEidLocation(e.target.value)}
+                    placeholder={t('settings.eid.location.placeholder')}
+                    maxLength={120}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      background: '#111',
+                      border: '1px solid rgba(201,168,76,.12)',
+                      borderRadius: 4,
+                      padding: '8px 12px',
+                      color: '#E8E0CC',
+                      fontSize: 13,
+                    }}
+                  />
                 </div>
 
                 {/* Two side-by-side schedule sections — Fitr on the left,

@@ -41,6 +41,10 @@ export const DEFAULTS = {
   locName: 'Toronto, Ontario, Canada',
   cityTz: 'America/Toronto',
   masjidName: '',
+  // Optional per-screen label (e.g. "Main Hall", "Women's Section",
+  // "Community Center"). When set, replaces the "Prayer Times · Digital
+  // Display" subtitle. Useful when one masjid runs several screens.
+  screenLabel: '',
   // ── Mosque branding ──────────────────────────────────────────────────
   // Optional logo uploaded by the admin. Stored as a base64 data URL so
   // it survives in localStorage with no backend or file system access.
@@ -96,6 +100,8 @@ export const DEFAULTS = {
     { time: '10:30', enabled: false },
   ],
   eidDaysBefore: 7, // show Eid banner this many days before the actual Eid
+  eidLocation: '', // optional venue/address (e.g. community center) — shown in
+  //                  the Eid banner and auto-announcements when set
   hijriOffset: 0, // ±days adjustment for Hijri date display
   highLatRule: 'middleOfNight', // for cities above ~48° latitude
   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'

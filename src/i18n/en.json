@@ -218,5 +218,10 @@
   "auto.announcement.eidToday": "Eid prayers today: {times}",
   "auto.announcement.eidGreeting": "Eid Mubarak — {eid}",
   "auto.eid.fitr": "Eid ul-Fitr",
-  "auto.eid.adha": "Eid ul-Adha"
+  "auto.eid.adha": "Eid ul-Adha",
+  "settings.eid.location": "Eid prayer venue / address (optional)",
+  "settings.eid.location.placeholder": "e.g. Community Center, 123 Main St",
+  "settings.screenLabel": "Screen label (optional)",
+  "settings.screenLabel.placeholder": "e.g. Main Hall, Women’s Section",
+  "settings.screenLabel.note": "Replaces the \"Prayer Times · Digital Display\" subtitle. Leave blank for the default."
 }

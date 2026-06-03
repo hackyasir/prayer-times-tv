@@ -36,14 +36,12 @@ export default function PrayerCard({
         <div className="par">{arName}</div>
       </div>
       {isActive && (
-        <div className="abadge">
+        <div className="abadge" aria-hidden="true">
           <span className="abadge-dot" />
         </div>
       )}
-      <div className="pcard-times">
-        <div className="ptime">{fmt12(time, cityTz)}</div>
-        <div className="ptime-iqamah">{fmt12(iqamahTime, cityTz)}</div>
-      </div>
+      <div className="ptime">{fmt12(time, cityTz)}</div>
+      <div className="ptime-iqamah">{fmt12(iqamahTime, cityTz)}</div>
     </div>
   );
 }

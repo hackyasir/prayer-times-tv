@@ -216,5 +216,10 @@
   "auto.announcement.eidToday": "آج عید کی نمازیں: {times}",
   "auto.announcement.eidGreeting": "عید مبارک — {eid}",
   "auto.eid.fitr": "عید الفطر",
-  "auto.eid.adha": "عید الاضحی"
+  "auto.eid.adha": "عید الاضحی",
+  "settings.eid.location": "عید نماز کا مقام / پتہ (اختیاری)",
+  "settings.eid.location.placeholder": "مثلاً: کمیونٹی سینٹر، 123 مین اسٹریٹ",
+  "settings.screenLabel": "اسکرین لیبل (اختیاری)",
+  "settings.screenLabel.placeholder": "مثلاً: مین ہال، خواتین کا حصہ",
+  "settings.screenLabel.note": "سب ٹائٹل کو تبدیل کرتا ہے۔ ڈیفالٹ کے لیے خالی چھوڑ دیں۔"
 }

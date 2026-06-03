@@ -16,6 +16,7 @@ import { useT } from '../i18n/I18nContext.jsx';
 
 export default function Header({
   masjidName,
+  screenLabel, // optional per-screen subtitle override
   logoDataUrl, // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
   locName,
   hijri,
@@ -41,12 +42,12 @@ export default function Header({
           {masjidName ? (
             <>
               <div className="app-title">{masjidName}</div>
-              <div className="app-sub">{t('app.subtitle.named')}</div>
+              <div className="app-sub">{screenLabel || t('app.subtitle.named')}</div>
             </>
           ) : (
             <>
               <div className="app-title">{t('app.title')}</div>
-              <div className="app-sub">{t('app.subtitle')}</div>
+              <div className="app-sub">{screenLabel || t('app.subtitle')}</div>
             </>
           )}
         </div>
