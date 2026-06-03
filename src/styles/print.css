@@ -69,6 +69,7 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .ps-back-btn:hover,
 .ps-print-btn:hover {
   background: rgba(var(--t-accent-rgb), 0.22);
@@ -79,6 +80,7 @@
   align-items: center;
   gap: 14px;
 }
+
 .ps-month-nav button {
   background: transparent;
   border: 1px solid var(--t-border);
@@ -89,6 +91,7 @@
   font-size: 20px;
   cursor: pointer;
 }
+
 .ps-month-nav button:hover {
   background: rgba(var(--t-accent-rgb), 0.12);
 }
@@ -195,6 +198,7 @@
 .ps-col-primary {
   display: block;
 }
+
 .ps-col-alias {
   display: block;
   margin-top: 1px;
@@ -219,8 +223,9 @@
 
 /* Friday rows — subtle highlight since Jumu'ah replaces Dhuhr */
 .ps-table tr.ps-friday td {
-  background: #fff8e1 !important;
+  background: #fff8e1;
 }
+
 .ps-table tr.ps-friday .ps-day {
   color: #c9a84c;
   font-weight: 700;
@@ -231,16 +236,18 @@
  * recommendation each row falls under. Lower visual weight than Friday
  * (Friday is mandatory Jumu'ah; Mon/Thu is voluntary fasting). */
 .ps-table tr.ps-sunnah td {
-  background: #f0f7e8 !important;
+  background: #f0f7e8;
 }
+
 .ps-table tr.ps-sunnah .ps-day {
   color: #4f7a2e;
   font-weight: 700;
 }
+
 /* Friday wins when both apply (Friday CAN'T overlap with Mon/Thu, but the
  * rule order keeps Friday styling stable for the edge case). */
 .ps-table tr.ps-friday.ps-sunnah td {
-  background: #fff8e1 !important;
+  background: #fff8e1;
 }
 
 /* White-day marker (✦) — Hijri 13/14/15 next to the Hijri date column.
@@ -307,6 +314,7 @@
 .ps-prayer-col.ps-sunrise {
   background: #f4efe2;
 }
+
 .ps-table td:nth-child(5) {
   /* Sunrise time column — keep tinted in body too */
   color: #888;
@@ -331,7 +339,8 @@
 }
 
 .ps-footer-col {
-  min-width: 0; /* lets long content wrap inside the grid cell */
+  min-width: 0;
+  /* lets long content wrap inside the grid cell */
 }
 
 .ps-footer-row {
@@ -380,9 +389,11 @@
   border: 1px solid #c9a84c;
   border-radius: 2px;
 }
+
 .ps-legend-friday {
   background: #fff8e1;
 }
+
 .ps-legend-sunnah {
   background: #f0f7e8;
   border-color: #8fb36a;
@@ -401,9 +412,10 @@
  * exactly what's on screen. We strip the dark theme and any UI chrome
  * so the printed page looks like a clean document. */
 @media print {
+
   /* Hide the on-screen controls — back button, month nav, print button */
   .no-print {
-    display: none !important;
+    display: none;
   }
 
   /* Sticky positioning is on-screen only. In print, sticky elements
@@ -411,8 +423,8 @@
    * with the table layout. Reset everything to static. */
   .ps-controls,
   .ps-table thead th {
-    position: static !important;
-    background: #efefef !important;
+    position: static;
+    background: #efefef;
   }
 
   /* Use the entire page — no card framing.
@@ -424,41 +436,45 @@
   }
 
   .printable-schedule {
-    background: #ffffff !important;
-    color: #000 !important;
-    padding: 0 !important;
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
+    background: #ffffff;
+    color: #000;
+    padding: 0;
+    height: auto;
+    min-height: auto;
+    overflow: visible;
   }
 
   .ps-page {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    max-width: none !important;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    max-width: none;
   }
 
   /* Even tighter header — saves vertical space for the footer. */
   .ps-header {
-    padding-bottom: 5px !important;
-    margin-bottom: 6px !important;
-    gap: 10px !important;
+    padding-bottom: 5px;
+    margin-bottom: 6px;
+    gap: 10px;
   }
+
   .ps-title {
-    font-size: 16px !important;
+    font-size: 16px;
   }
+
   .ps-subtitle {
-    font-size: 10px !important;
-    margin-top: 1px !important;
+    font-size: 10px;
+    margin-top: 1px;
   }
+
   .ps-month {
-    font-size: 10px !important;
-    margin-top: 2px !important;
+    font-size: 10px;
+    margin-top: 2px;
   }
+
   .ps-logo {
-    width: 36px !important;
-    height: 36px !important;
+    width: 36px;
+    height: 36px;
   }
 
   /* Table — compressed cell padding + smaller text so all 31 rows fit
@@ -466,85 +482,103 @@
   .ps-table {
     font-size: 9.5px;
   }
+
   .ps-table th {
-    padding: 3px 3px !important;
-    font-size: 9px !important;
+    padding: 3px;
+    font-size: 9px;
   }
+
   .ps-table td {
-    padding: 2px 3px !important;
+    padding: 2px 3px;
   }
+
   .ps-adhan {
-    font-size: 10px !important;
-    line-height: 1.05 !important;
+    font-size: 10px;
+    line-height: 1.05;
   }
+
   .ps-iqamah {
-    font-size: 8.5px !important;
-    line-height: 1.05 !important;
-    margin-top: 0 !important;
+    font-size: 8.5px;
+    line-height: 1.05;
+    margin-top: 0;
   }
+
   .ps-weekday {
-    font-size: 8.5px !important;
+    font-size: 8.5px;
   }
+
   .ps-date {
-    font-size: 10px !important;
+    font-size: 10px;
   }
+
   .ps-hijri {
-    font-size: 8.5px !important;
+    font-size: 8.5px;
   }
 
   /* Tighter footer — still readable but compact. The 2-column grid stays
    * (saves vertical space); we just shrink fonts and tighten gaps. */
   .ps-footer {
-    margin-top: 5px !important;
-    padding-top: 4px !important;
-    font-size: 8.5px !important;
-    line-height: 1.3 !important;
-    gap: 4px 24px !important;
+    margin-top: 5px;
+    padding-top: 4px;
+    font-size: 8.5px;
+    line-height: 1.3;
+    gap: 4px 24px;
   }
+
   .ps-footer-row {
-    margin-bottom: 2px !important;
+    margin-bottom: 2px;
   }
+
   .ps-footer-legend {
-    font-size: 8px !important;
-    gap: 2px 10px !important;
+    font-size: 8px;
+    gap: 2px 10px;
   }
+
   .ps-legend-swatch {
-    width: 10px !important;
-    height: 7px !important;
+    width: 10px;
+    height: 7px;
   }
+
   .ps-col-alias {
-    font-size: 7.5px !important;
+    font-size: 7.5px;
   }
+
   /* Print-safe sunnah row tint */
   .ps-table tr.ps-sunnah td {
-    background: #f0f7e8 !important;
+    background: #f0f7e8;
   }
 
   /* Print-safe colors — some browsers/printers may otherwise drop
    * background tints to save ink. */
   .ps-table th {
-    background: #efefef !important;
-    color: #000 !important;
+    color: #000;
   }
+
   .ps-table tr:nth-child(even) td {
-    background: #f7f7f7 !important;
+    background: #f7f7f7;
   }
+
   .ps-table tr.ps-friday td {
-    background: #fff4d6 !important;
+    background: #fff4d6;
+  }
+
+  .ps-jumuah-label {
+    font-size: 7px;
   }
 
   /* Force backgrounds to print (Chrome default is to strip them) */
   * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* Avoid splitting the table awkwardly across pages */
   .ps-table {
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
+
   .ps-table tr {
-    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }
 
@@ -560,11 +594,4 @@
   color: #c9a84c;
   line-height: 1;
   margin-bottom: 1px;
-}
-
-@media print {
-  /* Tighter label in print to keep row heights consistent. */
-  .ps-jumuah-label {
-    font-size: 7px !important;
-  }
 }

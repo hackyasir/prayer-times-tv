@@ -60,10 +60,10 @@
  * .is-active is the state toggle. */
 .test-btn {
   background: transparent;
-  border: 1px solid rgba(201, 168, 76, 0.15);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.15);
   border-radius: var(--radius-xs);
   padding: 2px 8px;
-  color: #9a8b6e;
+  color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(clamp(0.438rem, 0.72vw, 0.688rem) * var(--t-fs, 1));
   letter-spacing: 0.1em;
@@ -71,10 +71,12 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+
 .test-btn.is-disabled {
   cursor: default;
   opacity: 0.7;
 }
+
 /* Compact variant — used by the ✕ clear button (no letter-spacing/text-transform
  * needed, less horizontal padding). */
 .test-btn--compact {
@@ -87,20 +89,23 @@
  * `.is-active` class is also present. Keep these in lock-step with the
  * JSX class composition in Footer.jsx. */
 .test-btn--jumuah.is-active {
-  border-color: rgba(61, 200, 120, 0.5);
-  color: #3dc878;
+  border-color: rgba(var(--jumuah-rgb), 0.5);
+  color: var(--jumuah-accent);
 }
+
 .test-btn--eid.is-active {
-  border-color: rgba(196, 158, 255, 0.5);
-  color: #c49eff;
+  border-color: rgba(var(--eid-rgb), 0.5);
+  color: var(--eid-accent);
 }
+
 .test-btn--neutral.is-active {
   border-color: rgba(255, 255, 255, 0.5);
   color: #ffffff;
 }
+
 .test-btn--moon.is-active {
-  border-color: rgba(180, 200, 230, 0.5);
-  color: #c5d4e6;
+  border-color: rgba(var(--moon-rgb), 0.5);
+  color: var(--moon-accent);
 }
 
 /* Settings trigger button */
@@ -196,7 +201,7 @@
  * inherit stroke colors from a class. */
 .sun-arc-path-active {
   fill: none;
-  stroke: url(#sunArcGrad);
+  stroke: url('#sunArcGrad');
   stroke-width: 1.5;
   stroke-linecap: round;
 }
@@ -391,37 +396,37 @@
 
 .moon-arc-path {
   /* Dim dotted arc — slightly cooler than sun's gold */
-  stroke: rgba(180, 200, 230, 0.15);
+  stroke: rgba(var(--moon-rgb), 0.15);
 }
 
 .moon-arc-path-active {
   /* Bright moon-path overlay — silver gradient */
-  stroke: rgba(200, 220, 240, 0.5);
+  stroke: rgba(var(--moon-rgb-hi), 0.5);
   stroke-width: 1.5;
 }
 
 .moon-arc-marker {
-  fill: rgba(180, 200, 230, 0.5);
+  fill: rgba(var(--moon-rgb), 0.5);
 }
 
 /* Moon disk components */
 .moon-arc-lit {
-  fill: #e8edf3;
+  fill: var(--moon-accent-hi);
 }
 
 /* lit (bright) disk */
 .moon-arc-dark {
-  fill: #1a2030;
+  fill: var(--moon-surface);
 }
 
 /* dark side overlay */
 .moon-arc-ring {
   /* subtle outline */
   fill: none;
-  stroke: rgba(200, 220, 240, 0.35);
+  stroke: rgba(var(--moon-rgb-hi), 0.35);
   stroke-width: 0.5;
 }
 
 .moon-arc-halo {
-  fill: #c5d4e6;
+  fill: var(--moon-accent);
 }
