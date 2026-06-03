@@ -23,7 +23,7 @@
 // The result: SettingsContext owns persistence + applied/drafts lifecycle;
 // this component owns the form UI.
 
-import { useState, useRef } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { THEMES } from '../../lib/themes.js';
 import { METHOD_LABELS } from '../../lib/constants.js';
 import { fmt12, addMins } from '../../lib/formatters.js';
@@ -31,6 +31,7 @@ import { toHijri } from '../../lib/hijri.js';
 import { playBeep } from '../../lib/audio.js';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import { LANGUAGE_LABELS } from '../../i18n/I18nContext.jsx';
+import { findNonAscendingSlot, buildOrderErrorMessage } from '../../lib/scheduleValidation.js';
 import NumberStepper from '../NumberStepper.jsx';
 import LogoUploader from './LogoUploader.jsx';
 
@@ -134,9 +135,6 @@ export default function SettingsPanel({
   const [resetConfirming, setResetConfirming] = useState(false);
   const resetTimeoutRef = useRef(null);
 
-  // Now that hooks are done, we can safely short-circuit when hidden.
-  if (!visible) return null;
-
   function handleResetClick() {
     if (!resetConfirming) {
       setResetConfirming(true);
@@ -168,10 +166,33 @@ export default function SettingsPanel({
   // to the corresponding prop-named callbacks here so we don't have to
   // touch the (large) JSX block.
   const setShowSett = () => onCancel();
-  const applySettings = onApply;
+  const validationErrors = useMemo(() => {
+    const jumuahError = findNonAscendingSlot(draftJumuah);
+    const eidFitrError = findNonAscendingSlot(draftEidFitr);
+    const eidAdhaError = findNonAscendingSlot(draftEidAdha);
+    return {
+      jumuah: jumuahError ? buildOrderErrorMessage('Jumuah', jumuahError) : '',
+      eidFitr: eidFitrError ? buildOrderErrorMessage('Eid ul-Fitr', eidFitrError) : '',
+      eidAdha: eidAdhaError ? buildOrderErrorMessage('Eid ul-Adha', eidAdhaError) : '',
+    };
+  }, [draftJumuah, draftEidFitr, draftEidAdha]);
+
+  const hasValidationErrors =
+    Boolean(validationErrors.jumuah) ||
+    Boolean(validationErrors.eidFitr) ||
+    Boolean(validationErrors.eidAdha);
+
+  const applySettings = () => {
+    if (hasValidationErrors) return;
+    onApply?.();
+  };
+
   const handleSearchInput = onSearchInput;
   const handleSelectCity = onSelectCity;
   const geolocate = onGeolocate;
+
+  // Now that hooks are done, we can safely short-circuit when hidden.
+  if (!visible) return null;
 
   return (
     <div className="overlay">
@@ -183,7 +204,16 @@ export default function SettingsPanel({
             <button className="sbtn" onClick={() => setShowSett(false)}>
               {t('settings.cancel')}
             </button>
-            <button className="sbtn pri" onClick={applySettings}>
+            <button
+              className="sbtn pri"
+              onClick={applySettings}
+              disabled={hasValidationErrors}
+              title={
+                hasValidationErrors
+                  ? validationErrors.jumuah || validationErrors.eidFitr || validationErrors.eidAdha
+                  : ''
+              }
+            >
               {t('settings.apply')}
             </button>
           </div>
@@ -1642,6 +1672,11 @@ export default function SettingsPanel({
                     </div>
                   ))}
                 </div>
+                {validationErrors.jumuah && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: '#ff7c7c', lineHeight: 1.4 }}>
+                    {validationErrors.jumuah}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -1802,6 +1837,12 @@ export default function SettingsPanel({
                         </div>
                       ))}
                     </div>
+                    {((key === 'fitr' && validationErrors.eidFitr) ||
+                      (key === 'adha' && validationErrors.eidAdha)) && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: '#ff7c7c', lineHeight: 1.4 }}>
+                        {key === 'fitr' ? validationErrors.eidFitr : validationErrors.eidAdha}
+                      </div>
+                    )}
                   </div>
                 ))}
                 <p style={{ fontSize: 11, color: '#9A8B6E', marginTop: 6, lineHeight: 1.4 }}>
