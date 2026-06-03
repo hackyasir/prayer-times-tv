@@ -72,3 +72,6 @@ prayer-times-tv.zip
 # tools is undesirable. Uncomment if relevant.
 # yarn.lock
 # pnpm-lock.yaml
+
+# Local-only Copilot instruction overrides (personal preferences)
+.github/instructions/telegram-style.instructions.md

@@ -4,6 +4,7 @@ import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, findUpcomingEid } from './lib/hijri.js';
 import { addMins } from './lib/formatters.js';
 import { computeIqamah } from './lib/iqamah.js';
+import { findNonAscendingSlot, buildOrderErrorMessage } from './lib/scheduleValidation.js';
 import { buildThemeVars } from './lib/themes.js';
 
 // Custom hooks — pure logic extracted to their own files
@@ -769,6 +770,20 @@ export default function App() {
   }
 
   function applySettings() {
+    const jumuahOrderError = findNonAscendingSlot(drafts.jumuah);
+    const eidFitrOrderError = findNonAscendingSlot(drafts.eidFitr);
+    const eidAdhaOrderError = findNonAscendingSlot(drafts.eidAdha);
+    const firstOrderError =
+      (jumuahOrderError && buildOrderErrorMessage('Jumuah', jumuahOrderError)) ||
+      (eidFitrOrderError && buildOrderErrorMessage('Eid ul-Fitr', eidFitrOrderError)) ||
+      (eidAdhaOrderError && buildOrderErrorMessage('Eid ul-Adha', eidAdhaOrderError)) ||
+      '';
+
+    if (firstOrderError) {
+      window.alert(firstOrderError);
+      return;
+    }
+
     // Clamp/sanitize drafts before applying. The Settings panel inputs let
     // users type freely; we enforce ranges here at commit time.
     const sanitizedIqamah = Object.fromEntries(
