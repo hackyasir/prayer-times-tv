@@ -21,14 +21,16 @@
 .blackout {
   position: fixed;
   inset: 0;
-  background: #000;
-  z-index: 200; /* above overlay (100) and everything else */
+  background: var(--surface-black);
+  z-index: 200;
+  /* above overlay (100) and everything else */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: default;
-  user-select: none; /* hold-to-dismiss shouldn't trigger text selection */
+  user-select: none;
+  /* hold-to-dismiss shouldn't trigger text selection */
   -webkit-user-select: none;
   /* Touch-action: prevent default touch behaviours (zoom, scroll) during
      the hold gesture so the press doesn't accidentally pan the page. */
@@ -42,14 +44,15 @@
 .blackout-text {
   font-family: 'Amiri', serif;
   font-size: calc(clamp(2rem, 6vw, 5rem) * var(--t-fs, 1));
-  color: rgba(201, 168, 76, 0.55); /* --t-accent at 55% — dim but legible */
+  color: rgba(var(--t-accent-rgb), 0.55);
+  /* --t-accent at 55% — dim but legible */
   text-align: center;
   letter-spacing: 0.04em;
   line-height: 1.4;
   direction: rtl;
   padding: 0 2rem;
   /* Subtle text-shadow gives the gold a soft halo without being flashy */
-  text-shadow: 0 0 24px rgba(201, 168, 76, 0.15);
+  text-shadow: 0 0 24px rgba(var(--t-accent-rgb), 0.15);
 }
 
 /* The "Resuming in 7:42" countdown at the bottom — small and dim. */
@@ -58,7 +61,8 @@
   bottom: clamp(1rem, 3vh, 3rem);
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(clamp(0.625rem, 1.1vw, 1rem) * var(--t-fs, 1));
-  color: rgba(154, 139, 110, 0.45); /* very dim text-dim */
+  color: rgba(var(--t-text-dim-rgb), 0.45);
+  /* very dim text-dim */
   letter-spacing: 0.2em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
@@ -71,7 +75,7 @@
   bottom: clamp(3rem, 8vh, 6rem);
   font-family: 'Rajdhani', sans-serif;
   font-size: calc(clamp(0.5rem, 0.9vw, 0.812rem) * var(--t-fs, 1));
-  color: rgba(154, 139, 110, 0.7);
+  color: rgba(var(--t-text-dim-rgb), 0.7);
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
@@ -85,14 +89,14 @@
   width: 30vw;
   max-width: 320px;
   height: 2px;
-  background: rgba(201, 168, 76, 0.15);
+  background: rgba(var(--t-accent-rgb), 0.15);
   border-radius: 1px;
   overflow: hidden;
 }
 
 .blackout-hold-bar-fill {
   height: 100%;
-  background: rgba(201, 168, 76, 0.65);
+  background: rgba(var(--t-accent-rgb), 0.65);
   /* No CSS transition — the JS RAF tick is already smooth, and a transition
      would lag behind the actual hold progress, making the dismiss feel
      unresponsive. */

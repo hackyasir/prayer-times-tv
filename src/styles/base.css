@@ -49,11 +49,13 @@ html {
 :root {
   /* Corner radii — used by cards, buttons, badges, panels */
   --radius-xs: 2px;
-  --radius-sm: 4px; /* default for prayer cards, widget cards */
+  --radius-sm: 4px;
+  /* default for prayer cards, widget cards */
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-xl: 12px;
-  --radius-full: 9999px; /* pills, circles */
+  --radius-full: 9999px;
+  /* pills, circles */
 
   /* Spacing scale — for padding, gap, margin (when not viewport-relative).
      Keep using vh/vw for major layout sizes; use these for finer control
@@ -70,6 +72,39 @@ html {
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.45);
+
+  /* Shared semantic colors used by multiple feature stylesheets */
+  --overlay-backdrop-strong: rgba(0, 0, 0, 0.96);
+  --overlay-backdrop-medium: rgba(0, 0, 0, 0.75);
+  --overlay-backdrop-soft: rgba(0, 0, 0, 0.5);
+  --surface-black: #000;
+  --surface-deep: #0a0a0a;
+  --surface-deeper: #0e0e0e;
+  --surface-elevated: #111;
+  --text-on-dark-strong: #f5edd8;
+
+  --jumuah-rgb: 61, 200, 120;
+  --jumuah-accent: #3dc878;
+  --jumuah-accent-hi: #5dde94;
+  --jumuah-banner-start: rgba(26, 92, 58, 0.5);
+
+  --eid-rgb: 196, 158, 255;
+  --eid-rgb-strong: 180, 120, 255;
+  --eid-accent: #c49eff;
+  --eid-accent-strong: #b47cff;
+  --eid-accent-soft: #d4b3ff;
+  --eid-accent-hi: #d9b8ff;
+  --eid-banner-start: rgba(120, 60, 180, 0.35);
+
+  --moon-rgb: 180, 200, 230;
+  --moon-rgb-hi: 200, 220, 240;
+  --moon-accent: #c5d4e6;
+  --moon-accent-hi: #e8edf3;
+  --moon-surface: #1a2030;
+
+  --danger-rgb: 255, 107, 107;
+  --danger-accent: #ff6b6b;
+  --danger-accent-deep: #c0392b;
 }
 
 /* ── Global focus styling ─────────────────────────────────────────────────
@@ -100,6 +135,7 @@ body {
 
 /* Shared animations (used across multiple components) */
 @keyframes blink {
+
   0%,
   100% {
     opacity: 1;
@@ -113,6 +149,7 @@ body {
 }
 
 @keyframes cardpulse {
+
   0%,
   100% {
     box-shadow: 0 0 0 0 rgba(var(--t-accent-rgb), 0);
@@ -124,6 +161,7 @@ body {
 }
 
 @keyframes ablink {
+
   0%,
   100% {
     opacity: 1;
@@ -183,6 +221,7 @@ body {
  *     and small, not a flicker pattern.
  */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -191,6 +230,7 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
 /* ── Floating Settings button ─────────────────────────────────────────────
  * Fixed position top-right, always reachable. Icon-only. Touch-target
  * sized (44×44) for mobile/iPhone use. Semi-transparent dark with gold
@@ -205,10 +245,10 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(201, 168, 76, 0.3);
+  background: var(--overlay-backdrop-soft);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
   border-radius: var(--radius-full);
-  color: var(--t-accent, #c9a84c);
+  color: var(--t-accent);
   cursor: pointer;
   z-index: 50;
   transition: all 0.2s ease;
@@ -220,11 +260,12 @@ body {
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
 .settings-fab:hover,
 .settings-fab:focus-visible {
-  background: rgba(0, 0, 0, 0.75);
-  border-color: var(--t-accent, #c9a84c);
-  color: var(--t-accent-hi, #f0c96a);
+  background: var(--overlay-backdrop-medium);
+  border-color: var(--t-accent);
+  color: var(--t-accent-hi);
   transform: rotate(45deg);
 }
 
@@ -239,6 +280,7 @@ input[type='number']::-webkit-outer-spin-button {
   appearance: none;
   margin: 0;
 }
+
 input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;

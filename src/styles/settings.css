@@ -20,7 +20,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.96);
+  background: var(--overlay-backdrop-strong);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -38,6 +38,7 @@
   flex-direction: column;
   overflow: hidden;
 }
+
 .sbox-hdr {
   display: flex;
   align-items: center;
@@ -49,6 +50,7 @@
   background: var(--t-surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
+
 .stitle {
   font-family: 'Amiri', serif;
   font-size: calc(20px * var(--t-fs, 1));
@@ -58,6 +60,7 @@
   margin: 0;
   flex: 1;
 }
+
 .sbox-body {
   flex: 1;
   overflow-y: scroll;
@@ -69,6 +72,7 @@
 .sgrp {
   margin-bottom: 16px;
 }
+
 .slbl {
   display: block;
   font-size: calc(12px * var(--t-fs, 1));
@@ -92,9 +96,11 @@
   cursor: pointer;
   appearance: none;
 }
+
 .ssel:focus {
   border-color: var(--t-border-hi);
 }
+
 .sinput {
   width: 100%;
   background: var(--t-surface2);
@@ -106,11 +112,13 @@
   color: var(--t-text);
   outline: none;
 }
+
 .sinput:focus {
   border-color: var(--t-border-hi);
 }
+
 .sinput::placeholder {
-  color: #4a4035;
+  color: rgba(var(--t-text-dim-rgb), 0.65);
 }
 
 /* City search dropdown */
@@ -122,29 +130,35 @@
   max-height: 200px;
   overflow-y: auto;
 }
+
 .search-item {
   padding: 9px 13px;
   cursor: pointer;
   border-bottom: 1px solid rgba(var(--t-accent-rgb), 0.08);
   transition: background 0.15s;
 }
+
 .search-item:last-child {
   border-bottom: none;
 }
+
 .search-item:hover {
   background: rgba(var(--t-accent-rgb), 0.08);
 }
+
 .search-item-name {
   font-size: calc(15px * var(--t-fs, 1));
   color: var(--t-text);
   font-family: 'Rajdhani', sans-serif;
 }
+
 .search-item-sub {
   font-size: calc(12px * var(--t-fs, 1));
   color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
   margin-top: 1px;
 }
+
 .search-selected {
   padding: 9px 13px;
   background: rgba(var(--t-accent-rgb), 0.08);
@@ -154,16 +168,19 @@
   align-items: center;
   justify-content: space-between;
 }
+
 .search-selected-name {
   font-size: calc(15px * var(--t-fs, 1));
   color: var(--t-accent-hi);
   font-family: 'Rajdhani', sans-serif;
 }
+
 .search-selected-sub {
   font-size: calc(12px * var(--t-fs, 1));
   color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
 }
+
 .search-clear {
   background: none;
   border: none;
@@ -173,13 +190,15 @@
   padding: 0 4px;
   line-height: 1;
 }
+
 .search-clear:hover {
   color: var(--t-accent);
 }
+
 .search-status {
   padding: 10px 13px;
   font-size: calc(13px * var(--t-fs, 1));
-  color: #9a8b6e;
+  color: var(--t-text-dim);
   font-family: 'Rajdhani', sans-serif;
   letter-spacing: 0.05em;
   text-align: center;
@@ -200,17 +219,21 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .sbtn:hover {
   background: rgba(var(--t-accent-rgb), 0.12);
 }
+
 .sbtn.pri {
   background: rgba(var(--t-accent-rgb), 0.14);
 }
+
 .sbtn-row {
   display: flex;
   gap: 10px;
   align-items: center;
 }
+
 .geo-btn {
   width: 100%;
   text-align: center;
@@ -228,6 +251,7 @@
   transition: background 0.2s;
   margin-top: 4px;
 }
+
 .geo-btn:hover {
   background: rgba(var(--t-accent-rgb), 0.1);
 }
@@ -265,7 +289,8 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 12px 14px;
-  margin-bottom: -1px; /* overlap the .stab-strip border-bottom by 1px so the
+  margin-bottom: -1px;
+  /* overlap the .stab-strip border-bottom by 1px so the
                           active tab's underline visually replaces it */
   cursor: pointer;
   transition:
@@ -303,7 +328,7 @@
   padding: 9px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--t-border);
-  background: #0e0e0e;
+  background: var(--surface-deeper);
   transition:
     border-color 0.15s,
     background 0.15s;
@@ -345,7 +370,7 @@
   color: var(--t-text-dim);
   margin-top: 2px;
   letter-spacing: 0.03em;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 /* ── Settings header meta buttons (Export / Import) ──────────────────────
@@ -370,6 +395,7 @@
     background 0.15s;
   margin-right: 4px;
 }
+
 .sbtn-meta:hover {
   color: var(--t-accent);
   border-color: rgba(var(--t-accent-rgb), 0.4);
@@ -395,35 +421,38 @@
    modifier (set on first click) bumps the red intensity + filled background
    to make "click again to confirm" visually obvious. */
 .sbtn-meta-danger {
-  color: rgba(255, 107, 107, 0.8);
-  border-color: rgba(255, 107, 107, 0.25);
-}
-.sbtn-meta-danger:hover {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.5);
-  background: rgba(255, 107, 107, 0.08);
-}
-.sbtn-meta-danger.confirming {
-  color: #fff;
-  background: rgba(255, 107, 107, 0.85);
-  border-color: #ff6b6b;
-  animation: resetConfirmPulse 0.6s ease-in-out infinite alternate;
+  color: rgba(var(--danger-rgb), 0.8);
+  border-color: rgba(var(--danger-rgb), 0.25);
 }
 
-@keyframes resetConfirmPulse {
+.sbtn-meta-danger:hover {
+  color: var(--danger-accent);
+  border-color: rgba(var(--danger-rgb), 0.5);
+  background: rgba(var(--danger-rgb), 0.08);
+}
+
+.sbtn-meta-danger.confirming {
+  color: #fff;
+  background: rgba(var(--danger-rgb), 0.85);
+  border-color: var(--danger-accent);
+  animation: reset-confirm-pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes reset-confirm-pulse {
   from {
-    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.25);
+    box-shadow: 0 0 0 0 rgba(var(--danger-rgb), 0.25);
   }
+
   to {
-    box-shadow: 0 0 0 6px rgba(255, 107, 107, 0);
+    box-shadow: 0 0 0 6px rgba(var(--danger-rgb), 0);
   }
 }
 
 /* ── PIN entry overlay ───────────────────────────────────────────────────
  * Modal-style box used by <PinOverlay/> when SETTINGS_PIN is configured. */
 .pin-box {
-  background: #0a0a0a;
-  border: 1px solid rgba(201, 168, 76, 0.45);
+  background: var(--surface-deep);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.45);
   border-radius: var(--radius-lg);
   padding: 36px;
   width: min(340px, 90vw);
@@ -433,7 +462,7 @@
 .pin-title {
   font-family: 'Amiri', serif;
   font-size: 20px;
-  color: var(--t-accent, #c9a84c);
+  color: var(--t-accent);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 20px;
@@ -441,25 +470,26 @@
 
 .pin-input {
   width: 100%;
-  background: #111;
-  border: 1px solid rgba(201, 168, 76, 0.3);
+  background: var(--surface-elevated);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-family: 'Rajdhani', sans-serif;
   font-size: 22px;
-  color: #f5edd8;
+  color: var(--text-on-dark-strong);
   outline: none;
   text-align: center;
   letter-spacing: 0.3em;
   margin-bottom: 8px;
 }
+
 .pin-input--error {
-  border-color: #c0392b;
+  border-color: var(--danger-accent-deep);
 }
 
 .pin-error {
   font-size: 13px;
-  color: #c0392b;
+  color: var(--danger-accent-deep);
   margin-bottom: 8px;
   letter-spacing: 0.05em;
 }

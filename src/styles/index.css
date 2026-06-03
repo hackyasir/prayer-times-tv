@@ -19,13 +19,16 @@
  * since they need to change when the user switches themes.
  */
 
-@import './base.css';
-@import './layout.css';
-@import './prayer-cards.css';
-@import './clock.css';
-@import './widgets.css';
-@import './ticker.css';
-@import './settings.css';
-@import './print.css';
-@import './blackout.css';
-@import './responsive.css';
+@layer base, layout, components.prayer, components.clock, components.widgets, components.ticker,
+components.settings, print, overlays, responsive;
+
+@import './base.css' layer(base);
+@import './layout.css' layer(layout);
+@import './prayer-cards.css' layer(components.prayer);
+@import './clock.css' layer(components.clock);
+@import './widgets.css' layer(components.widgets);
+@import './ticker.css' layer(components.ticker);
+@import './settings.css' layer(components.settings);
+@import './print.css' layer(print);
+@import './blackout.css' layer(overlays);
+@import './responsive.css' layer(responsive);
