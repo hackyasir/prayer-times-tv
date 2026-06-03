@@ -50,9 +50,6 @@ export default function Footer({
   return (
     <div className="ftr">
       <div className="ftr-section">
-        {/* Settings button moved to floating top-right corner of the app
-            (rendered in App.jsx). Footer left section now shows only the
-            status text. */}
         <div className="ftr-txt">{t('footer.offline')}</div>
       </div>
       <div className="ftr-dots">

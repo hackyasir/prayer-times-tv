@@ -72,7 +72,7 @@ export default function Clock({
 
       {/* Next-prayer section: Arabic + Latin name, then ProgressVisual + countdown */}
       {next ? (
-        <div className="next-sec">
+        <div className="next-sec" role="status" aria-live="polite" aria-atomic="true">
           <div className="next-lbl">{t('label.next')}</div>
           <div className="next-name">{names.primary}</div>
           <div className="next-ar">{names.secondary}</div>
@@ -113,7 +113,9 @@ export default function Clock({
           {bottomSlot}
         </div>
       ) : (
-        <div className="clock-complete">{t('label.allComplete')}</div>
+        <div className="clock-complete" role="status" aria-live="polite" aria-atomic="true">
+          {t('label.allComplete')}
+        </div>
       )}
 
       <div className="divider" />

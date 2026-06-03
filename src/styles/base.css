@@ -231,44 +231,6 @@ body {
   }
 }
 
-/* ── Floating Settings button ─────────────────────────────────────────────
- * Fixed position top-right, always reachable. Icon-only. Touch-target
- * sized (44×44) for mobile/iPhone use. Semi-transparent dark with gold
- * gear so it doesn't compete with dashboard content but stays visible
- * against varying backgrounds. */
-.settings-fab {
-  position: fixed;
-  top: clamp(8px, 1.5vh, 16px);
-  right: clamp(8px, 1.5vw, 16px);
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--overlay-backdrop-soft);
-  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
-  border-radius: var(--radius-full);
-  color: var(--t-accent);
-  cursor: pointer;
-  z-index: 50;
-  transition: all 0.2s ease;
-  /* Prevent iOS double-tap highlight + selection on rapid tapping */
-  -webkit-tap-highlight-color: transparent;
-  -webkit-user-select: none;
-  user-select: none;
-  /* Backdrop blur for legibility over busy backgrounds */
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-.settings-fab:hover,
-.settings-fab:focus-visible {
-  background: var(--overlay-backdrop-medium);
-  border-color: var(--t-accent);
-  color: var(--t-accent-hi);
-  transform: rotate(45deg);
-}
-
 /* ── Hide native number-input spinners ────────────────────────────────────
  * iOS Safari overlays tiny up/down arrows on type="number" inputs that
  * clip the visible digits inside narrow fields. NumberStepper now uses

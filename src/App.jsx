@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, findUpcomingEid } from './lib/hijri.js';
 import { addMins } from './lib/formatters.js';
 import { computeIqamah } from './lib/iqamah.js';
 import { findNonAscendingSlot, buildOrderErrorMessage } from './lib/scheduleValidation.js';
+import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
 
 // Custom hooks — pure logic extracted to their own files
@@ -635,18 +636,7 @@ export default function App() {
     eidDate,
   });
 
-  function openSettings() {
-    if (SETTINGS_PIN) {
-      // Always ask PIN — never cache the unlock
-      setPinInput('');
-      setPinError(false);
-      setShowPin(true);
-      return;
-    }
-    _doOpenSettings();
-  }
-
-  function _doOpenSettings() {
+  const doOpenSettings = useCallback(() => {
     // Snapshot applied → drafts so the panel starts from the current state
     beginEditing();
     // Also reset the non-persistent UI state (search, masjid name preview)
@@ -657,12 +647,23 @@ export default function App() {
     setSearchStatus('idle');
     setSelectedCity(null);
     setShowSett(true);
-  }
+  }, [beginEditing, masjidName, logoDataUrl]);
+
+  const openSettings = useCallback(() => {
+    if (SETTINGS_PIN) {
+      // Always ask PIN — never cache the unlock
+      setPinInput('');
+      setPinError(false);
+      setShowPin(true);
+      return;
+    }
+    doOpenSettings();
+  }, [doOpenSettings]);
 
   function submitPin() {
     if (pinInput === SETTINGS_PIN) {
       setShowPin(false);
-      _doOpenSettings();
+      doOpenSettings();
     } else {
       setPinError(true);
       setPinInput('');
@@ -745,11 +746,12 @@ export default function App() {
       reader.onload = (e) => {
         try {
           const parsed = JSON.parse(e.target.result);
-          if (typeof parsed !== 'object' || parsed === null) throw new Error('not an object');
+          const normalized = normalizeImportedSettings(parsed, DEFAULTS);
+          if (!normalized.ok) throw new Error('invalid settings shape');
           // Merge into drafts so the panel can show the new values; user
           // must click Apply to commit. We use updateDrafts with a function
           // form so it spreads atomically over the current drafts state.
-          updateDrafts((prev) => ({ ...prev, ...parsed }));
+          updateDrafts(() => normalized.value);
           resolve(true);
         } catch {
           resolve(false);
@@ -874,6 +876,43 @@ export default function App() {
     );
   }
 
+  // Keyboard accessibility shortcuts:
+  // - Alt+S or Ctrl+, opens Settings
+  // - Escape closes PIN or Settings overlays
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      const inTypingField =
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable);
+
+      if (event.key === 'Escape') {
+        if (showPin) {
+          setShowPin(false);
+          return;
+        }
+        if (showSett) {
+          setShowSett(false);
+        }
+        return;
+      }
+
+      if (inTypingField) return;
+      const key = event.key.toLowerCase();
+      const openSettingsShortcut = (event.altKey && key === 's') || (event.ctrlKey && key === ',');
+      if (!openSettingsShortcut || showSett || showPin) return;
+
+      event.preventDefault();
+      openSettings();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showSett, showPin, openSettings]);
+
   // ── Early return: printable monthly schedule view ──────────────────
   // When the user clicks "Print Monthly Schedule" in Settings, we render
   // ONLY the schedule (no header, no footer, no widgets) so it occupies
@@ -919,41 +958,13 @@ export default function App() {
         <div className="corner bl" />
         <div className="corner br" />
 
-        {/* Floating Settings button — top-right corner, icon-only.
-            Replaces the old text "⚙ Settings" button in the footer.
-            Floating placement keeps it always-reachable without
-            consuming layout space. Touch-target sized (44×44) for
-            mobile/iPhone admin use. */}
-        <button
-          onClick={openSettings}
-          aria-label={t('app.openSettings')}
-          title={t('app.openSettings')}
-          className="settings-fab"
-        >
-          {/* Gear icon — pure SVG, inherits currentColor for theming */}
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-          </svg>
-        </button>
-
         {/* Header */}
         <Header
           masjidName={masjidName}
           logoDataUrl={logoDataUrl}
           locName={locName}
           hijri={hijri}
-          method={method}
+          onOpenSettings={openSettings}
           activePrayerKey={testPrayer || active?.key || 'fajr'}
           lunarPhase={lunarPhase}
           centerSlot={<HeaderQibla qibla={qibla} />}
@@ -1120,82 +1131,83 @@ export default function App() {
       />
 
       {/* Settings overlay — extracted to components/settings/SettingsPanel.jsx */}
-      <SettingsPanel
-        visible={showSett}
-        onCancel={() => setShowSett(false)}
-        onApply={applySettings}
-        draftMethod={draftMethod}
-        setDraftMethod={setDraftMethod}
-        draftAsr={draftAsr}
-        setDraftAsr={setDraftAsr}
-        draftIqamah={draftIqamah}
-        setDraftIqamah={setDraftIqamah}
-        draftIqamahAutoCalc={draftIqamahAutoCalc}
-        setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
-        draftIqamahAutoBuffers={draftIqamahAutoBuffers}
-        setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
-        draftJumuah={draftJumuah}
-        setDraftJumuah={setDraftJumuah}
-        draftEidFitr={draftEidFitr}
-        setDraftEidFitr={setDraftEidFitr}
-        draftEidAdha={draftEidAdha}
-        setDraftEidAdha={setDraftEidAdha}
-        draftEidDays={draftEidDays}
-        setDraftEidDays={setDraftEidDays}
-        draftHijri={draftHijri}
-        setDraftHijri={setDraftHijri}
-        draftHighLat={draftHighLat}
-        setDraftHighLat={setDraftHighLat}
-        draftTheme={draftTheme}
-        setDraftTheme={setDraftTheme}
-        draftChimeAdhan={draftChimeAdhan}
-        setDraftChimeAdhan={setDraftChimeAdhan}
-        draftChimeIqamah={draftChimeIqamah}
-        setDraftChimeIqamah={setDraftChimeIqamah}
-        draftFontScale={draftFontScale}
-        setDraftFontScale={setDraftFontScale}
-        draftProgress={draftProgress}
-        setDraftProgress={setDraftProgress}
-        draftMasjid={draftMasjid}
-        setDraftMasjid={setDraftMasjid}
-        draftLogo={draftLogo}
-        setDraftLogo={setDraftLogo}
-        draftLang={draftLang}
-        setDraftLang={setDraftLang}
-        draftAnnouncements={draftAnnouncements}
-        setDraftAnnouncements={setDraftAnnouncements}
-        draftBlackoutEnabled={draftBlackoutEnabled}
-        setDraftBlackoutEnabled={setDraftBlackoutEnabled}
-        draftBlackoutDurations={draftBlackoutDurations}
-        setDraftBlackoutDurations={setDraftBlackoutDurations}
-        draftBlackoutOpacity={draftBlackoutOpacity}
-        setDraftBlackoutOpacity={setDraftBlackoutOpacity}
-        searchQuery={searchQuery}
-        searchResults={searchResults}
-        searchStatus={searchStatus}
-        onSearchInput={handleSearchInput}
-        onSelectCity={handleSelectCity}
-        onClearCity={() => {
-          setSelectedCity(null);
-          setSearchQuery('');
-          setSearchStatus('idle');
-        }}
-        selectedCity={selectedCity}
-        onGeolocate={geolocate}
-        onExportSettings={exportSettings}
-        onImportSettings={importSettings}
-        onResetSettings={resetSettings}
-        onPrintSchedule={() => {
-          setShowSett(false);
-          setShowPrint(true);
-        }}
-        cityNow={cityNow}
-        cityTz={cityTz}
-        currentLocName={locName}
-        currentLat={lat}
-        currentLng={lng}
-        todayTimes={todayTimes}
-      />
+      {showSett && (
+        <SettingsPanel
+          onCancel={() => setShowSett(false)}
+          onApply={applySettings}
+          draftMethod={draftMethod}
+          setDraftMethod={setDraftMethod}
+          draftAsr={draftAsr}
+          setDraftAsr={setDraftAsr}
+          draftIqamah={draftIqamah}
+          setDraftIqamah={setDraftIqamah}
+          draftIqamahAutoCalc={draftIqamahAutoCalc}
+          setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
+          draftIqamahAutoBuffers={draftIqamahAutoBuffers}
+          setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
+          draftJumuah={draftJumuah}
+          setDraftJumuah={setDraftJumuah}
+          draftEidFitr={draftEidFitr}
+          setDraftEidFitr={setDraftEidFitr}
+          draftEidAdha={draftEidAdha}
+          setDraftEidAdha={setDraftEidAdha}
+          draftEidDays={draftEidDays}
+          setDraftEidDays={setDraftEidDays}
+          draftHijri={draftHijri}
+          setDraftHijri={setDraftHijri}
+          draftHighLat={draftHighLat}
+          setDraftHighLat={setDraftHighLat}
+          draftTheme={draftTheme}
+          setDraftTheme={setDraftTheme}
+          draftChimeAdhan={draftChimeAdhan}
+          setDraftChimeAdhan={setDraftChimeAdhan}
+          draftChimeIqamah={draftChimeIqamah}
+          setDraftChimeIqamah={setDraftChimeIqamah}
+          draftFontScale={draftFontScale}
+          setDraftFontScale={setDraftFontScale}
+          draftProgress={draftProgress}
+          setDraftProgress={setDraftProgress}
+          draftMasjid={draftMasjid}
+          setDraftMasjid={setDraftMasjid}
+          draftLogo={draftLogo}
+          setDraftLogo={setDraftLogo}
+          draftLang={draftLang}
+          setDraftLang={setDraftLang}
+          draftAnnouncements={draftAnnouncements}
+          setDraftAnnouncements={setDraftAnnouncements}
+          draftBlackoutEnabled={draftBlackoutEnabled}
+          setDraftBlackoutEnabled={setDraftBlackoutEnabled}
+          draftBlackoutDurations={draftBlackoutDurations}
+          setDraftBlackoutDurations={setDraftBlackoutDurations}
+          draftBlackoutOpacity={draftBlackoutOpacity}
+          setDraftBlackoutOpacity={setDraftBlackoutOpacity}
+          searchQuery={searchQuery}
+          searchResults={searchResults}
+          searchStatus={searchStatus}
+          onSearchInput={handleSearchInput}
+          onSelectCity={handleSelectCity}
+          onClearCity={() => {
+            setSelectedCity(null);
+            setSearchQuery('');
+            setSearchStatus('idle');
+          }}
+          selectedCity={selectedCity}
+          onGeolocate={geolocate}
+          onExportSettings={exportSettings}
+          onImportSettings={importSettings}
+          onResetSettings={resetSettings}
+          onPrintSchedule={() => {
+            setShowSett(false);
+            setShowPrint(true);
+          }}
+          cityNow={cityNow}
+          cityTz={cityTz}
+          currentLocName={locName}
+          currentLat={lat}
+          currentLng={lng}
+          todayTimes={todayTimes}
+        />
+      )}
 
       {/* Blackout overlay — full-viewport during salah. Rendered LAST so its
           z-index sits above everything else including PinOverlay/SettingsPanel.

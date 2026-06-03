@@ -86,6 +86,8 @@
   "settings.progress.hero.sub": "Countdown only",
   "settings.progress.line": "Line",
   "settings.progress.line.sub": "Thin bar + %",
+  "settings.progress.orbit": "Orbit",
+  "settings.progress.orbit.sub": "Prayer markers ring",
   "settings.beep": "Prayer Beep",
   "settings.beep.test": "Test Beep",
   "settings.beep.desc": "Plays at adhan and iqamah times for each prayer",

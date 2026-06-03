@@ -176,6 +176,73 @@ function ProgressLine({ ringProgress }) {
   );
 }
 
+/** Prayer Orbit — circular progress with prayer-time markers around the ring. */
+function ProgressOrbit({ ringProgress, prayers, todayTimes, tomorrowTimes, now }) {
+  const start = todayTimes?.fajr;
+  const end = tomorrowTimes?.fajr;
+  if (!start || !end) return null;
+
+  const total = end - start;
+  if (total <= 0) return null;
+
+  const radius = 48;
+  const cx = 60;
+  const cy = 60;
+  const circ = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(1, ringProgress));
+  const offset = circ * (1 - clamped);
+  const pct = Math.round(clamped * 100);
+  const nowAngle = clamped * 360 - 90;
+  const nowRad = (nowAngle * Math.PI) / 180;
+  const nowX = cx + Math.cos(nowRad) * radius;
+  const nowY = cy + Math.sin(nowRad) * radius;
+
+  const markers = prayers
+    .filter((p) => p.key !== 'sunrise')
+    .map((p) => {
+      const t = todayTimes[p.key];
+      if (!t) return null;
+      const frac = (t - start) / total;
+      if (frac < 0 || frac > 1) return null;
+      const angle = frac * 360 - 90;
+      const rad = (angle * Math.PI) / 180;
+      return {
+        key: p.key,
+        x: cx + Math.cos(rad) * radius,
+        y: cy + Math.sin(rad) * radius,
+        past: t <= now,
+      };
+    })
+    .filter(Boolean);
+
+  return (
+    <div className="orbit-wrap">
+      <svg className="orbit-svg" viewBox="0 0 120 120" aria-hidden="true">
+        <circle cx={cx} cy={cy} r={radius} className="orbit-track" />
+        <circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          className="orbit-progress"
+          strokeDasharray={circ.toFixed(1)}
+          strokeDashoffset={offset.toFixed(1)}
+        />
+        {markers.map((m) => (
+          <circle
+            key={m.key}
+            cx={m.x.toFixed(1)}
+            cy={m.y.toFixed(1)}
+            r="2.4"
+            className={`orbit-marker${m.past ? ' orbit-marker--past' : ''}`}
+          />
+        ))}
+        <circle cx={nowX.toFixed(1)} cy={nowY.toFixed(1)} r="4" className="orbit-now" />
+      </svg>
+      <div className="orbit-text">{pct}% elapsed</div>
+    </div>
+  );
+}
+
 /** Dispatcher — picks the right inner component based on the style prop. */
 export default function ProgressVisual({
   style,
@@ -203,6 +270,16 @@ export default function ProgressVisual({
       return <ProgressHero />;
     case 'line':
       return <ProgressLine ringProgress={ringProgress} />;
+    case 'orbit':
+      return (
+        <ProgressOrbit
+          ringProgress={ringProgress}
+          prayers={prayers}
+          todayTimes={todayTimes}
+          tomorrowTimes={tomorrowTimes}
+          now={now}
+        />
+      );
     case 'ring':
     default:
       return <ProgressRing ringProgress={ringProgress} />;

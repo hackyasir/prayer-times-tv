@@ -26,6 +26,7 @@
 
 import { createContext, useContext, useState, useCallback } from 'react';
 import { STORAGE_KEY } from '../lib/constants.js';
+import { normalizeImportedSettings } from '../lib/settingsImport.js';
 
 // ── Defaults & localStorage helpers ──────────────────────────────────────────
 //
@@ -134,77 +135,8 @@ function loadSettings() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
     const stored = JSON.parse(raw);
-
-    // ── Legacy migration: chimeEnabled → chimeAdhan + chimeIqamah ─────────
-    // Pre-split builds had a single `chimeEnabled` flag that controlled both
-    // adhan and iqamah beeps. If we find that key in storage and the new
-    // split keys aren't present, map the old value to both new fields so
-    // users don't lose their preference on upgrade. After migration, the
-    // old key is harmless (just ignored), so we don't actively delete it.
-    if ('chimeEnabled' in stored && !('chimeAdhan' in stored) && !('chimeIqamah' in stored)) {
-      stored.chimeAdhan = !!stored.chimeEnabled;
-      stored.chimeIqamah = !!stored.chimeEnabled;
-    }
-
-    // ── Legacy migration: single `eid` array → eidFitr + eidAdha ──────────
-    // Pre-Hijri-auto-detection builds had ONE `eid` array with `enabled` and
-    // `label` per slot. The label distinguished Fitr vs Adha; staff toggled
-    // `enabled` manually around each Eid.
-    //
-    // The new system has TWO separate arrays (eidFitr + eidAdha) and uses
-    // the Hijri calendar to auto-detect which Eid is approaching. So we
-    // migrate the old `eid` array by:
-    //   - Looking at the FIRST slot's label to guess which Eid the user
-    //     was configuring most recently
-    //   - Putting all slots (stripped of `enabled` + `label`) into that
-    //     Eid's new array
-    //   - Leaving the OTHER Eid at DEFAULTS values
-    if (
-      'eid' in stored &&
-      Array.isArray(stored.eid) &&
-      !('eidFitr' in stored) &&
-      !('eidAdha' in stored)
-    ) {
-      const cleanedSlots = stored.eid.map((e) => ({
-        time: e.time || '',
-        enabled: e.enabled !== false, // preserve original enabled flag
-      }));
-      const guessedKind = stored.eid[0]?.label?.toLowerCase().includes('adha') ? 'adha' : 'fitr';
-      if (guessedKind === 'adha') {
-        stored.eidAdha = cleanedSlots;
-        stored.eidFitr = DEFAULTS.eidFitr;
-      } else {
-        stored.eidFitr = cleanedSlots;
-        stored.eidAdha = DEFAULTS.eidAdha;
-      }
-    }
-
-    // ── Legacy migration: jumuah slots with iqamah → time-only slots ─────
-    // New model stores only adhan/congregation time for Jumu'ah.
-    // Older saved shapes may include {iqamah}. Strip it while preserving
-    // enabled/time values and slot order.
-    if (Array.isArray(stored.jumuah)) {
-      stored.jumuah = stored.jumuah.map((slot) => ({
-        time: slot?.time || '',
-        enabled: slot?.enabled !== false,
-      }));
-    }
-
-    // ── Legacy migration: eidFitr/eidAdha slots with iqamah → time-only ──
-    if (Array.isArray(stored.eidFitr)) {
-      stored.eidFitr = stored.eidFitr.map((slot) => ({
-        time: slot?.time || '',
-        enabled: slot?.enabled !== false,
-      }));
-    }
-    if (Array.isArray(stored.eidAdha)) {
-      stored.eidAdha = stored.eidAdha.map((slot) => ({
-        time: slot?.time || '',
-        enabled: slot?.enabled !== false,
-      }));
-    }
-
-    return { ...DEFAULTS, ...stored };
+    const normalized = normalizeImportedSettings(stored, DEFAULTS);
+    return normalized.ok ? normalized.value : DEFAULTS;
   } catch {
     return DEFAULTS;
   }

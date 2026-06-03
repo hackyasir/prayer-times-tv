@@ -154,6 +154,7 @@
   margin-top: 0.3vh;
   font-weight: 700;
 }
+
 /* ── Ring progress animation ─────────────────────────────────────────────── */
 /* Used by ProgressVisual's <ProgressRing/>. Smooth dashoffset transition
  * so the progress ring sweeps gradually instead of jumping each second. */
@@ -182,12 +183,10 @@
   left: 0;
   top: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    var(--t-accent-dim) 0%,
-    var(--t-accent) 50%,
-    var(--t-accent-hi) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--t-accent-dim) 0%,
+      var(--t-accent) 50%,
+      var(--t-accent-hi) 100%);
   border-radius: var(--radius-full);
   transition: width 60s linear;
 }
@@ -204,6 +203,7 @@
   background: var(--t-accent);
   opacity: 0.9;
 }
+
 .daybar-marker--past {
   background: var(--t-accent-dim);
   opacity: 0.4;
@@ -240,6 +240,7 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+
 .daybar-label--past {
   color: var(--t-text-dim);
 }
@@ -289,6 +290,62 @@
   color: var(--t-text-dim);
   margin-top: 2px;
   text-align: center;
+}
+
+/* ── Prayer Orbit progress visual ───────────────────────────────────────── */
+/* Circular determinate tracker with prayer markers around the perimeter.
+ * Keeps motion calm (dashoffset only) and preserves textual percentage. */
+.orbit-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0.4vh 0;
+}
+
+.orbit-svg {
+  width: clamp(86px, 9.5vw, 150px);
+  height: clamp(86px, 9.5vw, 150px);
+  overflow: visible;
+}
+
+.orbit-track {
+  fill: none;
+  stroke: rgba(var(--t-accent-rgb), 0.15);
+  stroke-width: 4;
+}
+
+.orbit-progress {
+  fill: none;
+  stroke: var(--t-accent-hi);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-origin: 60px 60px;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 1s linear;
+}
+
+.orbit-marker {
+  fill: var(--t-accent);
+  opacity: 0.9;
+}
+
+.orbit-marker--past {
+  fill: var(--t-accent-dim);
+  opacity: 0.45;
+}
+
+.orbit-now {
+  fill: var(--t-accent-hi);
+  filter: drop-shadow(0 0 6px var(--t-accent));
+}
+
+.orbit-text {
+  margin-top: 3px;
+  font-size: calc(clamp(0.46rem, 0.7vw, 0.75rem) * var(--t-fs, 1));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
 }
 
 /* ── Clock time row + complete message ────────────────────────────────────
