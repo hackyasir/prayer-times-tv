@@ -4,6 +4,7 @@ import { THEMES } from './themes.js';
 const ALLOWED_METHODS = new Set(Object.keys(METHOD_LABELS));
 const ALLOWED_THEMES = new Set(Object.keys(THEMES));
 const ALLOWED_LANGS = new Set(['en', 'ar', 'ur']);
+const ALLOWED_TICKER_MODES = new Set(['scroll', 'static']);
 const ALLOWED_PROGRESS = new Set(['ring', 'daybar', 'moon', 'hero', 'line', 'orbit']);
 const ALLOWED_HIGH_LAT_RULES = new Set(['middleOfNight', 'seventhOfNight', 'twilightAngle']);
 
@@ -117,6 +118,7 @@ export function normalizeImportedSettings(raw, defaults) {
         ? source.highLatRule
         : defaults.highLatRule,
     theme: toStringValue(source.theme) && ALLOWED_THEMES.has(source.theme) ? source.theme : defaults.theme,
+    ecoMode: toBoolean(source.ecoMode) ?? defaults.ecoMode,
     chimeAdhan: toBoolean(source.chimeAdhan) ?? defaults.chimeAdhan,
     chimeIqamah: toBoolean(source.chimeIqamah) ?? defaults.chimeIqamah,
     fontScale: Math.min(130, Math.max(70, toFiniteNumber(source.fontScale) ?? defaults.fontScale)),
@@ -125,7 +127,16 @@ export function normalizeImportedSettings(raw, defaults) {
         ? source.progressStyle
         : defaults.progressStyle,
     lang: toStringValue(source.lang) && ALLOWED_LANGS.has(source.lang) ? source.lang : defaults.lang,
+    autoAnnouncements: toBoolean(source.autoAnnouncements) ?? defaults.autoAnnouncements,
     announcements: toStringValue(source.announcements) ?? defaults.announcements,
+    tickerMode:
+      toStringValue(source.tickerMode) && ALLOWED_TICKER_MODES.has(source.tickerMode)
+        ? source.tickerMode
+        : defaults.tickerMode,
+    tickerStaticSeconds: Math.min(
+      30,
+      Math.max(3, toFiniteNumber(source.tickerStaticSeconds) ?? defaults.tickerStaticSeconds)
+    ),
     blackoutEnabled: toBoolean(source.blackoutEnabled) ?? defaults.blackoutEnabled,
     blackoutLeadSeconds:
       Math.min(300, Math.max(0, toFiniteNumber(source.blackoutLeadSeconds) ?? defaults.blackoutLeadSeconds)),

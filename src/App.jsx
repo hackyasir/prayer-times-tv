@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
-import { toHijri, findUpcomingEid } from './lib/hijri.js';
-import { addMins } from './lib/formatters.js';
+import { toHijri, toHijriParts, findUpcomingEid } from './lib/hijri.js';
+import { addMins, fmt12 } from './lib/formatters.js';
 import { computeIqamah } from './lib/iqamah.js';
 import { findNonAscendingSlot, buildOrderErrorMessage } from './lib/scheduleValidation.js';
 import { normalizeImportedSettings } from './lib/settingsImport.js';
@@ -19,7 +19,7 @@ import useBlackoutMode from './hooks/useBlackoutMode.js';
 
 // Settings context — wraps applied + draft state, persists to localStorage
 import { useSettings, DEFAULTS } from './context/SettingsContext.jsx';
-import { useT } from './i18n/I18nContext.jsx';
+import { useT, fmtStr } from './i18n/I18nContext.jsx';
 
 // Visual components — extracted to their own files
 import Header from './components/Header.jsx';
@@ -105,11 +105,15 @@ export default function App() {
     iqamahAutoBuffers,
     hijriOffset,
     theme,
+    ecoMode,
     chimeAdhan,
     chimeIqamah,
     fontScale,
     progressStyle,
+    autoAnnouncements,
     announcements,
+    tickerMode,
+    tickerStaticSeconds,
     blackoutEnabled,
     blackoutLeadSeconds,
     blackoutDurations,
@@ -136,12 +140,16 @@ export default function App() {
   const draftHijri = drafts.hijriOffset;
   const draftHighLat = drafts.highLatRule;
   const draftTheme = drafts.theme;
+  const draftEcoMode = drafts.ecoMode;
   const draftChimeAdhan = drafts.chimeAdhan;
   const draftChimeIqamah = drafts.chimeIqamah;
   const draftFontScale = drafts.fontScale;
   const draftProgress = drafts.progressStyle;
   const draftLang = drafts.lang;
+  const draftAutoAnnouncements = drafts.autoAnnouncements;
   const draftAnnouncements = drafts.announcements;
+  const draftTickerMode = drafts.tickerMode;
+  const draftTickerStaticSeconds = drafts.tickerStaticSeconds;
   const draftBlackoutEnabled = drafts.blackoutEnabled;
   const draftBlackoutDurations = drafts.blackoutDurations;
   const draftBlackoutOpacity = drafts.blackoutOpacity;
@@ -183,6 +191,8 @@ export default function App() {
     }));
   const setDraftTheme = (v) =>
     updateDrafts((prev) => ({ ...prev, theme: typeof v === 'function' ? v(prev.theme) : v }));
+  const setDraftEcoMode = (v) =>
+    updateDrafts((prev) => ({ ...prev, ecoMode: typeof v === 'function' ? v(prev.ecoMode) : v }));
   const setDraftChimeAdhan = (v) =>
     updateDrafts((prev) => ({
       ...prev,
@@ -205,10 +215,25 @@ export default function App() {
     }));
   const setDraftLang = (v) =>
     updateDrafts((prev) => ({ ...prev, lang: typeof v === 'function' ? v(prev.lang) : v }));
+  const setDraftAutoAnnouncements = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      autoAnnouncements: typeof v === 'function' ? v(prev.autoAnnouncements) : v,
+    }));
   const setDraftAnnouncements = (v) =>
     updateDrafts((prev) => ({
       ...prev,
       announcements: typeof v === 'function' ? v(prev.announcements) : v,
+    }));
+  const setDraftTickerMode = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      tickerMode: typeof v === 'function' ? v(prev.tickerMode) : v,
+    }));
+  const setDraftTickerStaticSeconds = (v) =>
+    updateDrafts((prev) => ({
+      ...prev,
+      tickerStaticSeconds: typeof v === 'function' ? v(prev.tickerStaticSeconds) : v,
     }));
   const setDraftBlackoutEnabled = (v) =>
     updateDrafts((prev) => ({
@@ -620,6 +645,201 @@ export default function App() {
     ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > now) ?? null)
     : null;
 
+  const autoAnnouncementText = (() => {
+    if (!autoAnnouncements) return '';
+
+    const lines = [];
+    const seen = new Set();
+    const pushLine = (line) => {
+      const text = (line || '').trim();
+      if (!text || seen.has(text)) return;
+      seen.add(text);
+      lines.push(text);
+    };
+
+    const splitHM = (totalMinutes) => {
+      const mins = Math.max(0, totalMinutes);
+      return { h: Math.floor(mins / 60), m: mins % 60 };
+    };
+
+    const nowHijriDate = new Date(cityNow);
+    nowHijriDate.setDate(nowHijriDate.getDate() + hijriOffset);
+    const tomorrowHijriDate = new Date(nowHijriDate);
+    tomorrowHijriDate.setDate(tomorrowHijriDate.getDate() + 1);
+
+    const todayHijri = toHijriParts(nowHijriDate);
+    const tomorrowHijri = toHijriParts(tomorrowHijriDate);
+    const todayWeekday = cityNow.getDay();
+    const tomorrowWeekday = (todayWeekday + 1) % 7;
+
+    const isWhiteDay = todayHijri.d >= 13 && todayHijri.d <= 15;
+    const isTomorrowWhiteDay = tomorrowHijri.d >= 13 && tomorrowHijri.d <= 15;
+    if (isWhiteDay) {
+      pushLine(
+        fmtStr(t('auto.announcement.whiteDaysToday'), {
+          day: String(todayHijri.d),
+        })
+      );
+    } else if (isTomorrowWhiteDay) {
+      pushLine(
+        fmtStr(t('auto.announcement.whiteDaysTomorrow'), {
+          day: String(tomorrowHijri.d),
+        })
+      );
+    }
+
+    // Monday/Thursday Sunnah fast awareness (city-local weekday)
+    if (todayWeekday === 1) {
+      pushLine(t('auto.announcement.sunnahMondayToday'));
+    } else if (todayWeekday === 4) {
+      pushLine(t('auto.announcement.sunnahThursdayToday'));
+    } else if (tomorrowWeekday === 1) {
+      pushLine(t('auto.announcement.sunnahMondayTomorrow'));
+    } else if (tomorrowWeekday === 4) {
+      pushLine(t('auto.announcement.sunnahThursdayTomorrow'));
+    }
+
+    // Key annual Sunnah fast awareness by Hijri date (with local offset)
+    // Arafah: 9 Dhu al-Hijjah (month 12)
+    if (todayHijri.m === 12 && todayHijri.d === 9) {
+      pushLine(`! ${t('auto.announcement.arafahToday')}`);
+    } else if (tomorrowHijri.m === 12 && tomorrowHijri.d === 9) {
+      pushLine(`! ${t('auto.announcement.arafahTomorrow')}`);
+    }
+
+    // Ashura / Tasu'a: 10 and 9 Muharram (month 1)
+    if (todayHijri.m === 1 && todayHijri.d === 9) {
+      pushLine(t('auto.announcement.tasuaToday'));
+    } else if (todayHijri.m === 1 && todayHijri.d === 10) {
+      pushLine(`! ${t('auto.announcement.ashuraToday')}`);
+    } else if (tomorrowHijri.m === 1 && tomorrowHijri.d === 9) {
+      pushLine(t('auto.announcement.tasuaTomorrow'));
+    } else if (tomorrowHijri.m === 1 && tomorrowHijri.d === 10) {
+      pushLine(`! ${t('auto.announcement.ashuraTomorrow')}`);
+    }
+
+    // Shawwal six voluntary fasts reminder: month 10 after Eid day
+    if (todayHijri.m === 10 && todayHijri.d >= 2 && todayHijri.d <= 29) {
+      pushLine(t('auto.announcement.shawwalWindow'));
+    }
+
+    if (active?.key) {
+      const prayerLabel = t(`prayer.${active.key}`) || active.en || '';
+      pushLine(fmtStr(t('auto.announcement.nowInPrayer'), { prayer: prayerLabel }));
+    }
+
+    if (next && Number.isFinite(secsToNext)) {
+      const { h, m } = splitHM(Math.floor(secsToNext / 60));
+      const prayerLabel = t(`prayer.${next.key}`) || next.en || '';
+      pushLine(
+        fmtStr(t('auto.announcement.nextPrayer'), {
+          prayer: prayerLabel,
+          h: String(h),
+          m: String(m),
+        })
+      );
+    }
+
+    const congregationCandidates = [];
+
+    if (showEidBanner && nextEid) {
+      congregationCandidates.push({
+        key: 'eid',
+        time: nextEid,
+        label: t('prayer.eid'),
+      });
+    }
+
+    if (isFridayEffective && nextJumuah) {
+      congregationCandidates.push({
+        key: 'jumuah',
+        time: nextJumuah,
+        label: t('prayer.jumuah'),
+      });
+    }
+
+    for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+      if (isFridayEffective && key === 'dhuhr') continue;
+      const adhan = todayTimes?.[key];
+      if (!adhan) continue;
+      const iqamahAt = addMins(adhan, iqamah?.[key] ?? 0);
+      if (!iqamahAt || iqamahAt <= now) continue;
+      congregationCandidates.push({
+        key,
+        time: iqamahAt,
+        label: t(`prayer.${key}`),
+      });
+    }
+
+    congregationCandidates.sort((a, b) => a.time - b.time);
+    const nextCongregation = congregationCandidates[0] || null;
+
+    if (nextCongregation) {
+      const minsAway = Math.max(0, Math.floor((nextCongregation.time - now) / 60000));
+      const { h, m } = splitHM(minsAway);
+      const urgentPrefix = minsAway <= 10 ? '! ' : '';
+      pushLine(
+        `${urgentPrefix}${fmtStr(t('auto.announcement.nextCongregation'), {
+          prayer: nextCongregation.label,
+          time: fmt12(nextCongregation.time, cityTz),
+          h: String(h),
+          m: String(m),
+        })}`
+      );
+    }
+
+    if (blackout?.active && blackout?.endsAt) {
+      const minsLeft = Math.max(0, Math.ceil((blackout.endsAt - now) / 60000));
+      const { h, m } = splitHM(minsLeft);
+      pushLine(
+        `! ${fmtStr(t('auto.announcement.blackoutActive'), {
+          time: fmt12(blackout.endsAt, cityTz),
+          h: String(h),
+          m: String(m),
+        })}`
+      );
+    }
+
+    if (isFridayEffective && activeJumuahSlots.length > 0) {
+      const times = activeJumuahSlots
+        .map((slot) => fmt12(jumuahDate(slot.time), cityTz))
+        .join(' • ');
+      pushLine(fmtStr(t('auto.announcement.jumuahToday'), { times }));
+    }
+
+    if (showEidBanner && upcomingEid?.kind) {
+      if (upcomingEid.daysUntil > 0) {
+        const eidLabel =
+          upcomingEid.kind === 'fitr' ? t('auto.eid.fitr') : t('auto.eid.adha');
+        pushLine(
+          fmtStr(t('auto.announcement.eidInDays'), {
+            eid: eidLabel,
+            days: String(upcomingEid.daysUntil),
+          })
+        );
+      } else {
+        const times = activeEidSlots
+          .map((slot) => fmt12(eidDate(slot.time), cityTz))
+          .join(' • ');
+        pushLine(fmtStr(t('auto.announcement.eidToday'), { times }));
+      }
+    }
+
+    if (upcomingEid?.kind && upcomingEid.daysUntil === 0) {
+      const eidLabel = upcomingEid.kind === 'fitr' ? t('auto.eid.fitr') : t('auto.eid.adha');
+      pushLine(`! ${fmtStr(t('auto.announcement.eidGreeting'), { eid: eidLabel })}`);
+    }
+
+    return lines.join('\n');
+  })();
+
+  const manualAnnouncements = (announcements || '').trim();
+  const mergedAnnouncements = autoAnnouncementText
+    ? manualAnnouncements
+      ? `${autoAnnouncementText}\n${manualAnnouncements}`
+      : autoAnnouncementText
+    : manualAnnouncements;
+
   // Hook: fire adhan/iqamah beep at the right times. Each flag gates its
   // own event type — caller can have either, both, or neither enabled.
   useChime({
@@ -944,7 +1164,7 @@ export default function App() {
 
   return (
     <>
-      <div className="app" style={{ '--t-fs': fontScale / 100 }}>
+      <div className={`app${ecoMode ? ' app--eco' : ''}`} style={{ '--t-fs': fontScale / 100 }}>
         {/* Islamic Geometry Engine — parametric, real-time */}
         <IslamicGeometryEngine
           activePrayer={testPrayer || active?.key || 'fajr'}
@@ -952,6 +1172,7 @@ export default function App() {
           minutesToNext={secsToNext ? Math.floor(secsToNext / 60) : 60}
           lunarPhase={lunarPhase}
           theme={theme}
+          ecoMode={ecoMode}
         />
         <div className="corner tl" />
         <div className="corner tr" />
@@ -1048,7 +1269,11 @@ export default function App() {
 
         {/* App footer — outside .grid, always at bottom of .app */}
         <div className="app-footer">
-          <Ticker announcements={announcements} />
+          <Ticker
+            announcements={mergedAnnouncements}
+            mode={tickerMode}
+            staticSeconds={tickerStaticSeconds}
+          />
           <Footer
             showTestBtns={SHOW_TEST_BTNS}
             testFriday={testFriday}
@@ -1159,6 +1384,8 @@ export default function App() {
           setDraftHighLat={setDraftHighLat}
           draftTheme={draftTheme}
           setDraftTheme={setDraftTheme}
+          draftEcoMode={draftEcoMode}
+          setDraftEcoMode={setDraftEcoMode}
           draftChimeAdhan={draftChimeAdhan}
           setDraftChimeAdhan={setDraftChimeAdhan}
           draftChimeIqamah={draftChimeIqamah}
@@ -1173,8 +1400,14 @@ export default function App() {
           setDraftLogo={setDraftLogo}
           draftLang={draftLang}
           setDraftLang={setDraftLang}
+          draftAutoAnnouncements={draftAutoAnnouncements}
+          setDraftAutoAnnouncements={setDraftAutoAnnouncements}
           draftAnnouncements={draftAnnouncements}
           setDraftAnnouncements={setDraftAnnouncements}
+          draftTickerMode={draftTickerMode}
+          setDraftTickerMode={setDraftTickerMode}
+          draftTickerStaticSeconds={draftTickerStaticSeconds}
+          setDraftTickerStaticSeconds={setDraftTickerStaticSeconds}
           draftBlackoutEnabled={draftBlackoutEnabled}
           setDraftBlackoutEnabled={setDraftBlackoutEnabled}
           draftBlackoutDurations={draftBlackoutDurations}

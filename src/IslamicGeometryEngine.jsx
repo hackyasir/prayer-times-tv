@@ -331,6 +331,7 @@ export default function IslamicGeometryEngine({
   minutesToNext = 60,
   lunarPhase = 0.5,
   theme = 'Classic Gold',
+  ecoMode = false,
 }) {
   const svgRef = useRef(null);
   const [size, setSize] = useState({ W: 1920, H: 1080 });
@@ -354,6 +355,7 @@ export default function IslamicGeometryEngine({
   const accent = themePal.hi; // brightest theme colour for fine stroke details
 
   // master opacity — visible but non-intrusive background art
+  const ecoScalar = ecoMode ? 0.72 : 1;
   const masterOp =
     sunElevation > 0
       ? lerp(0.18, 0.26, clamp(sunElevation / 90, 0, 1))
@@ -420,6 +422,7 @@ export default function IslamicGeometryEngine({
     <svg
       ref={svgRef}
       aria-hidden="true"
+      className="geometry-engine"
       style={{
         position: 'absolute',
         inset: 0,
@@ -450,7 +453,7 @@ export default function IslamicGeometryEngine({
         </filter>
       </defs>
 
-      <g opacity={masterOp}>
+      <g opacity={masterOp * ecoScalar}>
         {/* ── Girih lattice — geometric backbone, drawn first (deepest) ── */}
         {lw.lattice > 0 && (
           <g

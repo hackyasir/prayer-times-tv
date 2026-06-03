@@ -256,6 +256,210 @@
   background: rgba(var(--t-accent-rgb), 0.1);
 }
 
+/* ── Announcements editor enhancements ──────────────────────────────────── */
+.ann-chip {
+  background: rgba(var(--t-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--t-accent-rgb), 0.25);
+  border-radius: var(--radius-full);
+  color: var(--t-accent);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(12px * var(--t-fs, 1));
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ann-chip:hover {
+  background: rgba(var(--t-accent-rgb), 0.16);
+}
+
+.ann-date {
+  background: var(--t-surface2);
+  border: 1px solid var(--t-border);
+  border-radius: var(--radius-sm);
+  color: var(--t-text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: calc(12px * var(--t-fs, 1));
+  padding: 5px 8px;
+}
+
+.ann-preview {
+  margin-top: 10px;
+  border: 1px solid var(--t-border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ann-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ann-preview-add {
+  border: 1px solid rgba(var(--t-accent-rgb), 0.35);
+  background: rgba(var(--t-accent-rgb), 0.08);
+  color: var(--t-accent-hi);
+  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  font-size: calc(18px * var(--t-fs, 1));
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ann-editor-row {
+  border: 1px solid rgba(var(--t-accent-rgb), 0.16);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  background: rgba(var(--t-accent-rgb), 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.ann-editor-row.is-expired {
+  opacity: 0.6;
+}
+
+.ann-row-meta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.ann-icon-toggle {
+  border: 1px solid rgba(var(--t-accent-rgb), 0.35);
+  background: var(--t-surface2);
+  color: var(--t-accent);
+  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  font-size: calc(16px * var(--t-fs, 1));
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ann-icon-toggle.is-on {
+  border-color: rgba(255, 107, 107, 0.45);
+  color: #ffd5d5;
+  background: rgba(255, 107, 107, 0.2);
+}
+
+.ann-expiry-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ann-expiry-wrap.is-expired .ann-expiry-icon {
+  color: #ffd8ad;
+}
+
+.ann-expiry-icon {
+  color: var(--t-text-dim);
+  font-size: calc(12px * var(--t-fs, 1));
+  font-weight: 700;
+}
+
+.ann-row-remove {
+  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
+  background: var(--t-surface2);
+  color: var(--t-accent);
+  border-radius: var(--radius-sm);
+  width: 30px;
+  height: 30px;
+  font-size: calc(18px * var(--t-fs, 1));
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ann-row-remove {
+  color: #ffbfbf;
+  border-color: rgba(255, 107, 107, 0.35);
+}
+
+.ann-row-input {
+  min-width: 0;
+}
+
+.ann-row-date {
+  min-width: 0;
+  width: 100%;
+}
+
+.ann-preview-title {
+  font-size: calc(11px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.ann-preview-empty {
+  font-size: calc(12px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+}
+
+.ann-preview-item {
+  border: 1px solid rgba(var(--t-accent-rgb), 0.16);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  background: rgba(var(--t-accent-rgb), 0.05);
+}
+
+.ann-preview-item.is-expired {
+  opacity: 0.6;
+}
+
+.ann-preview-text {
+  font-size: calc(14px * var(--t-fs, 1));
+  color: var(--t-text);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.ann-preview-tags {
+  margin-top: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  grid-column: 1 / -1;
+}
+
+.ann-tag {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(var(--t-accent-rgb), 0.35);
+  border-radius: var(--radius-full);
+  color: var(--t-accent-hi);
+  font-size: calc(10px * var(--t-fs, 1));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+}
+
+.ann-tag-urgent {
+  border-color: rgba(255, 107, 107, 0.45);
+  color: #ffd5d5;
+  background: rgba(255, 107, 107, 0.16);
+}
+
+.ann-tag-expired {
+  border-color: rgba(255, 180, 120, 0.45);
+  color: #ffd8ad;
+  background: rgba(255, 180, 120, 0.12);
+}
+
 /* ── Tab strip (within settings panel) ─────────────────────────────────────
  *
  * Horizontal navigation across the Settings panel, organizing ~15 setting
