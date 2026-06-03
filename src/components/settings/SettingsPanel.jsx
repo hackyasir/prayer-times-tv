@@ -36,12 +36,60 @@ import NumberStepper from '../NumberStepper.jsx';
 import LogoUploader from './LogoUploader.jsx';
 
 const TAB_ORDER = ['display', 'location', 'prayerTimes', 'iqamah', 'behaviour'];
+const EXP_TOKEN = /^@(\d{4}-\d{2}-\d{2})$/;
+
+function parseRawAnnouncements(raw) {
+  const lines = (raw || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  return lines.map((line) => {
+    const tokens = line.split(/\s+/);
+    let urgent = false;
+    let expiresOn = '';
+    let cursor = 0;
+
+    while (cursor < tokens.length) {
+      const token = tokens[cursor];
+      if (token === '!') {
+        urgent = true;
+        cursor += 1;
+        continue;
+      }
+      const exp = token.match(EXP_TOKEN);
+      if (exp) {
+        expiresOn = exp[1];
+        cursor += 1;
+        continue;
+      }
+      break;
+    }
+
+    return {
+      text: tokens.slice(cursor).join(' ').trim(),
+      urgent,
+      expiresOn,
+    };
+  });
+}
+
+function serializeAnnouncements(rows) {
+  return (rows || [])
+    .map((row) => {
+      const text = (row?.text || '').trim();
+      if (!text) return '';
+      const parts = [];
+      if (row?.urgent) parts.push('!');
+      if (row?.expiresOn) parts.push(`@${row.expiresOn}`);
+      parts.push(text);
+      return parts.join(' ');
+    })
+    .filter(Boolean)
+    .join('\n');
+}
 
 export default function SettingsPanel({
   // Lifecycle
   onCancel,
   onApply,
-  // Draft state (all 11 settings drafts)
+  // Draft state (all 12 persistent settings drafts)
   draftMethod,
   setDraftMethod,
   draftAsr,
@@ -66,6 +114,8 @@ export default function SettingsPanel({
   setDraftHighLat,
   draftTheme,
   setDraftTheme,
+  draftEcoMode,
+  setDraftEcoMode,
   draftChimeAdhan,
   setDraftChimeAdhan,
   draftChimeIqamah,
@@ -80,8 +130,14 @@ export default function SettingsPanel({
   setDraftLogo,
   draftLang,
   setDraftLang,
+  draftAutoAnnouncements,
+  setDraftAutoAnnouncements,
   draftAnnouncements,
   setDraftAnnouncements,
+  draftTickerMode,
+  setDraftTickerMode,
+  draftTickerStaticSeconds,
+  setDraftTickerStaticSeconds,
   draftBlackoutEnabled,
   setDraftBlackoutEnabled,
   draftBlackoutDurations,
@@ -184,6 +240,10 @@ export default function SettingsPanel({
   // import attempt (success or parse error). Auto-clears after 3 seconds.
   const fileInputRef = useRef(null);
   const [importMsg, setImportMsg] = useState(null); // { ok: bool, text: str } | null
+  const [announcementRows, setAnnouncementRows] = useState(() => {
+    const parsed = parseRawAnnouncements(draftAnnouncements);
+    return parsed.length ? parsed : [{ text: '', urgent: false, expiresOn: '' }];
+  });
 
   // Reset confirmation — 2-click pattern to avoid accidental wipes. First
   // click puts the button into "confirm?" state; second click within 5s
@@ -202,6 +262,64 @@ export default function SettingsPanel({
     setResetConfirming(false);
     onResetSettings?.();
   }
+
+  useEffect(() => {
+    const parsed = parseRawAnnouncements(draftAnnouncements);
+    const next = parsed.length ? parsed : [{ text: '', urgent: false, expiresOn: '' }];
+    const curSerialized = serializeAnnouncements(announcementRows);
+    const nextSerialized = serializeAnnouncements(next);
+    if (curSerialized !== nextSerialized) {
+      setAnnouncementRows(next);
+    }
+  }, [draftAnnouncements, announcementRows]);
+
+  function updateAnnouncementRows(mutator) {
+    const nextRows = mutator(announcementRows.map((row) => ({ ...row })));
+    setAnnouncementRows(nextRows);
+    setDraftAnnouncements(serializeAnnouncements(nextRows));
+  }
+
+  function addAnnouncementRow(afterIndex) {
+    updateAnnouncementRows((rows) => {
+      const at = Math.max(0, Math.min(rows.length, (afterIndex ?? rows.length - 1) + 1));
+      rows.splice(at, 0, { text: '', urgent: false, expiresOn: '' });
+      return rows;
+    });
+  }
+
+  function removeAnnouncementRow(index) {
+    if (announcementRows.length <= 1) {
+      setAnnouncementRows([{ text: '', urgent: false, expiresOn: '' }]);
+      setDraftAnnouncements('');
+      return;
+    }
+    updateAnnouncementRows((rows) => {
+      rows.splice(index, 1);
+      return rows;
+    });
+  }
+
+  function patchAnnouncementRow(index, patch) {
+    updateAnnouncementRows((rows) => {
+      rows[index] = { ...rows[index], ...patch };
+      return rows;
+    });
+  }
+
+  const announcementPreviewItems = useMemo(() => {
+    const now = new Date();
+    return announcementRows.map((row) => {
+      let expired = false;
+      if (row.expiresOn) {
+        const [y, m, d] = row.expiresOn.split('-').map(Number);
+        if ([y, m, d].every(Number.isFinite)) {
+          const expiresAt = new Date(y, m - 1, d, 23, 59, 59, 999);
+          expired = now > expiresAt;
+        }
+      }
+      return { ...row, expired };
+    });
+  }, [announcementRows]);
 
   async function handleFilePick(e) {
     const file = e.target.files?.[0];
@@ -349,18 +467,134 @@ export default function SettingsPanel({
               variants, to keep the authoring workflow simple. */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.announcements')}</label>
-                <textarea
-                  className="sinput"
-                  rows={4}
-                  value={draftAnnouncements}
-                  placeholder={t('settings.announcements.placeholder')}
-                  onChange={(e) => setDraftAnnouncements(e.target.value)}
+
+                <div
                   style={{
-                    resize: 'vertical',
-                    fontFamily: 'Rajdhani, sans-serif',
-                    lineHeight: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                    marginBottom: 10,
                   }}
-                />
+                >
+                  <div>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.announcements.auto')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                        maxWidth: '42ch',
+                      }}
+                    >
+                      {t('settings.announcements.auto.note')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDraftAutoAnnouncements((v) => !v)}
+                    style={{
+                      width: 46,
+                      height: 24,
+                      borderRadius: 12,
+                      background: draftAutoAnnouncements ? 'var(--t-accent)' : '#333',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background .2s',
+                      flexShrink: 0,
+                    }}
+                    aria-pressed={draftAutoAnnouncements}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftAutoAnnouncements ? 24 : 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
+                </div>
+
+                <div className="ann-preview">
+                  <div className="ann-preview-head">
+                    <div className="ann-preview-title">{t('settings.announcements.previewEditable')}</div>
+                    <button
+                      type="button"
+                      className="ann-preview-add"
+                      onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
+                      aria-label={t('settings.announcements.addRow')}
+                      title={t('settings.announcements.addRow')}
+                    >
+                      +
+                    </button>
+                  </div>
+                  {announcementPreviewItems.map((item, idx) => (
+                    <div
+                      key={`${idx}-${item.text}-${item.expiresOn}`}
+                      className={`ann-editor-row${item.expired ? ' is-expired' : ''}`}
+                    >
+                      <div className="ann-row-meta">
+                        <button
+                          type="button"
+                          className={`ann-icon-toggle${item.urgent ? ' is-on' : ''}`}
+                          onClick={() => patchAnnouncementRow(idx, { urgent: !item.urgent })}
+                          aria-label={t('settings.announcements.preview.urgent')}
+                          title={t('settings.announcements.preview.urgent')}
+                        >
+                          !
+                        </button>
+
+                        <div className={`ann-expiry-wrap${item.expired ? ' is-expired' : ''}`}>
+                          <span className="ann-expiry-icon">@</span>
+                          <input
+                            type="date"
+                            className="ann-date ann-row-date"
+                            value={item.expiresOn || ''}
+                            onChange={(e) => patchAnnouncementRow(idx, { expiresOn: e.target.value })}
+                            aria-label={t('settings.announcements.insertDate')}
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          className="ann-row-remove"
+                          onClick={() => removeAnnouncementRow(idx)}
+                          aria-label={t('settings.announcements.removeRow')}
+                          title={t('settings.announcements.removeRow')}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <input
+                        className="sinput ann-row-input"
+                        value={item.text}
+                        placeholder={t('settings.announcements.placeholder')}
+                        onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
+                      />
+
+                      <div className="ann-preview-tags">
+                        {item.expiresOn && !item.expired && (
+                          <span className="ann-tag">{fmtStr(t('settings.announcements.preview.expires'), { date: item.expiresOn })}</span>
+                        )}
+                        {item.expired && <span className="ann-tag ann-tag-expired">{t('settings.announcements.preview.expired')}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
                 <div
                   style={{
                     marginTop: 5,
@@ -371,6 +605,74 @@ export default function SettingsPanel({
                   }}
                 >
                   {t('settings.announcements.note')}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.1em',
+                        marginBottom: 4,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {t('settings.announcements.mode')}
+                    </div>
+                    <select
+                      className="ssel"
+                      value={draftTickerMode}
+                      onChange={(e) => setDraftTickerMode(e.target.value)}
+                    >
+                      <option value="scroll">{t('settings.announcements.mode.scroll')}</option>
+                      <option value="static">{t('settings.announcements.mode.static')}</option>
+                    </select>
+                  </div>
+
+                  {draftTickerMode === 'static' && (
+                    <div style={{ minWidth: 140 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: 'var(--t-text-dim)',
+                          letterSpacing: '.1em',
+                          marginBottom: 4,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {t('settings.announcements.staticSeconds')}
+                      </div>
+                      <NumberStepper
+                        value={draftTickerStaticSeconds}
+                        onChange={setDraftTickerStaticSeconds}
+                        min={3}
+                        max={30}
+                        step={1}
+                        width={72}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 8,
+                    fontSize: 11,
+                    color: 'var(--t-text-dim)',
+                    letterSpacing: '.03em',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {t('settings.announcements.format')}
                 </div>
               </div>
             </>
@@ -635,6 +937,65 @@ export default function SettingsPanel({
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="sgrp">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#111',
+                    border: '1px solid var(--t-border)',
+                    borderRadius: 4,
+                    padding: '10px 14px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600 }}>
+                      {t('settings.eco')}</div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: 'var(--t-text-dim)',
+                        letterSpacing: '.05em',
+                        marginTop: 2,
+                        lineHeight: 1.4,
+                        maxWidth: '42ch',
+                      }}
+                    >
+                      {t('settings.eco.note')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setDraftEcoMode((v) => !v)}
+                    style={{
+                      width: 46,
+                      height: 24,
+                      borderRadius: 12,
+                      background: draftEcoMode ? 'var(--t-accent)' : '#333',
+                      border: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      transition: 'background .2s',
+                      flexShrink: 0,
+                    }}
+                    aria-pressed={draftEcoMode}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 2,
+                        left: draftEcoMode ? 24 : 2,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left .2s',
+                      }}
+                    />
+                  </button>
                 </div>
               </div>
             </>

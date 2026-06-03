@@ -133,6 +133,22 @@ body {
   color: var(--t-text);
 }
 
+/* Eco / screen-protection mode — opt-in settings state that calms motion and
+   lowers the background-art intensity even when the OS has not requested
+   reduced motion. This is stronger than the accessibility override because
+   it is meant for always-on kiosk displays. */
+.app--eco .geometry-engine {
+  opacity: 0.78;
+}
+
+.app--eco *,
+.app--eco *::before,
+.app--eco *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* Shared animations (used across multiple components) */
 @keyframes blink {
 

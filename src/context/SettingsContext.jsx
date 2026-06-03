@@ -2,7 +2,7 @@
 //
 // Centralises ALL persistent dashboard settings (location, calc method,
 // iqamah offsets, Jumu'ah / Eid slots, theme, font scale, progress style,
-// chime toggle, Hijri offset, etc) into a single React Context.
+// screen protection, chime toggle, Hijri offset, etc) into a single React Context.
 //
 // The dashboard distinguishes APPLIED settings (currently in effect) from
 // DRAFT settings (being edited in the Settings panel). The drafts only
@@ -100,6 +100,7 @@ export const DEFAULTS = {
   highLatRule: 'middleOfNight', // for cities above ~48° latitude
   // 'middleOfNight' | 'seventhOfNight' | 'twilightAngle'
   theme: 'Classic Gold',
+  ecoMode: true,
   // Prayer beeps — split into adhan + iqamah so admins can enable either
   // independently. Default: iqamah ON (the "stand up, prayer starting now"
   // signal everyone wants), adhan OFF (most mosques play the actual adhan
@@ -111,7 +112,10 @@ export const DEFAULTS = {
   fontScale: 100, // % — 100 = default, 70..130 adjustable in settings
   progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
   lang: 'en', // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
+  autoAnnouncements: false, // prepend basic computed notices to ticker
   announcements: '', // Newline-separated list shown in the bottom ticker.
+  tickerMode: 'scroll', // 'scroll' | 'static'
+  tickerStaticSeconds: 8, // static mode dwell time per item
   // Empty string = hide ticker entirely.
 
   // ── Blackout mode (Phase 3) ──────────────────────────────────────────────

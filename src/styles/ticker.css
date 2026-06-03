@@ -57,6 +57,8 @@
 }
 
 .ticker-segment {
+  display: inline-flex;
+  align-items: center;
   font-size: calc(clamp(0.8rem, 1.05vw, 1.2rem) * var(--t-fs, 1));
   color: var(--t-accent-dim);
   letter-spacing: 0.08em;
@@ -64,6 +66,60 @@
   font-weight: 500;
   flex-shrink: 0;
   /* don't compress when both segments are wide */
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.ticker-item.is-urgent {
+  color: #ffb3b3;
+}
+
+.ticker-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: calc(clamp(0.6rem, 0.85vw, 0.82rem) * var(--t-fs, 1));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #ffdede;
+  border: 1px solid rgba(255, 107, 107, 0.4);
+  background: rgba(255, 107, 107, 0.16);
+}
+
+.ticker-sep {
+  color: var(--t-accent-dim);
+}
+
+.ticker--static {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticker-static-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  max-width: 98%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(clamp(0.86rem, 1.12vw, 1.26rem) * var(--t-fs, 1));
+  color: var(--t-accent-dim);
+  letter-spacing: 0.06em;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+.ticker-static-item.is-urgent {
+  color: #ffb3b3;
 }
 
 /* ── Marquee animations ───────────────────────────────────────────────────
@@ -109,6 +165,7 @@
    the trade for accessibility, and acceptable since reduced-motion users
    typically accept some content limitations. */
 @media (prefers-reduced-motion: reduce) {
+
   .ticker[data-dir='ltr'] .ticker-track,
   .ticker[data-dir='rtl'] .ticker-track {
     animation: none;
@@ -121,7 +178,7 @@
 
   /* Track has two copies for the marquee loop; in static fallback only show
      one so the centred text doesn't read as a double announcement. */
-  .ticker .ticker-segment + .ticker-segment {
+  .ticker .ticker-segment+.ticker-segment {
     display: none;
   }
 }

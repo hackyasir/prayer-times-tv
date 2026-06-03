@@ -10,6 +10,10 @@ describe('normalizeImportedSettings', () => {
         fontScale: '120',
         lang: 'ur',
         progressStyle: 'orbit',
+        ecoMode: false,
+        autoAnnouncements: true,
+        tickerMode: 'static',
+        tickerStaticSeconds: '12',
         jumuah: [{ time: '13:15', enabled: true, iqamah: 22 }],
         blackoutOpacity: '80',
         extraField: 'ignore-me',
@@ -22,6 +26,10 @@ describe('normalizeImportedSettings', () => {
     expect(result.value.fontScale).toBe(120);
     expect(result.value.lang).toBe('ur');
     expect(result.value.progressStyle).toBe('orbit');
+    expect(result.value.ecoMode).toBe(false);
+    expect(result.value.autoAnnouncements).toBe(true);
+    expect(result.value.tickerMode).toBe('static');
+    expect(result.value.tickerStaticSeconds).toBe(12);
     expect(result.value.jumuah[0]).toEqual({ time: '13:15', enabled: true });
     expect(result.value.blackoutOpacity).toBe(80);
     expect(result.value).not.toHaveProperty('extraField');
