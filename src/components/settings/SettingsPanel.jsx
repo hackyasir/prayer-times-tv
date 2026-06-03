@@ -1839,10 +1839,10 @@ export default function SettingsPanel({
                     </div>
                     {((key === 'fitr' && validationErrors.eidFitr) ||
                       (key === 'adha' && validationErrors.eidAdha)) && (
-                      <div style={{ marginTop: 8, fontSize: 12, color: '#ff7c7c', lineHeight: 1.4 }}>
-                        {key === 'fitr' ? validationErrors.eidFitr : validationErrors.eidAdha}
-                      </div>
-                    )}
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#ff7c7c', lineHeight: 1.4 }}>
+                          {key === 'fitr' ? validationErrors.eidFitr : validationErrors.eidAdha}
+                        </div>
+                      )}
                   </div>
                 ))}
                 <p style={{ fontSize: 11, color: '#9A8B6E', marginTop: 6, lineHeight: 1.4 }}>
