@@ -2,7 +2,7 @@
 
 Automated test suite for **prayer-times-tv**, built on [Vitest](https://vitest.dev/) and [@testing-library/react](https://testing-library.com/).
 
-[![Tests](https://img.shields.io/badge/tests-115%2B-success)](#whats-covered)
+[![Tests](https://img.shields.io/badge/tests-211-success)](#whats-covered)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -26,7 +26,7 @@ Automated test suite for **prayer-times-tv**, built on [Vitest](https://vitest.d
 
 ```bash
 npm install              # one-time, installs vitest + testing-library
-npm test                 # run all tests once (~115 tests, <2s)
+npm test                 # run all tests once (211 tests)
 npm run test:watch       # re-run on file changes (dev mode)
 npm run test:coverage    # generate ./coverage/ HTML report
 ```
@@ -46,21 +46,23 @@ Tests are **colocated** with the code they verify, inside `__tests__/` folders. 
 ```
 src/
 ├── lib/
-│   ├── hijri.js
-│   ├── formatters.js
-│   ├── prayerCalc.js
+│   ├── *.js
 │   └── __tests__/
-│       ├── hijri.test.js
-│       ├── formatters.test.js
-│       └── prayerCalc.test.js
+│       ├── formatters.test.js       hijri.test.js
+│       ├── iqamah.test.js           prayerCalc.test.js
+│       ├── sunnahFasts.test.js      viewingScale.test.js
+│       ├── scheduleValidation.test.js
+│       └── settingsImport.test.js
 ├── components/
-│   ├── NumberStepper.jsx
 │   └── __tests__/
-│       └── NumberStepper.test.jsx
+│       ├── NumberStepper.test.jsx
+│       └── Ticker.test.jsx
 ├── context/
-│   ├── SettingsContext.jsx
 │   └── __tests__/
 │       └── SettingsContext.test.jsx
+├── hooks/
+│   └── __tests__/
+│       └── useWeather.test.jsx
 └── tests/
     └── setup.js          ← global test setup (one file)
 ```
@@ -94,16 +96,24 @@ Not every new feature needs tests. The rule used in this project:
 
 ## What's covered
 
-| File                                          | Tests | Type      | Focus                                                                                                            |
-| --------------------------------------------- | ----: | --------- | ---------------------------------------------------------------------------------------------------------------- |
-| `lib/__tests__/hijri.test.js`                 |    25 | Unit      | Gregorian↔Hijri conversion; Eid auto-detection; **Hijri offset bug regression**                                  |
-| `lib/__tests__/formatters.test.js`            |    30 | Unit      | Time formatting, countdown, compass bearings, edge cases                                                         |
-| `lib/__tests__/prayerCalc.test.js`            |    20 | Unit      | All 12 calculation methods, prayer ordering invariants, madhab, high-latitude                                    |
-| `lib/__tests__/iqamah.test.js`                |    25 | Unit      | Manual / auto-rounding modes; **safety floor (iqamah never before adhan)**; Maghrib buf=0 convention             |
-| `components/__tests__/NumberStepper.test.jsx` |    20 | Component | iOS spinner replacement, clamping, disabled states, digit-only input                                             |
-| `context/__tests__/SettingsContext.test.jsx`  |    20 | Component | **Legacy migrations** (eid array → eidFitr/eidAdha, chimeEnabled → split), draft/applied separation, persistence |
+211 tests across 12 files (run `npm test` for the live count):
 
-**~140 tests total.**
+| File                                            | Tests | Type      | Focus                                                                                          |
+| ----------------------------------------------- | ----: | --------- | ---------------------------------------------------------------------------------------------- |
+| `lib/__tests__/formatters.test.js`              |    36 | Unit      | Time formatting, countdown, compass bearings, edge cases                                       |
+| `lib/__tests__/hijri.test.js`                   |    24 | Unit      | Gregorian↔Hijri conversion; Eid auto-detection; **Hijri offset bug regression**                |
+| `lib/__tests__/iqamah.test.js`                  |    24 | Unit      | Manual / auto-rounding modes; **safety floor (iqamah never before adhan)**; Maghrib buf=0      |
+| `lib/__tests__/prayerCalc.test.js`              |    22 | Unit      | All 12 calculation methods, prayer ordering invariants, madhab, high-latitude                  |
+| `lib/__tests__/sunnahFasts.test.js`             |    22 | Unit      | Ranked combined fasts (tashreek), **forbidden-day gate** (Eid + Tashreeq), Shawwal overlaps    |
+| `lib/__tests__/viewingScale.test.js`            |     9 | Unit      | Distance→multiplier mapping, calibration clamp, combined type scale                            |
+| `lib/__tests__/scheduleValidation.test.js`      |     7 | Unit      | HH:MM parsing, range checks, non-ascending slot detection                                      |
+| `lib/__tests__/settingsImport.test.js`          |     3 | Unit      | Import sanitiser — whitelisting, coercion, defaults                                            |
+| `components/__tests__/NumberStepper.test.jsx`   |    21 | Component | iOS spinner replacement, clamping, disabled states, digit-only input                           |
+| `components/__tests__/Ticker.test.jsx`          |    19 | Unit      | Markup parsing (`!` urgent, `@date` expiry); **timezone-correct expiry**; calendar-day compare |
+| `context/__tests__/SettingsContext.test.jsx`    |    21 | Component | **Legacy migrations**, draft/applied separation, persistence                                   |
+| `hooks/__tests__/useWeather.test.jsx`           |     3 | Hook      | Fetch success/failure, graceful offline degradation                                            |
+
+**211 tests total.**
 
 ### Regression tests
 
@@ -119,7 +129,7 @@ Each suite includes tests for bugs we've actually encountered:
 | Component               | Why skipped                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `PrayerList`            | ~25 props, prop-driven UI — bugs surface visually in seconds. Brittle assertions vs. low real-bug catch rate. |
-| `SettingsPanel`         | Admin-only UI behind PIN; 109 inline-styled inputs. Low ROI.                                                  |
+| `SettingsPanel`         | Admin-only UI behind PIN; heavily inline-styled form. Low ROI.                                                  |
 | `Footer` test buttons   | Dev-only, manual verification sufficient.                                                                     |
 | `widgets/*`             | Mostly SVG renderers with little logic. Visual inspection covers them.                                        |
 | End-to-end / Playwright | Offline display app has no user flows worth E2E testing.                                                      |

@@ -9,7 +9,7 @@ Welcome — this guide covers everything you need to develop, test, and contribu
 - **Stack:** React 19 + Vite 6 + Vitest 4
 - **Calculation libs:** [adhan-js](https://github.com/batoulapps/adhan-js), [suncalc](https://github.com/mourner/suncalc)
 - **State:** React Context (`SettingsContext`, `I18nContext`) — no Redux/Zustand
-- **Tests:** Vitest, ~140 unit + component tests in `src/**/__tests__/`
+- **Tests:** Vitest, 211 unit + component tests across 12 files in `src/**/__tests__/`
 - **Deploy:** GitHub Pages via `.github/workflows/deploy.yml`
 - **PWA:** vite-plugin-pwa, installable on any device with a modern browser
 
@@ -215,7 +215,7 @@ Pure functions are trivially testable (no React Testing Library setup, no DOM mo
 
 ### Why settings use Context, not Redux
 
-The project has ~30 settings keys. Redux is overkill for that. React Context with a custom `useSettings()` hook gives us the same separation (state vs UI) at a fraction of the boilerplate.
+The project has ~35 settings keys. Redux is overkill for that. React Context with a custom `useSettings()` hook gives us the same separation (state vs UI) at a fraction of the boilerplate.
 
 ### Why CSS is hand-written (not Tailwind/styled-components)
 

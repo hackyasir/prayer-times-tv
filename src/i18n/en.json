@@ -244,5 +244,7 @@
   "auto.fast.tag.white": "White Day {day}",
   "auto.fast.tag.monday": "Monday",
   "auto.fast.tag.thursday": "Thursday",
-  "auto.fast.tag.shawwal": "Six of Shawwal"
+  "auto.fast.tag.shawwal": "Six of Shawwal",
+  "alert.geoDenied": "Location permission denied — enable it in your browser, or select a city below.",
+  "alert.geoUnavailable": "Location unavailable right now — try again, or select a city below."
 }

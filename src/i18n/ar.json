@@ -244,5 +244,7 @@
   "auto.fast.tag.white": "اليوم الأبيض {day}",
   "auto.fast.tag.monday": "الإثنين",
   "auto.fast.tag.thursday": "الخميس",
-  "auto.fast.tag.shawwal": "ست من شوال"
+  "auto.fast.tag.shawwal": "ست من شوال",
+  "alert.geoDenied": "تم رفض إذن الموقع — فعّله في المتصفح أو اختر مدينة أدناه.",
+  "alert.geoUnavailable": "الموقع غير متاح حاليًا — حاول مرة أخرى أو اختر مدينة أدناه."
 }
