@@ -421,7 +421,8 @@ export default function App() {
           ...(tz ? { cityTz: tz } : {}),
         });
       },
-      () => { }
+      () => { },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1136,7 +1137,36 @@ export default function App() {
         });
         setShowSett(false);
       },
-      () => alert(t('alert.geoFailed'))
+      (err) => {
+        // Surface WHY it failed so it's diagnosable rather than a generic
+        // "could not get location". The common repeat-failure cause is a
+        // non-secure context (http:// on a LAN IP) where the browser grants
+        // permission once then blocks subsequent calls, or a device with no
+        // GPS that times out on a fresh fix.
+        let msg = t('alert.geoFailed');
+        if (err && typeof err.code === 'number') {
+          if (err.code === err.PERMISSION_DENIED) {
+            msg = t('alert.geoDenied');
+          } else if (
+            err.code === err.POSITION_UNAVAILABLE ||
+            err.code === err.TIMEOUT
+          ) {
+            msg = t('alert.geoUnavailable');
+          }
+        }
+        alert(msg);
+      },
+      {
+        // Network/IP-based fix is plenty for prayer times (city-level is fine);
+        // high accuracy needlessly invokes slow/absent GPS hardware.
+        enableHighAccuracy: false,
+        // Give it a real ceiling instead of waiting forever.
+        timeout: 10000,
+        // Accept a position fixed up to 5 min ago — this is the key fix for
+        // "works once then fails": a TV/desktop with no live GPS can reuse the
+        // recent fix instead of failing on every fresh request.
+        maximumAge: 300000,
+      }
     );
   }
 

@@ -242,5 +242,7 @@
   "auto.fast.tag.white": "سفید دن {day}",
   "auto.fast.tag.monday": "پیر",
   "auto.fast.tag.thursday": "جمعرات",
-  "auto.fast.tag.shawwal": "شوال کے چھ روزے"
+  "auto.fast.tag.shawwal": "شوال کے چھ روزے",
+  "alert.geoDenied": "مقام کی اجازت مسترد — براؤزر میں فعال کریں یا نیچے شہر منتخب کریں۔",
+  "alert.geoUnavailable": "مقام ابھی دستیاب نہیں — دوبارہ کوشش کریں یا نیچے شہر منتخب کریں۔"
 }
