@@ -18,7 +18,7 @@
     "ci-check": "npm ci && npm run lint && npm test && npm run build"
   },
   "dependencies": {
-    "adhan": "^4.4.4",
+    "adhan": "^4.4.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "suncalc": "^1.9.0"
