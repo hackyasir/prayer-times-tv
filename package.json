@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "adhan": "^4.4.3",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "suncalc": "^1.9.0"
   },
   "devDependencies": {
