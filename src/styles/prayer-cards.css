@@ -114,6 +114,19 @@
 .pcard.active {
   background: var(--t-active-bg);
   border-color: var(--t-accent);
+}
+
+/* Pulsing outline on the active card — a static ring whose opacity is
+   animated (GPU-composited), instead of animating box-shadow itself. Inset,
+   because .pcard clips overflow. */
+.pcard.active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--t-card-pulse);
+  opacity: 0;
+  pointer-events: none;
   animation: cardpulse 2.8s ease-in-out infinite;
 }
 

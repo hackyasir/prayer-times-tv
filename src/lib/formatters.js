@@ -6,6 +6,25 @@
 
 import { COMPASS_16, COMPASS_LONG } from './constants.js';
 
+// Intl.DateTimeFormat objects are slow to create — notably on smart-TV
+// browsers — and fmt12 runs dozens of times per screen update. Keep one
+// formatter per timezone and reuse it. (An invalid zone throws on creation;
+// that isn't cached, so the caller's fallback still applies.)
+const hourMinuteFormatters = new Map();
+function hourMinuteFormatter(tz) {
+  let fmt = hourMinuteFormatters.get(tz);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    hourMinuteFormatters.set(tz, fmt);
+  }
+  return fmt;
+}
+
 /**
  * Format an absolute Date as "h:mm AM/PM" in a specific IANA timezone.
  * If `tz` is omitted, falls back to the device's local timezone.
@@ -18,12 +37,7 @@ export function fmt12(date, tz) {
   if (!date) return '--:--';
   try {
     if (tz) {
-      const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-      }).formatToParts(date);
+      const parts = hourMinuteFormatter(tz).formatToParts(date);
       const get = (t) => parts.find((p) => p.type === t)?.value ?? '';
       // Intl.DateTimeFormat with hour12:false can return "24" for midnight
       // on some platforms (Node 18+ / V8 newer than ~10.x) instead of "00".

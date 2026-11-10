@@ -1,3 +1,6 @@
+// Opt-in performance overlay (?perf in the URL). Imported first so it can
+// count date formatters created anywhere in the app.
+import './lib/perfMonitor.js';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';

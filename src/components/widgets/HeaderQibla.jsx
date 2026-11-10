@@ -9,11 +9,12 @@
 //
 // Doesn't recreate the compass — reuses the existing component verbatim.
 
+import { memo } from 'react';
 import QiblaCompass from '../QiblaCompass.jsx';
 import { bearingToCompass } from '../../lib/formatters.js';
 import { useT } from '../../i18n/I18nContext.jsx';
 
-export default function HeaderQibla({ qibla }) {
+function HeaderQibla({ qibla }) {
   const { t } = useT();
   if (qibla == null) return null;
 
@@ -29,3 +30,6 @@ export default function HeaderQibla({ qibla }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(HeaderQibla);

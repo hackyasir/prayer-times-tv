@@ -1,4 +1,14 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  lazy,
+  Suspense,
+} from 'react';
+import { perfCommit } from './lib/perfMonitor.js';
 import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS, PRAYERS } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, toHijriParts, findUpcomingEid } from './lib/hijri.js';
@@ -32,8 +42,12 @@ import BlackoutOverlay from './components/BlackoutOverlay.jsx';
 import Clock from './components/Clock.jsx';
 import PrayerList from './components/PrayerList.jsx';
 import PinOverlay from './components/PinOverlay.jsx';
-import SettingsPanel from './components/settings/SettingsPanel.jsx';
-import PrintableSchedule from './components/PrintableSchedule.jsx';
+// Settings and the printable schedule are opened rarely, so they load on
+// demand — that keeps their code (and the large Settings panel) out of the
+// startup bundle a TV browser has to download and parse. The service worker
+// precaches both chunks, so they still open offline.
+const SettingsPanel = lazy(() => import('./components/settings/SettingsPanel.jsx'));
+const PrintableSchedule = lazy(() => import('./components/PrintableSchedule.jsx'));
 // Layout widgets — pulled into the surrounding chrome (header / above
 // clock / below prayer list / under countdown). These are the dashboard's
 // only widget set after removing the classic bottom-band cards.
@@ -87,6 +101,9 @@ export default function App() {
   // directly from App.jsx. Most translated text lives in child components
   // that call useT() themselves.
   const { t } = useT();
+
+  // ?perf overlay: records how long each 1-second tick takes to commit.
+  useLayoutEffect(() => perfCommit());
 
   // Destructure applied → individual reactive values used throughout App.jsx
   const {
@@ -348,6 +365,23 @@ export default function App() {
   // Custom hook: city-time anchor (now ticks + cityNowParts derived in cityTz)
   const { now, cityNow, cityNowParts, isFriday } = useCityTime(cityTz);
 
+  // Slower clocks for parts of the screen that don't need per-second
+  // updates. Components fed these (wrapped in React.memo) re-render once a
+  // minute / hour / day instead of every second — on TV browsers the
+  // per-second re-render of the whole dashboard was the main cost.
+  // Prayer, Jumu'ah and Eid times are whole minutes, so minute precision
+  // gives the same "passed / next" results as the exact time.
+  const minuteKey = Math.floor(now.getTime() / 60000);
+  const nowMinute = useMemo(() => new Date(minuteKey * 60000), [minuteKey]);
+  const hourKey = Math.floor(now.getTime() / 3600000);
+  const cityDayKey = cityNowParts.dayKey;
+  const cityDay = useMemo(() => {
+    const [y, m, d] = cityDayKey.split('-').map(Number);
+    return new Date(y, m, d);
+  }, [cityDayKey]);
+  // Device-local midnight (findUpcomingEid reads the device calendar day).
+  const deviceDayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
   // Custom hook: weather fetch + 10-min refresh
   const { weather, weatherState } = useWeather(lat, lng);
 
@@ -506,14 +540,14 @@ export default function App() {
   const secStr = `:${String(cityNowParts.s).padStart(2, '0')} ${cityNowParts.h >= 12 ? 'PM' : 'AM'}`;
   const dateStr = `${cityNowParts.weekday}, ${cityNowParts.monthName} ${cityNowParts.dayNum}, ${cityNowParts.yearNum}`;
   const hijri = useMemo(() => {
-    if (hijriOffset === 0) return toHijri(cityNow);
-    const adjusted = new Date(cityNow);
+    if (hijriOffset === 0) return toHijri(cityDay);
+    const adjusted = new Date(cityDay);
     adjusted.setDate(adjusted.getDate() + hijriOffset);
     return (
       toHijri(adjusted) +
       (hijriOffset !== 0 ? ` (${hijriOffset > 0 ? '+' : ''}${hijriOffset})` : '')
     );
-  }, [hijriOffset, cityNow]);
+  }, [hijriOffset, cityDay]);
   const qibla = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
 
   // ── Parametric inputs for IslamicGeometryEngine ──────────────────────────
@@ -536,6 +570,9 @@ export default function App() {
     const maxEl = 90 - Math.abs(lat - 23.5); // approximate max elevation
     return maxEl * Math.sin((Math.PI * (nowMs - srMs)) / (ssMs - srMs));
   }, [now, todayTimes, lat]);
+  // Whole degrees: the background art redraws when this visibly changes
+  // (every few minutes) rather than on every tick.
+  const sunElevationDeg = Math.round(sunElevation);
 
   // Lunar phase — owned by useLunarPhase hook (computed from Hijri day)
   const lunarPhase = useLunarPhase(hijri);
@@ -544,27 +581,32 @@ export default function App() {
   // wall-clock value in the city's timezone equals (today_in_city @ HH:MM).
   // Same trick as calcTimes: Date.UTC(...) - cityTzOffset_ms.
   const cityTzOff = useMemo(
-    () => tzOffsetHours(cityTz, now),
-    [cityTz, now]
+    () => tzOffsetHours(cityTz, new Date(hourKey * 3600000)),
+    [cityTz, hourKey] // hourly: DST changes happen on the hour
   );
-  function makeCityDateAt(hh, mm) {
-    const Y = cityNow.getFullYear();
-    const M = cityNow.getMonth();
-    const D = cityNow.getDate();
-    return new Date(Date.UTC(Y, M, D, hh, mm, 0) - cityTzOff * 3600 * 1000);
-  }
 
   // Jumu'ah — Friday is the CITY's day-of-week (or testFriday override for QA)
   const isFridayEffective = isFriday || testFriday;
-  const activeJumuahSlots = jumuah.filter((j) => j.enabled);
-  function jumuahDate(timeStr) {
-    const [hh, mm] = timeStr.split(':').map(Number);
-    return makeCityDateAt(hh, mm);
-  }
-  // Compare absolute instants against the absolute `now`
-  const nextJumuah = isFridayEffective
-    ? (activeJumuahSlots.map((j) => jumuahDate(j.time)).find((t) => t > now) ?? null)
-    : null;
+  const activeJumuahSlots = useMemo(() => jumuah.filter((j) => j.enabled), [jumuah]);
+  // Stable per day (memoised children compare it by identity).
+  const jumuahDate = useCallback(
+    (timeStr) => {
+      const [hh, mm] = timeStr.split(':').map(Number);
+      return new Date(
+        Date.UTC(cityDay.getFullYear(), cityDay.getMonth(), cityDay.getDate(), hh, mm, 0) -
+          cityTzOff * 3600 * 1000
+      );
+    },
+    [cityDay, cityTzOff]
+  );
+  // Compare absolute instants (minute precision — slots are whole minutes)
+  const nextJumuah = useMemo(
+    () =>
+      isFridayEffective
+        ? (activeJumuahSlots.map((j) => jumuahDate(j.time)).find((t) => t > nowMinute) ?? null)
+        : null,
+    [isFridayEffective, activeJumuahSlots, jumuahDate, nowMinute]
+  );
 
   // ── Jumu'ah substitution for next-prayer display ─────────────────────────
   // On Fridays with at least one upcoming Jumu'ah slot, the dashboard's
@@ -611,30 +653,33 @@ export default function App() {
   // No manual toggle needed — the banner appears N days before Eid, stays
   // through the day, and auto-hides after the last iqamah + 30 min.
   const upcomingEidReal = useMemo(
-    () => findUpcomingEid(now, hijriOffset, eidDaysBefore),
-    // Re-evaluate when the day changes (cheap — runs at most once per minute
-    // but result only changes once per day in practice).
-    [now, hijriOffset, eidDaysBefore]
+    () => findUpcomingEid(new Date(deviceDayStart), hijriOffset, eidDaysBefore),
+    // Re-evaluated once per day (it used to run on every tick).
+    [deviceDayStart, hijriOffset, eidDaysBefore]
   );
   // Apply test override: if `testEidKind` is set, force-show that Eid's
   // banner with eidDate = today and daysUntil = 0. Lets the dev/admin
   // preview the banner via footer Test Fitr / Test Adha buttons without
   // waiting for actual Eid.
-  const upcomingEid = testEidKind
-    ? {
-      kind: testEidKind,
-      eidDate: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
-      daysUntil: 0,
-    }
-    : upcomingEidReal;
+  const upcomingEid = useMemo(
+    () =>
+      testEidKind
+        ? { kind: testEidKind, eidDate: new Date(deviceDayStart), daysUntil: 0 }
+        : upcomingEidReal,
+    [testEidKind, deviceDayStart, upcomingEidReal]
+  );
 
   // Pick the right schedule (eidFitr or eidAdha) and filter out disabled or
   // empty-time slots. Slot is active when enabled=true AND time is set.
-  const activeEidSlots = upcomingEid.kind
-    ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha).filter(
-      (e) => e.enabled && e.time && e.time.length > 0
-    )
-    : [];
+  const activeEidSlots = useMemo(
+    () =>
+      upcomingEid.kind
+        ? (upcomingEid.kind === 'fitr' ? eidFitr : eidAdha).filter(
+            (e) => e.enabled && e.time && e.time.length > 0
+          )
+        : [],
+    [upcomingEid.kind, eidFitr, eidAdha]
+  );
   // Auto-generated label based on detected Eid kind
   const eidLabelAuto =
     upcomingEid.kind === 'fitr' ? 'Eid ul-Fitr' : upcomingEid.kind === 'adha' ? 'Eid ul-Adha' : '';
@@ -642,13 +687,16 @@ export default function App() {
   // Eid time helper — anchors HH:MM to the actual upcoming Eid Gregorian date
   // (not "today" — that was the bug). If upcomingEid has no date yet (no Eid
   // in window), falls back to today's date (banner won't render anyway).
-  function eidDate(timeStr) {
-    const [hh, mm] = timeStr.split(':').map(Number);
-    const base = upcomingEid.eidDate || cityNow;
-    const d = new Date(base);
-    d.setHours(hh, mm, 0, 0);
-    return d;
-  }
+  const upcomingEidDate = upcomingEid.eidDate;
+  const eidDate = useCallback(
+    (timeStr) => {
+      const [hh, mm] = timeStr.split(':').map(Number);
+      const d = new Date(upcomingEidDate || cityDay);
+      d.setHours(hh, mm, 0, 0);
+      return d;
+    },
+    [upcomingEidDate, cityDay]
+  );
   const lastEidTime = activeEidSlots.length
     ? eidDate(activeEidSlots[activeEidSlots.length - 1].time)
     : null;
@@ -670,23 +718,38 @@ export default function App() {
       if (upcomingEid.daysUntil > 0) return true; // real Eid in lead-up
       return addMins(eidEnd, 30) > now; // real Eid on its day
     })();
-  const nextEid = showEidBanner
-    ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > now) ?? null)
-    : null;
+  const nextEid = useMemo(
+    () =>
+      showEidBanner
+        ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > nowMinute) ?? null)
+        : null,
+    [showEidBanner, activeEidSlots, eidDate, nowMinute]
+  );
 
   // ── Today's congregations — shared by ticker, chime and blackout ─────────
   // Daily iqamahs, with Jumu'ah slots replacing Dhuhr on Fridays and Eid
   // slots added on the Eid day itself. See src/lib/congregations.js.
-  const congregations = buildCongregations({
-    todayTimes,
-    iqamah,
-    isFriday: isFridayEffective,
-    jumuahTimes: activeJumuahSlots.map((j) => jumuahDate(j.time)),
-    eidTimes:
-      showEidBanner && upcomingEid.daysUntil === 0
-        ? activeEidSlots.map((e) => eidDate(e.time))
-        : [],
-  });
+  const eidIsToday = showEidBanner && upcomingEid.daysUntil === 0;
+  const congregations = useMemo(
+    () =>
+      buildCongregations({
+        todayTimes,
+        iqamah,
+        isFriday: isFridayEffective,
+        jumuahTimes: activeJumuahSlots.map((j) => jumuahDate(j.time)),
+        eidTimes: eidIsToday ? activeEidSlots.map((e) => eidDate(e.time)) : [],
+      }),
+    [
+      todayTimes,
+      iqamah,
+      isFridayEffective,
+      activeJumuahSlots,
+      jumuahDate,
+      eidIsToday,
+      activeEidSlots,
+      eidDate,
+    ]
+  );
 
   // Blackout mode — derives whether the dashboard should be in salah-blackout
   // RIGHT NOW from today's congregations + yesterday's Isha + per-prayer
@@ -882,6 +945,26 @@ export default function App() {
       ? `${autoAnnouncementText}\n${manualAnnouncements}`
       : autoAnnouncementText
     : manualAnnouncements;
+
+  // Slot elements built only when their inputs change, so the memoised
+  // Header, PrayerList and Ticker skip re-rendering on ticks that don't
+  // affect them.
+  const headerCenterSlot = useMemo(() => <HeaderQibla qibla={qibla} />, [qibla]);
+  const weatherSlot = useMemo(
+    () => <WeatherStrip weather={weather} weatherState={weatherState} />,
+    [weather, weatherState]
+  );
+  const tickerElement = useMemo(
+    () => (
+      <Ticker
+        announcements={mergedAnnouncements}
+        mode={tickerMode}
+        staticSeconds={tickerStaticSeconds}
+        cityNow={cityDay}
+      />
+    ),
+    [mergedAnnouncements, tickerMode, tickerStaticSeconds, cityDay]
+  );
 
   // Hook: fire adhan/iqamah beep at the right times. Each flag gates its
   // own event type — caller can have either, both, or neither enabled.
@@ -1215,7 +1298,8 @@ export default function App() {
   // button flips the flag back to show the live dashboard.
   if (showPrint) {
     return (
-      <PrintableSchedule
+      <Suspense fallback={null}>
+        <PrintableSchedule
         lat={lat}
         lng={lng}
         cityTz={cityTz}
@@ -1233,7 +1317,8 @@ export default function App() {
         eidFitr={eidFitr}
         eidAdha={eidAdha}
         onClose={() => setShowPrint(false)}
-      />
+        />
+      </Suspense>
     );
   }
 
@@ -1253,7 +1338,7 @@ export default function App() {
         {/* Islamic Geometry Engine — parametric, real-time */}
         <IslamicGeometryEngine
           activePrayer={testPrayer || active?.key || 'fajr'}
-          sunElevation={sunElevation}
+          sunElevation={sunElevationDeg}
           minutesToNext={secsToNext ? Math.floor(secsToNext / 60) : 60}
           lunarPhase={lunarPhase}
           theme={theme}
@@ -1274,7 +1359,7 @@ export default function App() {
           onOpenSettings={openSettings}
           activePrayerKey={testPrayer || active?.key || 'fajr'}
           lunarPhase={lunarPhase}
-          centerSlot={<HeaderQibla qibla={qibla} />}
+          centerSlot={headerCenterSlot}
         />
 
         {/* Grid */}
@@ -1286,7 +1371,7 @@ export default function App() {
               todayTimes={todayTimes}
               iqamah={iqamah}
               active={active}
-              now={now}
+              now={nowMinute}
               cityTz={cityTz}
               isFriday={isFridayEffective}
               activeJumuahSlots={activeJumuahSlots}
@@ -1298,7 +1383,7 @@ export default function App() {
               showEidBanner={showEidBanner}
               eidLabelAuto={eidLabelAuto}
               eidLocation={eidLocation}
-              footerSlot={<WeatherStrip weather={weather} weatherState={weatherState} />}
+              footerSlot={weatherSlot}
             />
 
             {/* Centre: clock + countdown */}
@@ -1326,12 +1411,12 @@ export default function App() {
                 const set = todayTimes?.maghrib; // maghrib ≈ sunset
                 const isDay = !testMoonActive && sun && set && now >= sun && now < set;
                 return isDay ? (
-                  <SunArc todayTimes={todayTimes} now={now} cityTz={cityTz} />
+                  <SunArc todayTimes={todayTimes} now={nowMinute} cityTz={cityTz} />
                 ) : (
                   <MoonArc
                     lat={lat}
                     lng={lng}
-                    now={now}
+                    now={nowMinute}
                     cityTz={cityTz}
                     phaseOverride={testMoonPhase}
                   />
@@ -1341,7 +1426,7 @@ export default function App() {
                 <FastBar
                   todayTimes={todayTimes}
                   tomorrowTimes={tomorrowTimes}
-                  now={now}
+                  now={nowMinute}
                   cityTz={cityTz}
                 />
               }
@@ -1358,14 +1443,7 @@ export default function App() {
         {/* App footer — outside .grid, always at bottom of .app */}
         <div className="app-footer">
           <Footer
-            ticker={
-              <Ticker
-                announcements={mergedAnnouncements}
-                mode={tickerMode}
-                staticSeconds={tickerStaticSeconds}
-                cityNow={cityNow}
-              />
-            }
+            ticker={tickerElement}
             showTestBtns={SHOW_TEST_BTNS}
             testFriday={testFriday}
             testPrayer={testPrayer}
@@ -1448,6 +1526,7 @@ export default function App() {
 
       {/* Settings overlay — extracted to components/settings/SettingsPanel.jsx */}
       {showSett && (
+        <Suspense fallback={null}>
         <SettingsPanel
           onCancel={() => setShowSett(false)}
           onApply={applySettings}
@@ -1534,13 +1613,14 @@ export default function App() {
             setShowSett(false);
             setShowPrint(true);
           }}
-          cityNow={cityNow}
+          cityNow={cityDay}
           cityTz={cityTz}
           currentLocName={locName}
           currentLat={lat}
           currentLng={lng}
           todayTimes={todayTimes}
         />
+        </Suspense>
       )}
 
       {/* Blackout overlay — full-viewport during salah. Rendered LAST so its

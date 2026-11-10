@@ -13,10 +13,11 @@
 //   - Hi/Lo aligned to the RIGHT edge (auto-margin via flex)
 //   - Feels-like fills middle (more useful than "Overcast" or "Clear Sky")
 
+import { memo } from 'react';
 import { wmoEmoji } from '../../lib/weather.js';
 import { useT } from '../../i18n/I18nContext.jsx';
 
-export default function WeatherStrip({ weather, weatherState }) {
+function WeatherStrip({ weather, weatherState }) {
   const { t } = useT();
 
   // Hide entirely when no weather data — empty space is better than
@@ -57,3 +58,6 @@ export default function WeatherStrip({ weather, weatherState }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(WeatherStrip);

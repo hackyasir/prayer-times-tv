@@ -18,22 +18,25 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { DAYS, MONTHS_FULL } from '../lib/constants.js';
+import { perfTickStart } from '../lib/perfMonitor.js';
 
 export default function useCityTime(cityTz) {
   // Real-world "now" — same instant for everyone, regardless of timezone.
   // Ticks every second.
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => {
+      perfTickStart(); // no-op unless ?perf is in the URL
+      setNow(new Date());
+    }, 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Extract city-local calendar fields, then build an anchor Date.
-  // Falls back to device-local fields if cityTz is invalid.
-  const cityNowParts = useMemo(() => {
-    let h, m, s, weekday, monthName, dayNum, yearNum;
+  // One formatter per timezone, reused every tick (creating Intl formatters
+  // is slow on TV browsers). null = invalid zone → device-local fallback.
+  const fmt = useMemo(() => {
     try {
-      const fmt = new Intl.DateTimeFormat('en-US', {
+      return new Intl.DateTimeFormat('en-US', {
         timeZone: cityTz,
         hour12: false,
         hour: '2-digit',
@@ -44,9 +47,21 @@ export default function useCityTime(cityTz) {
         day: 'numeric',
         weekday: 'long',
       });
+    } catch {
+      return null;
+    }
+  }, [cityTz]);
+
+  // Extract city-local calendar fields, then build an anchor Date.
+  // Falls back to device-local fields if cityTz is invalid.
+  const cityNowParts = useMemo(() => {
+    let h, m, s, weekday, monthName, dayNum, yearNum;
+    try {
+      if (!fmt) throw new Error('invalid timezone');
       const parts = fmt.formatToParts(now);
       const get = (t) => parts.find((p) => p.type === t)?.value ?? '';
-      h = parseInt(get('hour'), 10);
+      // Some engines (older Chromium on TVs) report midnight as "24".
+      h = parseInt(get('hour'), 10) % 24;
       m = parseInt(get('minute'), 10);
       s = parseInt(get('second'), 10);
       weekday = get('weekday');
@@ -65,8 +80,10 @@ export default function useCityTime(cityTz) {
     const weekdayIdx = DAYS.indexOf(weekday); // 0..6 (Sun..Sat)
     const monthIdx = MONTHS_FULL.indexOf(monthName); // 0..11
     const anchor = new Date(yearNum, monthIdx, dayNum, h, m, s);
-    return { h, m, s, weekday, monthName, dayNum, yearNum, weekdayIdx, monthIdx, anchor };
-  }, [now, cityTz]);
+    // Changes once per city-local day — handy as a memo key for daily work.
+    const dayKey = `${yearNum}-${monthIdx}-${dayNum}`;
+    return { h, m, s, weekday, monthName, dayNum, yearNum, weekdayIdx, monthIdx, anchor, dayKey };
+  }, [now, fmt]);
 
   const cityNow = cityNowParts.anchor;
   const isFriday = cityNowParts.weekdayIdx === 5;

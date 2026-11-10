@@ -11,10 +11,11 @@
 // The mosque icon reflects the active prayer's colour palette and current
 // lunar phase via its activePrayer + lunarPhase props.
 
+import { memo } from 'react';
 import MosqueIcon from './MosqueIcon.jsx';
 import { useT } from '../i18n/I18nContext.jsx';
 
-export default function Header({
+function Header({
   masjidName,
   screenLabel, // optional per-screen subtitle override
   logoDataUrl, // optional: base64 PNG/JPG/SVG; if set, replaces MosqueIcon
@@ -103,3 +104,6 @@ export default function Header({
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(Header);

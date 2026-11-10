@@ -17,6 +17,7 @@
 // STYLING: all visual styling lives in CSS (.moon-arc-* classes in
 // src/styles/widgets.css). JSX = structure + data only.
 
+import { memo } from 'react';
 import SunCalc from 'suncalc';
 import { fmt12 } from '../../lib/formatters.js';
 import { useT } from '../../i18n/I18nContext.jsx';
@@ -119,7 +120,7 @@ function MoonPhase({ cx, cy, r, phase }) {
   );
 }
 
-export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
+function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
   const { t } = useT();
 
   // Calculate moon rise/set for TODAY at this location
@@ -229,3 +230,6 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(MoonArc);

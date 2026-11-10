@@ -8,7 +8,7 @@
  * All drawn at 6–14 % opacity so UI content is always fully readable.
  */
 
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { memo, useMemo, useRef, useEffect, useState } from 'react';
 
 // ── tiny math helpers ─────────────────────────────────────────────────────────
 const TAU = Math.PI * 2;
@@ -325,7 +325,7 @@ function blendPal(prayerPal, themePal) {
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function IslamicGeometryEngine({
+function IslamicGeometryEngine({
   activePrayer = 'dhuhr',
   sunElevation = 45,
   minutesToNext = 60,
@@ -573,3 +573,6 @@ export default function IslamicGeometryEngine({
     </svg>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(IslamicGeometryEngine);
