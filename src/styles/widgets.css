@@ -278,11 +278,11 @@
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   font-weight: 700;
-  font-size: calc(clamp(0.825rem, 1vw, 1rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.825rem, 1.15vmax, 1.5rem) * var(--t-fs, 1));
 }
 
 .weather-strip-temp {
-  font-size: calc(clamp(1rem, 1.6vw, 1.75rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1rem, 1.6vmax, 2.25rem) * var(--t-fs, 1));
   color: var(--t-accent);
   font-variant-numeric: tabular-nums;
 }
@@ -336,7 +336,7 @@
  * Uppercase + bold + dim gold for a quiet but readable hint. */
 .fast-bar-label {
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.625rem, 0.8vw, 1rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.7rem, 0.9vmax, 1.2rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-accent);
   letter-spacing: 0.14em;
@@ -363,7 +363,7 @@
 
 .fast-bar-endpoint-lbl {
   font-family: 'Rajdhani', sans-serif;
-  font-size: calc(clamp(0.563rem, 0.7vw, 0.875rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.65rem, 0.85vmax, 1.1rem) * var(--t-fs, 1));
   color: var(--t-text-dim);
   letter-spacing: 0.08em;
   text-transform: uppercase;

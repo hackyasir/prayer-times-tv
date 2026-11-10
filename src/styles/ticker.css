@@ -57,8 +57,10 @@
 .ticker-segment {
   display: inline-flex;
   align-items: center;
-  font-size: calc(clamp(0.8rem, 1.05vw, 1.2rem) * var(--t-fs, 1));
-  color: var(--t-accent-dim);
+  /* Announcements are read from across the hall — TV-sized, and the
+     brighter dim-text colour (accent-dim was about 3.6:1 on black). */
+  font-size: calc(clamp(0.8rem, 1.6vmax, 2.25rem) * var(--t-fs, 1));
+  color: var(--t-text-dim);
   letter-spacing: 0.08em;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 500;
@@ -82,7 +84,7 @@
   justify-content: center;
   padding: 1px 6px;
   border-radius: 999px;
-  font-size: calc(clamp(0.6rem, 0.85vw, 0.82rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.6rem, 1vmax, 1.25rem) * var(--t-fs, 1));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 700;
@@ -109,8 +111,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: calc(clamp(0.86rem, 1.12vw, 1.26rem) * var(--t-fs, 1));
-  color: var(--t-accent-dim);
+  font-size: calc(clamp(0.86rem, 1.65vmax, 2.4rem) * var(--t-fs, 1));
+  color: var(--t-text-dim);
   letter-spacing: 0.06em;
   font-family: 'Rajdhani', sans-serif;
   font-weight: 600;

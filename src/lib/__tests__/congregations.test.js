@@ -5,7 +5,7 @@
 // when passed in) are the regressions these tests guard.
 
 import { describe, it, expect } from 'vitest';
-import { buildCongregations } from '../congregations.js';
+import { buildCongregations, findPendingIqamah } from '../congregations.js';
 
 const at = (hh, mm) => new Date(Date.UTC(2026, 10, 13, hh, mm));
 
@@ -97,5 +97,37 @@ describe('buildCongregations', () => {
     });
     expect(list.map((c) => c.key)).toEqual(['fajr', 'dhuhr', 'maghrib', 'isha']);
     expect(list[1].time).toEqual(todayTimes.dhuhr);
+  });
+});
+
+describe('findPendingIqamah', () => {
+  const list = buildCongregations({ todayTimes, iqamah });
+
+  it('returns the prayer between its adhan and iqamah', () => {
+    // Dhuhr adhan 17:00, iqamah 17:15
+    expect(findPendingIqamah(list, todayTimes, at(17, 5))).toMatchObject({ key: 'dhuhr' });
+    expect(findPendingIqamah(list, todayTimes, at(17, 0))).toMatchObject({ key: 'dhuhr' });
+  });
+
+  it('returns null before the adhan and once the iqamah starts', () => {
+    expect(findPendingIqamah(list, todayTimes, at(16, 59))).toBeNull();
+    expect(findPendingIqamah(list, todayTimes, at(17, 15))).toBeNull();
+  });
+
+  it('never applies when iqamah is at the adhan time', () => {
+    const zero = buildCongregations({ todayTimes, iqamah: { ...iqamah, maghrib: 0 } });
+    expect(findPendingIqamah(zero, todayTimes, at(21, 45))).toBeNull();
+  });
+
+  it("ignores Jumu'ah and Eid slots, which have no separate adhan", () => {
+    const friday = buildCongregations({
+      todayTimes,
+      iqamah,
+      isFriday: true,
+      jumuahTimes: [at(18, 0)],
+      eidTimes: [at(13, 0)],
+    });
+    // Dhuhr adhan has passed, but on Friday Dhuhr is replaced by Jumu'ah
+    expect(findPendingIqamah(friday, todayTimes, at(17, 5))).toBeNull();
   });
 });

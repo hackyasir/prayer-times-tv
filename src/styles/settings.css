@@ -39,6 +39,15 @@
   overflow: hidden;
 }
 
+/* Focus ring inside the panel — thicker and brighter than the global one so
+ * a remote-control user can see which control is selected from the couch.
+ * Also overrides `outline: none` on the select and text inputs below. */
+.sbox :focus-visible,
+.pin-box :focus-visible {
+  outline: 3px solid var(--t-accent-hi, #f0d080);
+  outline-offset: 2px;
+}
+
 .sbox-hdr {
   display: flex;
   align-items: center;

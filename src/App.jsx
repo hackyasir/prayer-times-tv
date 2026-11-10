@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS } from './lib/constants.js';
+import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS, PRAYERS } from './lib/constants.js';
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, toHijriParts, findUpcomingEid } from './lib/hijri.js';
 import { addMins, fmt12 } from './lib/formatters.js';
@@ -9,7 +9,7 @@ import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
 import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
 import { fastReasonsFor, buildFastLine } from './lib/sunnahFasts.js';
-import { buildCongregations } from './lib/congregations.js';
+import { buildCongregations, findPendingIqamah } from './lib/congregations.js';
 
 // Custom hooks — pure logic extracted to their own files
 import useCityTime from './hooks/useCityTime.js';
@@ -705,6 +705,22 @@ export default function App() {
     forceUntil: testBlackoutUntil,
   });
 
+  // ── Clock countdown target ───────────────────────────────────────────────
+  // Between a daily prayer's adhan and its iqamah, the big countdown targets
+  // the iqamah — that's what people in the hall are waiting for. Otherwise it
+  // counts down to the next adhan (or Jumu'ah slot). The Test Countdown
+  // button keeps priority so it can still preview the final-minute view.
+  const pendingIqamah = testCountdownUntil
+    ? null
+    : findPendingIqamah(congregations, todayTimes, now);
+  const clockCountdown = pendingIqamah
+    ? {
+        mode: 'iqamah',
+        next: { ...PRAYERS.find((p) => p.key === pendingIqamah.key), time: pendingIqamah.time },
+        secs: Math.max(0, Math.floor((pendingIqamah.time - now) / 1000)),
+      }
+    : { mode: 'adhan', next, secs: secsToNext };
+
   const autoAnnouncementText = (() => {
     if (!autoAnnouncements) return '';
 
@@ -1290,8 +1306,9 @@ export default function App() {
               timeStr={timeStr}
               secStr={secStr}
               dateStr={dateStr}
-              next={next}
-              secsToNext={secsToNext}
+              next={clockCountdown.next}
+              secsToNext={clockCountdown.secs}
+              countdownMode={clockCountdown.mode}
               progressStyle={progressStyle}
               ringProgress={ringProgress}
               todayTimes={todayTimes}

@@ -13,6 +13,22 @@
 import { fmt12 } from '../lib/formatters.js';
 import PrayerIcon from './PrayerIcons.jsx';
 
+/**
+ * "5:27 AM" → digits plus a smaller AM/PM suffix, so the digits can be large
+ * and still fit the time column on a TV. Placeholders ("--:--") pass through.
+ */
+function TimeText({ date, cityTz }) {
+  const text = fmt12(date, cityTz);
+  const m = /^(.*\d)\s+(AM|PM)$/.exec(text);
+  if (!m) return text;
+  return (
+    <>
+      {m[1]}
+      <span className="ptime-ampm">{m[2]}</span>
+    </>
+  );
+}
+
 /** Standard prayer row. */
 export default function PrayerCard({
   enName,
@@ -40,8 +56,12 @@ export default function PrayerCard({
           <span className="abadge-dot" />
         </div>
       )}
-      <div className="ptime">{fmt12(time, cityTz)}</div>
-      <div className="ptime-iqamah">{fmt12(iqamahTime, cityTz)}</div>
+      <div className="ptime">
+        <TimeText date={time} cityTz={cityTz} />
+      </div>
+      <div className="ptime-iqamah">
+        <TimeText date={iqamahTime} cityTz={cityTz} />
+      </div>
     </div>
   );
 }

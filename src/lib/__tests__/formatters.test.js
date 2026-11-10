@@ -13,6 +13,7 @@ import {
   fmt12,
   addMins,
   fmtCountdown,
+  fmtCountdownShort,
   bearingToCompass,
   bearingToCompassLong,
 } from '../formatters.js';
@@ -206,5 +207,20 @@ describe('bearingToCompassLong', () => {
   it('falls back to "North" for completely invalid input', () => {
     // Pure-NaN input → bearingToCompass returns undefined → fallback.
     expect(bearingToCompassLong(NaN)).toBe('North');
+  });
+});
+
+describe('fmtCountdownShort', () => {
+  it('shows MM:SS under an hour', () => {
+    expect(fmtCountdownShort(492)).toBe('08:12');
+    expect(fmtCountdownShort(59)).toBe('00:59');
+  });
+
+  it('falls back to HH:MM:SS from one hour', () => {
+    expect(fmtCountdownShort(3600)).toBe('01:00:00');
+  });
+
+  it('never goes negative', () => {
+    expect(fmtCountdownShort(-5)).toBe('00:00');
   });
 });

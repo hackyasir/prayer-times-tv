@@ -56,3 +56,23 @@ export function buildCongregations({
 
   return out.sort((a, b) => a.time - b.time);
 }
+
+/**
+ * The daily prayer whose adhan has been called but whose iqamah hasn't
+ * started yet — i.e. the congregation people in the hall are waiting for.
+ * Jumu'ah and Eid have no separate adhan, so they never count here (the
+ * normal countdown already targets their slot time).
+ *
+ * @param {Array<{ key: string, time: Date }>} congregations from buildCongregations()
+ * @param {object} todayTimes { fajr, dhuhr, ... } adhan Dates
+ * @param {Date} now
+ * @returns {{ id: string, key: string, time: Date } | null}
+ */
+export function findPendingIqamah(congregations, todayTimes, now) {
+  for (const c of congregations || []) {
+    if (!DAILY_PRAYER_KEYS.includes(c.key)) continue;
+    const adhan = todayTimes?.[c.key];
+    if (isValidDate(adhan) && adhan <= now && now < c.time) return c;
+  }
+  return null;
+}

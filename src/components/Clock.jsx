@@ -4,7 +4,9 @@
 //   1. Big clock time + seconds + date
 //   2. Divider
 //   3. "Next Prayer" label + Arabic name + chosen ProgressVisual + countdown
-//      (final-minute mode: huge pulsing seconds number)
+//      (final-minute mode: huge pulsing seconds number). Between a prayer's
+//      adhan and iqamah (countdownMode 'iqamah') it reads "Iqamah" and
+//      counts down to the iqamah instead.
 //   4. Divider
 //   5. Hadith — rotates per prayer index
 //
@@ -12,7 +14,7 @@
 // parent using the city's timezone — we never call Date.now() here.
 
 import ProgressVisual from './ProgressVisual.jsx';
-import { fmt12, fmtCountdown } from '../lib/formatters.js';
+import { fmt12, fmtCountdown, fmtCountdownShort } from '../lib/formatters.js';
 import { PRAYERS } from '../lib/constants.js';
 import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 
@@ -21,9 +23,11 @@ export default function Clock({
   timeStr,
   secStr,
   dateStr,
-  // Next prayer info ({ en, ar, time, key } | null)
+  // Countdown target ({ en, ar, time, key } | null). In 'iqamah' mode this is
+  // the prayer whose adhan has been called, and `time` is its iqamah.
   next,
   secsToNext,
+  countdownMode = 'adhan', // 'adhan' | 'iqamah'
   // Progress visual config + data
   progressStyle,
   ringProgress,
@@ -54,6 +58,7 @@ export default function Clock({
     return { primary: localized, secondary: arabicName };
   }
   const names = nextNames();
+  const isIqamah = countdownMode === 'iqamah';
 
   return (
     <div className="ccol">
@@ -72,8 +77,13 @@ export default function Clock({
 
       {/* Next-prayer section: Arabic + Latin name, then ProgressVisual + countdown */}
       {next ? (
-        <div className="next-sec" role="status" aria-live="polite" aria-atomic="true">
-          <div className="next-lbl">{t('label.next')}</div>
+        <div
+          className={`next-sec${isIqamah ? ' next-sec--iqamah' : ''}`}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div className="next-lbl">{isIqamah ? t('label.iqamahNext') : t('label.next')}</div>
           <div className="next-name">{names.primary}</div>
           <div className="next-ar">{names.secondary}</div>
 
@@ -92,7 +102,7 @@ export default function Clock({
             <>
               <div className="countdown-big">{secsToNext}</div>
               <div className="countdown-lbl">
-                {fmtStr(t('label.untilSeconds'), {
+                {fmtStr(t(isIqamah ? 'label.untilIqamahSeconds' : 'label.untilSeconds'), {
                   plural: secsToNext === 1 ? '' : 's',
                   prayer: names.primary,
                 })}
@@ -100,9 +110,11 @@ export default function Clock({
             </>
           ) : (
             <>
-              <div className="countdown">{fmtCountdown(secsToNext)}</div>
+              <div className="countdown">
+                {isIqamah ? fmtCountdownShort(secsToNext) : fmtCountdown(secsToNext)}
+              </div>
               <div className="countdown-lbl">
-                {fmtStr(t('label.until'), {
+                {fmtStr(t(isIqamah ? 'label.untilIqamah' : 'label.until'), {
                   prayer: names.primary,
                   time: fmt12(next.time, cityTz),
                 })}

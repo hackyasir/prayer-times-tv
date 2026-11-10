@@ -218,12 +218,75 @@ export default function SettingsPanel({
     const focusableSelector =
       'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+    // Controls that need Up/Down to edit their value (time/date segments) or
+    // move the caret between lines. Everything else — buttons, toggles, tabs,
+    // dropdowns, sliders (Left/Right adjust them), single-line text fields —
+    // lets Up/Down move between controls, so a remote user never changes a
+    // value just by moving past it.
+    const UP_DOWN_INPUT_TYPES = ['number', 'time', 'date', 'datetime-local', 'month', 'week', 'radio'];
+    const usesUpDown = (el) =>
+      el instanceof HTMLElement &&
+      (el.tagName === 'TEXTAREA' ||
+        el.isContentEditable ||
+        (el.tagName === 'INPUT' && UP_DOWN_INPUT_TYPES.includes(el.type)));
+    // Fields where the remote's OK (Enter) means "done, next control".
+    const ENTER_ADVANCES_TYPES = ['text', 'search', 'time', 'date'];
+
+    // Focusable controls in on-screen order, skipping hidden ones and
+    // roving-tabindex tabs that aren't selected.
+    const visibleFocusables = () =>
+      Array.from(node.querySelectorAll(focusableSelector)).filter(
+        (el) => el.tabIndex >= 0 && el.getClientRects().length > 0
+      );
+
     const onKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         onCancel?.();
         return;
       }
+
+      // TV remotes: the D-pad sends arrow keys, and most TV browsers have no
+      // Tab key. Up/Down step through the panel's controls like Tab /
+      // Shift+Tab (the browser scrolls the focused control into view).
+      const moveFocus = (step) => {
+        const focusables = visibleFocusables();
+        if (!focusables.length) return;
+        const i = focusables.indexOf(document.activeElement);
+        const target =
+          i === -1
+            ? focusables[0]
+            : focusables[(i + step + focusables.length) % focusables.length];
+        event.preventDefault();
+        target.focus();
+      };
+
+      if (event.defaultPrevented) return;
+
+      if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !usesUpDown(event.target)) {
+        moveFocus(event.key === 'ArrowDown' ? 1 : -1);
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        const el = event.target;
+        // OK on a dropdown opens it (browsers don't do this on their own).
+        if (el instanceof HTMLSelectElement && typeof el.showPicker === 'function') {
+          event.preventDefault();
+          try {
+            el.showPicker();
+          } catch {
+            // Not allowed in this context — Space / Alt+Down still open it.
+          }
+          return;
+        }
+        // OK on a text, time or date field moves on to the next control.
+        if (el instanceof HTMLInputElement && ENTER_ADVANCES_TYPES.includes(el.type)) {
+          moveFocus(1);
+          return;
+        }
+      }
+
       if (event.key !== 'Tab') return;
 
       const focusables = Array.from(node.querySelectorAll(focusableSelector));
@@ -909,7 +972,6 @@ export default function SettingsPanel({
                           cursor: 'pointer',
                           textAlign: 'center',
                           transition: 'border-color .2s',
-                          outline: 'none',
                         }}
                       >
                         {/* Colour swatches */}
@@ -2270,7 +2332,6 @@ export default function SettingsPanel({
                           fontFamily: 'Rajdhani,sans-serif',
                           fontSize: 15,
                           fontWeight: 700,
-                          outline: 'none',
                           flex: 1,
                           opacity: j.enabled ? 1 : 0.4,
                           colorScheme: 'dark',
@@ -2469,7 +2530,6 @@ export default function SettingsPanel({
                               fontFamily: 'Rajdhani,sans-serif',
                               fontSize: 14,
                               fontWeight: 700,
-                              outline: 'none',
                               flex: 1,
                               opacity: slot.enabled ? 1 : 0.4,
                               colorScheme: 'dark',

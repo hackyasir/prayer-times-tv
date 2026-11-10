@@ -62,6 +62,16 @@ export function fmtCountdown(secs) {
 }
 
 /**
+ * Like fmtCountdown, but MM:SS when under an hour ("08:12"). Used for the
+ * iqamah countdown, which is nearly always minutes away.
+ */
+export function fmtCountdownShort(secs) {
+  if (secs >= 3600) return fmtCountdown(secs);
+  const s = Math.max(0, Math.floor(secs));
+  return [Math.floor(s / 60), s % 60].map((x) => String(x).padStart(2, '0')).join(':');
+}
+
+/**
  * Convert a compass bearing (degrees 0..360) to a 16-point cardinal name.
  *   0° → N,  22.5° → NNE,  45° → NE,  ... ,  337.5° → NNW
  */

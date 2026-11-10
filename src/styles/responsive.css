@@ -9,6 +9,7 @@
  *   768px+ portrait          kiosk portrait — stack, clock first
  *   768px+ AND max-h 500px   landscape phone — compress cards, hide hadith
  *   1200px+                  kiosk/TV — larger gaps
+ *   1600px+ AND 800px+ tall  TV — zoom the Settings panel + PIN box
  *   2400px+                  4K landscape — font bumps
  *   min-height 2400px        4K portrait — font bumps
  */
@@ -73,6 +74,12 @@
   }
   .pcol {
     align-self: stretch;
+  }
+  /* Give the prayer list the column's full height so the rows (and their
+     times) grow into the space instead of leaving a gap above the weather
+     strip. */
+  .pcol-wrap > .pcol {
+    flex: 1 1 auto;
   }
   .pcard {
     flex: 1;
@@ -170,6 +177,32 @@
   }
 }
 
+/* ── Settings panel + PIN box on TVs ─────────────────────────────────────
+ * Settings are saved on each device, so admins set up each screen on the TV
+ * itself, from a few feet away and often with a remote. The panel is full of
+ * inline pixel sizes that font-size rules can't reach, so `zoom` scales the
+ * whole panel (text, controls, spacing) evenly. Width and height are divided
+ * by the zoom so the zoomed panel still fits on screen. */
+@media (min-width: 1600px) and (min-height: 800px) {
+  .sbox,
+  .pin-box {
+    --s-zoom: 1.5;
+
+    zoom: var(--s-zoom);
+  }
+  .sbox {
+    width: min(760px, calc(94vw / var(--s-zoom)));
+    height: min(calc(92vh / var(--s-zoom)), 860px);
+  }
+}
+
+@media (min-width: 2400px) and (min-height: 1300px) {
+  .sbox,
+  .pin-box {
+    --s-zoom: 2.25;
+  }
+}
+
 /* ── 2400px+ — 4K landscape ──────────────────────────────────────────────── */
 @media (min-width: 2400px) {
   .app {
@@ -207,25 +240,8 @@
     font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1));
   }
 
-  .pen {
-    font-size: calc(clamp(1.5rem, 2.2vw, 5rem) * var(--t-fs, 1));
-  }
-  .par {
-    font-size: calc(clamp(1.1rem, 1.6vw, 3.5rem) * var(--t-fs, 1));
-  }
-  /* ptime bigger than ptime-iqamah — different sizes, wider columns */
-  .ptime {
-    font-size: calc(clamp(1.5rem, 2.4vw, 5rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
-  .ptime-iqamah {
-    font-size: calc(clamp(1.2rem, 1.9vw, 4rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
-  .pheader-col {
-    font-size: calc(clamp(0.6rem, 0.85vw, 1.4rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
+  /* Prayer names and times need no 4K overrides — they scale with the
+     prayer column's width (cqi) in prayer-cards.css. */
 
   .app-title {
     font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1));
@@ -283,23 +299,6 @@
   }
   .next-ar {
     font-size: calc(clamp(1.5rem, 3vw, 6rem) * var(--t-fs, 1));
-  }
-  .pen {
-    font-size: calc(clamp(1.2rem, 2vw, 4rem) * var(--t-fs, 1));
-  }
-  .par {
-    font-size: calc(clamp(1rem, 1.8vw, 3rem) * var(--t-fs, 1));
-  }
-  .ptime {
-    font-size: calc(clamp(1.2rem, 2.2vw, 4rem) * var(--t-fs, 1));
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
-  }
-  .ptime-iqamah {
-    font-size: calc(clamp(1rem, 1.8vw, 3.2rem) * var(--t-fs, 1));
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
-  }
-  .pheader-col {
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
   }
   .pcard {
     flex: 1;
