@@ -83,9 +83,13 @@
   gap: 1.2vw;
 }
 
+/* Location, Hijri date and the Settings button stay right-aligned together
+ * in every layout (on narrow screens this block wraps onto its own row; it
+ * used to switch to left alignment there, leaving the date and Settings
+ * button on the left while the location stayed on the right). */
 .hdr-right {
   flex: 1 1 100%;
-  text-align: left;
+  text-align: right;
 }
 
 /* Header typography */

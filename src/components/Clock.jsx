@@ -14,6 +14,7 @@
 // parent using the city's timezone — we never call Date.now() here.
 
 import ProgressVisual from './ProgressVisual.jsx';
+import StableDigits from './StableDigits.jsx';
 import { fmt12, fmtCountdown, fmtCountdownShort } from '../lib/formatters.js';
 import { PRAYERS } from '../lib/constants.js';
 import { useT, fmtStr } from '../i18n/I18nContext.jsx';
@@ -64,11 +65,16 @@ export default function Clock({
     <div className="ccol">
       {/* Optional embedded-variant slot above the clock — Sun arc, etc. */}
       {topSlot}
-      {/* Clock time block */}
+      {/* Clock time block. StableDigits keeps the ticking numbers from
+          shifting left and right (the font's digits differ in width). */}
       <div className="clock">
         <div className="clock-time-row">
-          <span className="clock-main">{timeStr}</span>
-          <span className="clock-sec">{secStr}</span>
+          <span className="clock-main">
+            <StableDigits text={timeStr} />
+          </span>
+          <span className="clock-sec">
+            <StableDigits text={secStr} />
+          </span>
         </div>
         <div className="clock-date">{dateStr}</div>
       </div>
@@ -100,7 +106,9 @@ export default function Clock({
           {/* Final-minute mode: huge pulsing seconds digit instead of HH:MM:SS */}
           {secsToNext <= 60 && secsToNext > 0 ? (
             <>
-              <div className="countdown-big">{secsToNext}</div>
+              <div className="countdown-big">
+                <StableDigits text={secsToNext} />
+              </div>
               <div className="countdown-lbl">
                 {fmtStr(t(isIqamah ? 'label.untilIqamahSeconds' : 'label.untilSeconds'), {
                   plural: secsToNext === 1 ? '' : 's',
@@ -111,7 +119,9 @@ export default function Clock({
           ) : (
             <>
               <div className="countdown">
-                {isIqamah ? fmtCountdownShort(secsToNext) : fmtCountdown(secsToNext)}
+                <StableDigits
+                  text={isIqamah ? fmtCountdownShort(secsToNext) : fmtCountdown(secsToNext)}
+                />
               </div>
               <div className="countdown-lbl">
                 {fmtStr(t(isIqamah ? 'label.untilIqamah' : 'label.until'), {

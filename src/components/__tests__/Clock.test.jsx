@@ -46,13 +46,25 @@ function renderClock(props) {
 }
 
 describe('Clock countdown', () => {
+  it('wraps each ticking digit in a fixed-width cell so the time does not shift', () => {
+    renderClock({
+      next: { key: 'maghrib', en: 'Maghrib', ar: 'المغرب', time: todayTimes.maghrib },
+      secsToNext: 7_692,
+    });
+    // 2:37 + :48 + 02:08:12 = 3 + 2 + 6 digit cells
+    expect(document.querySelectorAll('.clock-main .sd')).toHaveLength(3);
+    expect(document.querySelectorAll('.clock-sec .sd')).toHaveLength(2);
+    expect(document.querySelectorAll('.countdown .sd')).toHaveLength(6);
+    expect(document.querySelector('.clock-sec').textContent).toBe(':48 PM');
+  });
+
   it('counts down to the next adhan by default', () => {
     renderClock({
       next: { key: 'maghrib', en: 'Maghrib', ar: 'المغرب', time: todayTimes.maghrib },
       secsToNext: 7_692,
     });
     expect(screen.getByText('Next Prayer')).toBeInTheDocument();
-    expect(screen.getByText('02:08:12')).toBeInTheDocument();
+    expect(document.querySelector('.countdown').textContent).toBe('02:08:12');
     expect(screen.getByText('Until Maghrib · 9:45 PM')).toBeInTheDocument();
   });
 
@@ -64,7 +76,7 @@ describe('Clock countdown', () => {
     });
     expect(screen.getByText('Iqamah')).toBeInTheDocument();
     expect(screen.queryByText('Next Prayer')).not.toBeInTheDocument();
-    expect(screen.getByText('08:12')).toBeInTheDocument();
+    expect(document.querySelector('.countdown').textContent).toBe('08:12');
     expect(screen.getByText('Asr iqamah · 7:45 PM')).toBeInTheDocument();
     expect(document.querySelector('.next-sec--iqamah')).not.toBeNull();
   });
@@ -75,7 +87,7 @@ describe('Clock countdown', () => {
       secsToNext: 30,
       countdownMode: 'iqamah',
     });
-    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(document.querySelector('.countdown-big').textContent).toBe('30');
     expect(screen.getByText('seconds until Asr iqamah')).toBeInTheDocument();
   });
 });

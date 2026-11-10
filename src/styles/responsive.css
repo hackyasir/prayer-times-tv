@@ -314,3 +314,168 @@
     max-height: 22vh;
   }
 }
+
+/* ── Fit-to-space sizing ──────────────────────────────────────────────────
+ * Wherever container query units work (most browsers since 2022/23), the
+ * main text is sized from the space it actually has — so the layout fills
+ * any screen shape (16:9, 16:10, 4:3, ultra-wide, portrait) without leaving
+ * gaps or cutting anything off. Older browsers skip this block and keep the
+ * vw/vmax sizes above and in the component stylesheets.
+ *
+ * Units: cqi/cqw = % of the container's width, cqh = % of its height.
+ * The viewing-distance scale (--t-fs) still enlarges text, but only up to
+ * what fits; it can't push content off screen. */
+@supports (width: 1cqh) {
+  @media (min-width: 768px) {
+    /* Each prayer row and the clock column become size containers, so
+       their text can follow their own height as well as width. */
+    .pcard,
+    .ccol {
+      container-type: size;
+    }
+  }
+
+  /* ── Prayer list ─────────────────────────────────────────────────────
+   * Column width comes from the list's width (the header row and each card
+   * resolve it against .pcol), capped so both time columns never take more
+   * than ~62% of a row. Text then fits BOTH the row's height (cqh — rows
+   * shrink on Fridays / Eid when banners join the list) and the width. */
+  .pheader,
+  .pcard {
+    --ptime-w: min(calc(28cqi * var(--t-fs, 1)), 31cqi);
+  }
+  .pheader-name,
+  .pheader-col {
+    font-size: max(0.75rem, min(calc(2.4cqi * var(--t-fs, 1)), 4.5cqi));
+  }
+  .pen {
+    font-size: clamp(0.8rem, min(calc(5.2cqi * var(--t-fs, 1)), 6.5cqi, 44cqh), 5rem);
+  }
+  .par {
+    font-size: clamp(0.625rem, min(calc(3.4cqi * var(--t-fs, 1)), 4.5cqi, 28cqh), 3.5rem);
+  }
+  .ptime,
+  .ptime-iqamah {
+    /* One line at line-height 1.1 — 80% of the row's content height leaves
+       a small margin. */
+    font-size: clamp(1.05rem, min(calc(var(--ptime-w) * 0.25), 80cqh), 8rem);
+  }
+
+  /* ── Clock column ────────────────────────────────────────────────────
+   * Each element gets a share of the column's height (--fit-h, in %) and a
+   * width limit (--fit-w, % of the column's width) so its line fits. The
+   * viewing-distance scale can grow it to at most 10% past its share. The
+   * shares add up to about 85% of the column (with the sun arc and fast
+   * bar), leaving room for the final-minute countdown. Pure CSS on purpose:
+   * the size depends only on the screen, so nothing re-measures or jitters
+   * while the clock ticks. */
+  .ccol .clock-main,
+  .ccol .clock-sec,
+  .ccol .clock-date,
+  .ccol .next-lbl,
+  .ccol .next-name,
+  .ccol .next-ar,
+  .ccol .countdown,
+  .ccol .countdown-big,
+  .ccol .countdown-lbl,
+  .ccol .clock-complete,
+  .ccol .hadith-ar,
+  .ccol .hadith-en {
+    font-size: max(
+      var(--fit-min, 0.75rem),
+      calc(
+        min(var(--fit-h) * 1cqh * var(--t-fs, 1), var(--fit-h) * 1.1cqh, var(--fit-w) * 1cqw) *
+          var(--fit-k, 1)
+      )
+    );
+  }
+  /* The sun / moon arc keeps its 400:84 shape, so its height follows its
+     width. Cap the width at 66% of the column's height so the arc never
+     takes more than ~14% of the height (on short, wide screens it took
+     ~20% and squeezed everything else). */
+  .ccol .sun-arc {
+    width: min(92%, 600px, 66cqh);
+  }
+
+  @media (min-width: 768px) and (orientation: portrait) {
+    /* The portrait rule's 2vh gaps cost ~23% of the column at 1080×1920;
+       justify-content: space-between spreads any spare room instead. */
+    .ccol {
+      gap: 0.6vh;
+    }
+  }
+  /* The ring, moon, orbit and day-bar progress styles add a graphic of their own —
+     keep it within a share of the height and give the text a little less. */
+  .ccol:has(.ring-wrap, .moon-prog-wrap, .orbit-wrap, .daybar-wrap) {
+    --fit-k: 0.85;
+  }
+  /* Day bar: full column width, labels sized to the column so neighbouring
+     labels (alternating above/below the bar) never touch. */
+  .ccol .daybar-wrap {
+    width: 85cqw;
+  }
+  .ccol .daybar-labels {
+    font-size: max(0.6rem, min(calc(2.2cqh * var(--t-fs, 1)), 2.6cqw));
+  }
+  .ccol .ring-svg,
+  .ccol .moon-prog-svg,
+  .ccol .orbit-svg {
+    width: min(clamp(64px, 9vw, 150px), 13cqh);
+    height: min(clamp(64px, 9vw, 150px), 13cqh);
+  }
+  .ccol .clock-main {
+    --fit-h: 19;
+    --fit-w: 24;
+    --fit-min: 2.75rem;
+  }
+  .ccol .clock-sec {
+    --fit-h: 6.1;
+    --fit-w: 7.7;
+    --fit-min: 1.125rem;
+  }
+  .ccol .clock-date {
+    --fit-h: 2.6;
+    --fit-w: 4.3;
+    --fit-min: 0.85rem;
+  }
+  .ccol .next-lbl {
+    --fit-h: 2.5;
+    --fit-w: 10;
+  }
+  .ccol .next-name {
+    --fit-h: 7;
+    --fit-w: 22;
+    --fit-min: 1.25rem;
+  }
+  .ccol .next-ar {
+    --fit-h: 3.4;
+    --fit-w: 12;
+    --fit-min: 0.8rem;
+  }
+  .ccol .countdown {
+    --fit-h: 11;
+    --fit-w: 20;
+    --fit-min: 1.625rem;
+  }
+  .ccol .countdown-big {
+    --fit-h: 16;
+    --fit-w: 60;
+    --fit-min: 4rem;
+  }
+  .ccol .countdown-lbl {
+    --fit-h: 2.5;
+    --fit-w: 4.2;
+  }
+  .ccol .clock-complete {
+    --fit-h: 2.5;
+    --fit-w: 4;
+  }
+  .ccol .hadith-ar {
+    --fit-h: 2.8;
+    --fit-w: 5;
+  }
+  .ccol .hadith-en {
+    --fit-h: 2.4;
+    --fit-w: 3.4;
+  }
+}

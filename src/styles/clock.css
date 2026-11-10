@@ -235,20 +235,39 @@
   transition: left 60s linear;
 }
 
+/* Two label rows — one above the bar, one below (labels alternate between
+ * them so close-together prayers don't overlap). Each row is one line tall;
+ * the label size is set on the row so its height follows it. */
 .daybar-labels {
   position: relative;
-  height: clamp(14px, 1.8vw, 22px);
-  margin-top: 0.4vh;
+  height: 1.35em;
+  margin-top: 0.7vh;
+  font-size: calc(clamp(0.6rem, 0.85vw, 1.1rem) * var(--t-fs, 1));
+}
+
+.daybar-labels--top {
+  margin-top: 0;
+  margin-bottom: 0.7vh;
 }
 
 .daybar-label {
   position: absolute;
   transform: translateX(-50%);
-  font-size: calc(clamp(0.45rem, 0.75vw, 0.812rem) * var(--t-fs, 1));
+  font-size: inherit;
+  line-height: 1.35;
   color: var(--t-accent);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* End labels align inward so they don't run past the bar. */
+.daybar-label--start {
+  transform: none;
+}
+
+.daybar-label--end {
+  transform: translateX(-100%);
 }
 
 .daybar-label--past {

@@ -107,6 +107,16 @@ html {
   --danger-accent-deep: #c0392b;
 }
 
+/* ── Fixed-width digit cell (StableDigits) ────────────────────────────────
+ * Rajdhani's digits have different widths and the font has no tabular
+ * figures, so ticking clocks wrap each digit in a 1ch-wide cell (ch = width
+ * of "0", the widest digit) to keep their width — and position — steady. */
+.sd {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
+}
+
 /* ── Global focus styling ─────────────────────────────────────────────────
  * :focus-visible (not :focus) means we only show a focus ring when the
  * user is navigating with KEYBOARD, not when they click with a mouse.
