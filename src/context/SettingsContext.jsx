@@ -148,8 +148,25 @@ export const DEFAULTS = {
   // 85 = default — clearly "in prayer mode" but
   //      dashboard still faintly visible underneath
   // 100 = fully opaque (pure black, current behaviour)
-  blackoutDurations: { fajr: 10, dhuhr: 10, asr: 10, maghrib: 7, isha: 12 },
+  // jumuah covers the khutbah + prayer from each Jumu'ah slot time; eid
+  // covers the Eid prayer + khutbah from each Eid slot time.
+  blackoutDurations: { fajr: 10, dhuhr: 10, asr: 10, maghrib: 7, isha: 12, jumuah: 40, eid: 30 },
 };
+
+/**
+ * True once any settings have been saved on this device (by Apply, the
+ * "Use my location" button, or an earlier automatic location lookup).
+ * App uses this to run the automatic location lookup on first run only,
+ * so a restart never replaces a location the admin chose.
+ */
+export function hasSavedSettings() {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    // Storage unavailable — treat as nothing saved.
+    return false;
+  }
+}
 
 function loadSettings() {
   try {

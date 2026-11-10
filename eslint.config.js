@@ -40,7 +40,7 @@ export default [
       globals: {
         // Browser globals — window, document, fetch, localStorage, etc.
         ...globals.browser,
-        // Service worker globals (used by public/sw.js if linted).
+        // Service worker globals (used by src/sw.js).
         ...globals.serviceworker,
       },
     },
@@ -114,8 +114,6 @@ export default [
       'dist/**',
       'coverage/**',
       'node_modules/**',
-      'public/sw.js', // Hand-crafted service worker; intentionally
-      // skips lint rules that don't apply to SWs.
       '.vite/**',
       '.vitest-cache/**',
     ],

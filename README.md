@@ -110,7 +110,8 @@ Open in a browser, click **Settings** (gear icon, top-right), set your location 
 <summary><strong>Reverent mode (Blackout during salah)</strong></summary>
 
 - Optional overlay covers the dashboard from a configurable lead time before iqamah until after the prayer ends.
-- Per-prayer durations and overlay opacity are configurable.
+- On Fridays it follows the Jumu'ah slots instead of Dhuhr, and on Eid it covers the Eid prayer slots.
+- Per-prayer durations (including Jumu'ah and Eid) and overlay opacity are configurable.
 - Dismiss early with a 3-second press-and-hold gesture (with on-screen progress feedback) to prevent accidental taps.
 
 </details>
@@ -140,7 +141,7 @@ Open in a browser, click **Settings** (gear icon, top-right), set your location 
 - **Settings export / import / reset** as JSON, with a sanitising validator on import.
 - **PWA installable** — add to home screen for a fullscreen, offline-first launch.
 - **City search** via [Open-Meteo Geocoding](https://open-meteo.com/) (~600k cities, free, no key).
-- **Audio chimes** — optional adhan/iqamah beeps (browser autoplay-unlock handled).
+- **Audio chimes** — optional adhan/iqamah beeps (browser autoplay-unlock handled). Jumu'ah and Eid slots beep when either chime is on; on Fridays the Jumu'ah slots replace the Dhuhr iqamah beep.
 
 </details>
 
@@ -183,7 +184,7 @@ Open in a browser, click **Settings** (gear icon, top-right), set your location 
 
 ```
 prayer-times-tv/
-├── index.html                  # CSP meta, PWA manifest link, fonts
+├── index.html                  # CSP meta, icons (manifest link injected at build)
 ├── package.json
 ├── vite.config.js              # Vite 6 + vite-plugin-pwa (injectManifest)
 ├── vitest.config.js            # Test runner config
@@ -192,17 +193,18 @@ prayer-times-tv/
 │   ├── workflows/deploy.yml     # CI: build + GitHub Pages deploy
 │   └── dependabot.yml
 │
-├── public/                     # Static assets (icons, manifest, sw.js,
-│                               #   ornament.jpg, sounds/)
+├── public/                     # Static assets (icons, ornament.jpg, sounds/)
 │
 └── src/
     ├── main.jsx                # Entry — provider chain
     ├── App.jsx                 # Orchestrator
+    ├── sw.js                   # Service worker (Workbox precache, offline)
     ├── IslamicGeometryEngine.jsx  # Decorative background geometry
     ├── lib/                    # Pure-JS helpers (no React)
     │   ├── hijri.js            # Gregorian↔Hijri, Eid detection
     │   ├── prayerCalc.js       # adhan wrapper + qibla
     │   ├── iqamah.js           # Manual/auto iqamah computation
+    │   ├── congregations.js    # Today's iqamah/Jumu'ah/Eid list (ticker, chime, blackout)
     │   ├── sunnahFasts.js      # Recommended-fast rules (shared)
     │   ├── viewingScale.js     # Distance-based type scaling
     │   ├── scheduleValidation.js

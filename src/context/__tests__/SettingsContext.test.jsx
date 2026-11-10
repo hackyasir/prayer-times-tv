@@ -18,7 +18,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { SettingsProvider, useSettings, DEFAULTS } from '../SettingsContext.jsx';
+import { SettingsProvider, useSettings, DEFAULTS, hasSavedSettings } from '../SettingsContext.jsx';
 import { STORAGE_KEY } from '../../lib/constants.js';
 
 // Tiny wrapper that mounts the provider for hook tests.
@@ -290,5 +290,51 @@ describe('useSettings — outside provider', () => {
     } finally {
       console.error = originalError;
     }
+  });
+});
+
+// App only runs the automatic location lookup when nothing has been saved
+// yet, so a restart never replaces the admin's chosen city.
+describe('hasSavedSettings — first-run detection', () => {
+  it('is false on a fresh device', () => {
+    expect(hasSavedSettings()).toBe(false);
+  });
+
+  it('is true once settings have been saved', () => {
+    const { result } = renderHook(() => useSettings(), { wrapper });
+    act(() => {
+      result.current.updateApplied({ locName: 'Mississauga, Ontario, Canada' });
+    });
+    expect(hasSavedSettings()).toBe(true);
+  });
+
+  it('is false when storage is unavailable', () => {
+    const original = localStorage.getItem;
+    localStorage.getItem = () => {
+      throw new Error('blocked');
+    };
+    try {
+      expect(hasSavedSettings()).toBe(false);
+    } finally {
+      localStorage.getItem = original;
+    }
+  });
+});
+
+describe('DEFAULTS — blackout durations', () => {
+  it("include Jumu'ah and Eid, and fill them in for older saved settings", () => {
+    expect(DEFAULTS.blackoutDurations.jumuah).toBeGreaterThan(0);
+    expect(DEFAULTS.blackoutDurations.eid).toBeGreaterThan(0);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ blackoutDurations: { fajr: 5, dhuhr: 5, asr: 5, maghrib: 5, isha: 5 } })
+    );
+    const { result } = renderHook(() => useSettings(), { wrapper });
+    expect(result.current.applied.blackoutDurations).toMatchObject({
+      fajr: 5,
+      jumuah: DEFAULTS.blackoutDurations.jumuah,
+      eid: DEFAULTS.blackoutDurations.eid,
+    });
   });
 });

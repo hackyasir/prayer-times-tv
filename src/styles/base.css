@@ -1,9 +1,11 @@
 /* ── Base styles ─────────────────────────────────────────────────────────────
  *
- * Font imports + global reset + the four shared keyframe animations.
+ * Global reset + the four shared keyframe animations.
  * Every other stylesheet builds on what's here.
  *
- *  - Fonts: Amiri (Arabic display), Rajdhani (Latin), Noto Naskh Arabic (Arabic body)
+ *  - Fonts: Amiri (Arabic display), Rajdhani (Latin), Noto Naskh Arabic (Arabic body).
+ *    Self-hosted via @fontsource and imported in src/main.jsx, so they are
+ *    precached by the service worker and work offline.
  *  - Reset: zero margins/padding, border-box sizing on everything
  *  - Root font-size 16px so rem-based clamps are predictable but still scale
  *    with user browser-zoom / OS accessibility text-size
@@ -13,8 +15,6 @@
  *      ablink      — active prayer indicator dot (1.4s)
  *      secondtick  — final-minute countdown digit (1s)
  */
-
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap');
 
 *,
 *::before,

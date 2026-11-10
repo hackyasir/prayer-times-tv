@@ -14,27 +14,47 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
 
-      // Use our hand-crafted service worker (src/sw.js)
+      // Our own service worker source (src/sw.js), bundled by the plugin
+      // with the precache manifest injected.
       strategies: 'injectManifest',
-      srcDir: 'public',
+      srcDir: 'src',
       filename: 'sw.js',
 
+      // Files to precache for offline use. (With injectManifest the
+      // `workbox` option is ignored — this is the setting that applies.)
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,ico,mp3,woff2,webmanifest}'],
+      },
+
+      // The only web app manifest — the plugin writes manifest.webmanifest
+      // and links it from index.html. start_url and scope come from `base`.
+      // Icon paths are relative so they resolve under the base path too.
       manifest: {
         name: 'Prayer Times — Digital Masjid Display',
         short_name: 'Prayer Times',
-        description: 'Offline-first prayer times dashboard for Smart TVs',
+        description:
+          'High-visibility prayer times dashboard for Smart TVs, Fire Sticks, and large displays. Works offline.',
+        lang: 'en',
+        dir: 'ltr',
+        categories: ['lifestyle', 'utilities'],
         theme_color: '#000000',
         background_color: '#000000',
         display: 'fullscreen',
         orientation: 'landscape',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'icons/icon-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
+          {
+            src: 'icons/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
         ],
-      },
-
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,jpg,woff2}'],
       },
     }),
   ],

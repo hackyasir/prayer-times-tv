@@ -1,11 +1,12 @@
 // ── useBlackoutMode ──────────────────────────────────────────────────────────
 //
 // Derives the "should we be in blackout right now?" decision from:
-//   - today's iqamah times (5 daily prayers)
+//   - today's congregations (daily iqamahs, Jumu'ah slots on Fridays, Eid
+//     slots on the Eid day — see lib/congregations.js)
 //   - yesterday's Isha iqamah  (handles pre-Fajr morning when last night's
 //                               Isha blackout might still be running)
-//   - configured lead-in seconds (default 30s before iqamah)
-//   - configured per-prayer durations in minutes
+//   - configured lead-in seconds (default 30s before the congregation)
+//   - configured per-prayer durations in minutes (incl. jumuah and eid)
 //   - current time
 //   - a manual-dismiss flag managed by the parent
 //
@@ -13,13 +14,6 @@
 //   - active     boolean — render the overlay?
 //   - prayerKey  which prayer triggered it (for theming / debug)
 //   - endsAt     Date — when blackout naturally ends (for the resume countdown)
-//
-// Why pre-compute iqamah times here instead of taking them as a prop?
-// The parent (App.jsx) computes adhan times for each prayer; iqamah is
-// adhan + offset. Rather than make the parent compute iqamah for all five
-// prayers AND yesterday's Isha just to feed us, we accept the building
-// blocks (todayTimes, yesterdayTimes, iqamah offsets) and do the addition
-// here. Keeps blackout logic self-contained.
 
 import { useMemo } from 'react';
 import { addMins } from '../lib/formatters.js';
@@ -27,9 +21,9 @@ import { addMins } from '../lib/formatters.js';
 export default function useBlackoutMode({
   enabled, // boolean — global blackout toggle from settings
   leadSeconds, // number — start blackout this many seconds BEFORE iqamah
-  durations, // { fajr, dhuhr, asr, maghrib, isha } in minutes
-  todayTimes, // { fajr, dhuhr, asr, maghrib, isha } adhan Dates
-  yesterdayTimes, // same shape, for Isha-spanning-midnight case
+  durations, // { fajr, dhuhr, asr, maghrib, isha, jumuah, eid } in minutes
+  congregations, // [{ key, time }] from buildCongregations()
+  yesterdayTimes, // adhan Dates for yesterday, for Isha-spanning-midnight case
   iqamah, // { fajr, dhuhr, asr, maghrib, isha } offset MINUTES
   now, // current Date
   dismissedAt, // Date|null — set by parent when user holds to dismiss
@@ -57,18 +51,18 @@ export default function useBlackoutMode({
     if (!enabled) return { active: false, prayerKey: null, endsAt: null };
 
     // Build the list of [prayerKey, blackoutStartDate, blackoutEndDate]
-    // for each of today's prayers + yesterday's Isha.
-    // blackoutStart = iqamah − leadSeconds; blackoutEnd = iqamah + duration.
+    // for each of today's congregations + yesterday's Isha.
+    // blackoutStart = start − leadSeconds; blackoutEnd = start + duration.
     const candidates = [];
+    const minutesFor = (key) => Number(durations?.[key]) || 0;
 
-    // Today's 5 daily prayers (sunrise excluded — not a congregational prayer)
-    for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
-      const adhan = todayTimes?.[key];
-      if (!adhan) continue;
-      const iqamahTime = addMins(adhan, iqamah[key]);
-      const blackoutStart = new Date(iqamahTime.getTime() - leadSeconds * 1000);
-      const blackoutEnd = new Date(iqamahTime.getTime() + durations[key] * 60 * 1000);
-      candidates.push({ prayerKey: key, start: blackoutStart, end: blackoutEnd });
+    // Today's congregations. On Fridays this holds the Jumu'ah slots in
+    // place of Dhuhr; on the Eid day it also holds the Eid slots.
+    for (const c of congregations || []) {
+      if (!c?.time) continue;
+      const blackoutStart = new Date(c.time.getTime() - leadSeconds * 1000);
+      const blackoutEnd = new Date(c.time.getTime() + minutesFor(c.key) * 60 * 1000);
+      candidates.push({ prayerKey: c.key, start: blackoutStart, end: blackoutEnd });
     }
 
     // Yesterday's Isha — its blackout window may extend past midnight into
@@ -76,14 +70,14 @@ export default function useBlackoutMode({
     // Without this, a user opening the dashboard at 12:05 AM right after
     // Isha would see normal content during what should still be blackout.
     if (yesterdayTimes?.isha) {
-      const iqamahTime = addMins(yesterdayTimes.isha, iqamah.isha);
+      const iqamahTime = addMins(yesterdayTimes.isha, Number(iqamah?.isha) || 0);
       const blackoutStart = new Date(iqamahTime.getTime() - leadSeconds * 1000);
-      const blackoutEnd = new Date(iqamahTime.getTime() + durations.isha * 60 * 1000);
+      const blackoutEnd = new Date(iqamahTime.getTime() + minutesFor('isha') * 60 * 1000);
       candidates.push({ prayerKey: 'isha', start: blackoutStart, end: blackoutEnd });
     }
 
-    // Find the candidate window the user is currently inside.
-    // (At most one — windows shouldn't overlap unless durations are absurd.)
+    // Find the candidate window the user is currently inside. Windows can
+    // overlap (e.g. Eid and Jumu'ah close together); the first match wins.
     const current = candidates.find((c) => now >= c.start && now < c.end);
     if (!current) return { active: false, prayerKey: null, endsAt: null };
 
@@ -100,7 +94,7 @@ export default function useBlackoutMode({
     leadSeconds,
     durations,
     iqamah,
-    todayTimes,
+    congregations,
     yesterdayTimes,
     now,
     dismissedAt,

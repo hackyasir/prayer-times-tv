@@ -839,7 +839,7 @@ export default function SettingsPanel({
                   <div style={{ marginTop: 8 }}>
                     <label className="slbl">{t('settings.blackout.duration')}</label>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((key) => (
+                      {['fajr', 'dhuhr', 'asr', 'maghrib', 'isha', 'jumuah', 'eid'].map((key) => (
                         <div
                           key={key}
                           style={{
@@ -854,7 +854,7 @@ export default function SettingsPanel({
                         >
                           <span
                             style={{
-                              width: 62,
+                              width: 96,
                               fontSize: 13,
                               color: '#9A8B6E',
                               letterSpacing: '.08em',

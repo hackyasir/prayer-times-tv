@@ -9,6 +9,7 @@ import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
 import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
 import { fastReasonsFor, buildFastLine } from './lib/sunnahFasts.js';
+import { buildCongregations } from './lib/congregations.js';
 
 // Custom hooks — pure logic extracted to their own files
 import useCityTime from './hooks/useCityTime.js';
@@ -20,7 +21,7 @@ import useLunarPhase from './hooks/useLunarPhase.js';
 import useBlackoutMode from './hooks/useBlackoutMode.js';
 
 // Settings context — wraps applied + draft state, persists to localStorage
-import { useSettings, DEFAULTS } from './context/SettingsContext.jsx';
+import { useSettings, DEFAULTS, hasSavedSettings } from './context/SettingsContext.jsx';
 import { useT, fmtStr } from './i18n/I18nContext.jsx';
 
 // Visual components — extracted to their own files
@@ -392,18 +393,25 @@ export default function App() {
   // The chime fires at adhan AND iqamah times for each daily prayer +
   // Jumu'ah (Fridays) + Eid (when banner active). See hook for details.
 
-  // Auto-geolocation on mount.
+  // Auto-geolocation — FIRST RUN ONLY.
+  // Once anything has been saved on this device (Apply, city search, the
+  // "Use my location" button, or an earlier auto lookup), the saved location
+  // wins. Running this on every load used to replace the admin's chosen city
+  // with an approximate device position after each restart.
   // CRITICAL: must also update the timezone so the clock matches reality.
-  // Without this, the saved timezone leaks across geolocation changes.
   // We use the device's resolved timezone — close enough for auto-detection
   // (city search later resolves a more precise IANA tz).
   const didAutoGeoRef = useRef(false);
   useEffect(() => {
     if (didAutoGeoRef.current) return;
     didAutoGeoRef.current = true;
+    if (hasSavedSettings()) return;
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // The lookup can take several seconds. If the admin saved settings
+        // in the meantime, keep their choice.
+        if (hasSavedSettings()) return;
         // Batch all geolocation fields into one updateApplied — saves to
         // localStorage exactly once and triggers a single re-render.
         let tz = null;
@@ -531,23 +539,6 @@ export default function App() {
 
   // Lunar phase — owned by useLunarPhase hook (computed from Hijri day)
   const lunarPhase = useLunarPhase(hijri);
-
-  // Blackout mode — derives whether the dashboard should be in salah-blackout
-  // RIGHT NOW based on today's & yesterday's iqamah times + per-prayer
-  // durations from settings. Returns null/null when inactive (overlay
-  // renders nothing). See src/hooks/useBlackoutMode.js for the windowing
-  // logic + how yesterday's Isha edge case is handled.
-  const blackout = useBlackoutMode({
-    enabled: blackoutEnabled,
-    leadSeconds: blackoutLeadSeconds,
-    durations: blackoutDurations,
-    todayTimes,
-    yesterdayTimes,
-    iqamah,
-    now,
-    dismissedAt: blackoutDismissedAt,
-    forceUntil: testBlackoutUntil,
-  });
 
   // Jumu'ah / Eid date helpers — must produce ABSOLUTE UTC instants whose
   // wall-clock value in the city's timezone equals (today_in_city @ HH:MM).
@@ -683,6 +674,37 @@ export default function App() {
     ? (activeEidSlots.map((e) => eidDate(e.time)).find((t) => t > now) ?? null)
     : null;
 
+  // ── Today's congregations — shared by ticker, chime and blackout ─────────
+  // Daily iqamahs, with Jumu'ah slots replacing Dhuhr on Fridays and Eid
+  // slots added on the Eid day itself. See src/lib/congregations.js.
+  const congregations = buildCongregations({
+    todayTimes,
+    iqamah,
+    isFriday: isFridayEffective,
+    jumuahTimes: activeJumuahSlots.map((j) => jumuahDate(j.time)),
+    eidTimes:
+      showEidBanner && upcomingEid.daysUntil === 0
+        ? activeEidSlots.map((e) => eidDate(e.time))
+        : [],
+  });
+
+  // Blackout mode — derives whether the dashboard should be in salah-blackout
+  // RIGHT NOW from today's congregations + yesterday's Isha + per-prayer
+  // durations from settings. Returns null/null when inactive (overlay
+  // renders nothing). See src/hooks/useBlackoutMode.js for the windowing
+  // logic + how yesterday's Isha edge case is handled.
+  const blackout = useBlackoutMode({
+    enabled: blackoutEnabled,
+    leadSeconds: blackoutLeadSeconds,
+    durations: blackoutDurations,
+    congregations,
+    yesterdayTimes,
+    iqamah,
+    now,
+    dismissedAt: blackoutDismissedAt,
+    forceUntil: testBlackoutUntil,
+  });
+
   const autoAnnouncementText = (() => {
     if (!autoAnnouncements) return '';
 
@@ -775,39 +797,8 @@ export default function App() {
       );
     }
 
-    const congregationCandidates = [];
-
-    if (showEidBanner && nextEid) {
-      congregationCandidates.push({
-        key: 'eid',
-        time: nextEid,
-        label: t('prayer.eid'),
-      });
-    }
-
-    if (isFridayEffective && nextJumuah) {
-      congregationCandidates.push({
-        key: 'jumuah',
-        time: nextJumuah,
-        label: t('prayer.jumuah'),
-      });
-    }
-
-    for (const key of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
-      if (isFridayEffective && key === 'dhuhr') continue;
-      const adhan = todayTimes?.[key];
-      if (!adhan) continue;
-      const iqamahAt = addMins(adhan, iqamah?.[key] ?? 0);
-      if (!iqamahAt || iqamahAt <= now) continue;
-      congregationCandidates.push({
-        key,
-        time: iqamahAt,
-        label: t(`prayer.${key}`),
-      });
-    }
-
-    congregationCandidates.sort((a, b) => a.time - b.time);
-    const nextCongregation = congregationCandidates[0] || null;
+    // Same list the chime and blackout use (already sorted by time).
+    const nextCongregation = congregations.find((c) => c.time > now) || null;
 
     if (nextCongregation) {
       const minsAway = Math.max(0, Math.floor((nextCongregation.time - now) / 60000));
@@ -815,7 +806,7 @@ export default function App() {
       const urgentPrefix = minsAway <= 10 ? '! ' : '';
       pushLine(
         `${urgentPrefix}${fmtStr(t('auto.announcement.nextCongregation'), {
-          prayer: nextCongregation.label,
+          prayer: t(`prayer.${nextCongregation.key}`),
           time: fmt12(nextCongregation.time, cityTz),
           h: String(h),
           m: String(m),
@@ -883,13 +874,7 @@ export default function App() {
     chimeIqamah,
     now,
     todayTimes,
-    iqamah,
-    isFriday: isFridayEffective,
-    activeJumuahSlots,
-    showEidBanner,
-    activeEidSlots,
-    jumuahDate,
-    eidDate,
+    congregations,
   });
 
   const doOpenSettings = useCallback(() => {
