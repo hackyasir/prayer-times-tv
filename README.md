@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-346-success)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-391-success)](TESTING.md)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 </div>
@@ -22,6 +22,7 @@ Most mosque display software needs a paid subscription, depends on a vendor serv
 
 - **Self-hosted** — clone, build, deploy. No accounts, no API keys, no telemetry.
 - **Works offline** — prayer times are calculated in the browser with [`adhan`](https://github.com/batoulapps/adhan-js). After the first visit, the service worker keeps the whole app (code, fonts, sound, images) cached, so the display keeps running with the internet unplugged.
+- **Follow your masjid (optional)** — anyone can follow a masjid on their own TV or phone (**Find your masjid**, or its link / QR code): its prayer times, iqamah, Jumu'ah, Eid and announcements come from the masjid and can't be changed; their language, theme, text size and beeps stay their own. The masjid's own screens mirror everything, behind the Settings PIN. Each screen answers one question in Settings → **Share & follow**: my own screen, a screen in the masjid, or **I manage this masjid**. A managing screen registers the masjid in one form, nothing on it is locked, and its Apply becomes **Apply and publish** (with the masjid's publish passphrase; nobody signs in to Google). Their settings are signed rows in one Google Sheet (your registration form's responses), and screens apply only rows signed with the key you approved with a tick. Or list a masjid with its own Google Sheet, or publish from Settings through a small Cloudflare service that pushes changes within seconds. Every screen still runs offline on its last copy. See [docs/remote-settings.md](docs/remote-settings.md).
 - **Built to stay on a TV for years** — readable from the back of the hall, light on weak TV hardware, no pop-ups or nags.
 - **Free** — MIT licensed; every dependency is open source.
 
@@ -259,7 +260,11 @@ prayer-times-tv/
 ├── .github/
 │   ├── workflows/deploy.yml    # Lint + test + build + GitHub Pages deploy
 │   └── dependabot.yml
-├── public/                     # Icons, ornament.jpg, sounds/
+├── docs/remote-settings.md     # Shared masjid settings: setup for both sources
+├── worker/                     # Cloudflare Worker for the `cloudflare` source (deployed separately)
+├── scripts/build-directory.mjs # Deploy step: masjids.json with approved self-serve masjids and masjids' own names
+├── scripts/build-sheet-script.mjs # Builds docs/registration-sheet.gs, the registration sheet's clean-up script
+├── public/                     # Icons, ornament.jpg, sounds/, masjids.json (codes → Google Sheets)
 └── src/
     ├── main.jsx                # Entry: providers, styles, fonts, perf monitor
     ├── App.jsx                 # Orchestrator
@@ -280,11 +285,15 @@ prayer-times-tv/
     │   ├── formatters.js       # Time and countdown formatting (cached formatters)
     │   ├── perfMonitor.js      # ?perf overlay
     │   ├── regionDefaults.js   # Usual method/Asr and iqamah preset by country; device language
+    │   ├── remoteSettings.js   # Masjid codes, reading the sheet, merging shared settings
+    │   ├── registrations.js    # Self-serve masjids: the form, the shared sheet, the masjid list
+    │   ├── signatures.js       # Signed masjid updates (Ed25519)
+    │   ├── passphraseKey.js    # The masjid's signing key from its passphrase (Argon2id)
     │   ├── audio.js            # Beep playback
     │   ├── weather.js          # Weather code → icon / text
     │   ├── themes.js           # Theme colour variables
     │   └── constants.js        # Prayers, methods, storage key, env flags
-    ├── hooks/                  # useCityTime, usePrayerTimes, useBlackoutMode, useChime, …
+    ├── hooks/                  # useCityTime, usePrayerTimes, useBlackoutMode, useChime, useRemoteSettings, …
     ├── context/                # SettingsContext, I18nContext
     ├── i18n/                   # en.json, ar.json, ur.json
     ├── components/             # React components (tests in __tests__/)
@@ -301,14 +310,18 @@ prayer-times-tv/
 
 ### Environment variables
 
-Set these at build time, for example in `.env.local` at the project root (never commit it).
+Set these at build time, for example in `.env.local` at the project root (never commit it). A commented sample with every variable is in [docs/env.example](docs/env.example): copy it to `.env.local` and fill it in.
 
-| Variable                 | Default                | Description                                                                                 |
-| ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------- |
-| `VITE_SETTINGS_PIN`      | _(none)_               | PIN required before Settings opens.                                                         |
-| `VITE_SHOW_TEST_BUTTONS` | on in dev, off in prod | `true` / `false` to force the preview buttons (Friday, Eid, blackout, countdown) on or off. |
-| `VITE_APP_ENV`           | _(none)_               | Set to `staging` to treat a production build as staging (test buttons on).                  |
-| `VITE_BASE_URL`          | `/`                    | Base path when the app is served from a sub-folder, e.g. `/prayer-times-tv/`.               |
+| Variable                      | Default                | Description                                                                                                                                                                                                                                               |
+| ----------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SETTINGS_PIN`           | _(none)_               | PIN required before Settings opens.                                                                                                                                                                                                                       |
+| `VITE_SHOW_TEST_BUTTONS`      | on in dev, off in prod | `true` / `false` to force the preview buttons (Friday, Eid, blackout, countdown) on or off.                                                                                                                                                               |
+| `VITE_APP_ENV`                | _(none)_               | Set to `staging` to treat a production build as staging (test buttons on).                                                                                                                                                                                |
+| `VITE_BASE_URL`               | `/`                    | Base path when the app is served from a sub-folder, e.g. `/prayer-times-tv/`.                                                                                                                                                                             |
+| `VITE_SETTINGS_SOURCE`        | `none`                 | Shared masjid settings: `sheet` (Google Sheets: self-serve masjids, or a masjid's own sheet) or `cloudflare` (the Worker in `worker/`). In GitHub, set the repository variable `SETTINGS_SOURCE`. See [docs/remote-settings.md](docs/remote-settings.md). |
+| `VITE_SETTINGS_API_URL`       | _(none)_               | The Cloudflare Worker's address (`cloudflare` only). In GitHub: the variable `SETTINGS_API_URL`.                                                                                                                                                          |
+| `VITE_REGISTER_FORM_URL`      | _(none)_               | Google Sheet only: the registration form's pre-filled link, for self-serve **Register your masjid**. In GitHub: the variable `REGISTER_FORM_URL`.                                                                                                         |
+| `VITE_REGISTRATIONS_SHEET_ID` | _(none)_               | Google Sheet only: the form's responses sheet, where self-serve masjids' signed settings are kept. In GitHub: the variable `REGISTRATIONS_SHEET_ID`.                                                                                                      |
 
 ```bash
 # .env.local
@@ -348,7 +361,7 @@ Because settings live on each device, the quickest way to set up several screens
 
 ### Testing
 
-**346 tests across 25 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the regional method note, the automatic announcements, the background-art geometry and moon phases, the CSS fallbacks for older TVs, the nightly reload, the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
+**432 tests across 32 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the regional method note, the automatic announcements, the background-art geometry and moon phases, the CSS fallbacks for older TVs, the nightly reload, following a masjid (locked masjid settings, followers vs masjid screens, the Google Sheet reader, self-serve masjids with signed updates and passphrase keys, the published masjid list, the Cloudflare Worker and its sign-in checks), the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
 
 ```bash
 npm test

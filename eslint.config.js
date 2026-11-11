@@ -97,6 +97,33 @@ export default [
     },
   },
 
+  // ── Cloudflare Worker (worker/) — a service-worker-style runtime ────
+  {
+    files: ['worker/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+    rules: {
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
+
+  // ── Build scripts (scripts/) — Node ─────────────────────────────────
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2024,
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
   // ── Vitest config + setup file context ──────────────────────────────
   // These run in Node environment, not the browser.
   {
@@ -110,12 +137,6 @@ export default [
 
   // ── Files to skip entirely ──────────────────────────────────────────
   {
-    ignores: [
-      'dist/**',
-      'coverage/**',
-      'node_modules/**',
-      '.vite/**',
-      '.vitest-cache/**',
-    ],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', '.vite/**', '.vitest-cache/**'],
   },
 ];

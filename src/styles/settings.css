@@ -607,6 +607,266 @@
   margin-right: 0;
 }
 
+/* Masjid code / shared settings (components/settings/MasjidSync.jsx) */
+.sync-status {
+  font-size: calc(13px * var(--t-fs, 1));
+  color: var(--t-text);
+  overflow-wrap: anywhere;
+}
+
+.sync-status-text {
+  display: block;
+  margin-top: 2px;
+  color: var(--t-text-dim);
+}
+
+.sync-status[data-phase='notFound'] .sync-status-text,
+.sync-status[data-phase='notShared'] .sync-status-text,
+.sync-status[data-phase='invalid'] .sync-status-text,
+.sync-status[data-phase='noValid'] .sync-status-text,
+.sync-status[data-phase='setup'] .sync-status-text {
+  color: var(--t-accent);
+}
+
+.sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.sync-actions .sinput {
+  flex: 1 1 160px;
+  min-width: 0;
+  text-transform: uppercase;
+}
+
+.sync-actions .sbtn-meta {
+  margin-right: 0;
+}
+
+/* The masjid's own settings, locked while the screen follows a masjid
+   (SettingsPanel wraps them in <fieldset disabled>). */
+.locked-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.locked-fields:disabled {
+  opacity: 0.55;
+}
+
+/* "Find your masjid" results */
+.sync-directory {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sync-directory li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--t-border);
+}
+
+.sync-directory-name {
+  font-size: calc(13px * var(--t-fs, 1));
+  color: var(--t-text);
+  overflow-wrap: anywhere;
+}
+
+.sync-directory-city {
+  display: block;
+  font-size: calc(11px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+}
+
+.sync-link {
+  font-family: monospace;
+  font-size: calc(11px * var(--t-fs, 1));
+}
+
+/* One line across every tab while the screen follows a masjid code. */
+.sync-banner {
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
+  border-radius: var(--radius-sm);
+  font-size: calc(12px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+}
+
+.sync-banner[data-editing] {
+  border-color: var(--t-accent);
+  color: var(--t-accent);
+}
+
+/* Settings → Share & follow: follow or register, the register steps, and
+   the sections of a following screen (MasjidSync.jsx). */
+.sync-pointer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: calc(12px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+}
+
+/* "How is this screen used?" — three answers, one chosen. */
+.sync-role {
+  display: grid;
+  gap: 8px;
+}
+
+.sync-role-question {
+  font-size: calc(13px * var(--t-fs, 1));
+  color: var(--t-text);
+}
+
+.sync-role-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--t-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--t-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sync-role-option[aria-checked='true'] {
+  border-color: var(--t-accent);
+  background: rgba(var(--t-accent-rgb), 0.08);
+}
+
+.sync-role-option strong {
+  display: block;
+  font-size: calc(14px * var(--t-fs, 1));
+}
+
+.sync-role-option span span {
+  display: block;
+  margin-top: 2px;
+  font-size: calc(12px * var(--t-fs, 1));
+  line-height: 1.4;
+  color: var(--t-text-dim);
+}
+
+.sync-role-dot {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border: 2px solid var(--t-border);
+  border-radius: 50%;
+}
+
+.sync-role-option[aria-checked='true'] .sync-role-dot {
+  border-color: var(--t-accent);
+  /* single-position stops: old TV browsers draw these too */
+  background: radial-gradient(circle, var(--t-accent) 3px, transparent 4px);
+}
+
+/* The followed or managed masjid: its status and what this screen does. */
+.sync-current {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--t-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Settings → Apply and publish: the passphrase, then progress. */
+.publish-bar {
+  padding: 10px 24px 12px;
+  border-bottom: 1px solid var(--t-border);
+  background: rgba(var(--t-accent-rgb), 0.06);
+}
+
+.publish-bar-msg {
+  margin-top: 6px;
+  font-size: calc(12px * var(--t-fs, 1));
+  color: var(--t-accent);
+}
+
+.sync-step {
+  margin-top: 16px;
+}
+
+.sync-step-title {
+  margin-top: 4px;
+  font-size: calc(15px * var(--t-fs, 1));
+  color: var(--t-text);
+}
+
+.sync-details {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--t-border);
+  border-radius: var(--radius-sm);
+}
+
+.sync-details li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--t-border);
+}
+
+.sync-details li:first-child {
+  border-top: 0;
+}
+
+.sync-details-label {
+  flex: 0 0 110px;
+  font-size: calc(12px * var(--t-fs, 1));
+  color: var(--t-text-dim);
+}
+
+.sync-details-value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: calc(13px * var(--t-fs, 1));
+  color: var(--t-text);
+}
+
+.sync-details-value[data-missing] {
+  color: var(--t-accent);
+}
+
+.sync-section-title {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--t-border);
+  font-size: calc(12px * var(--t-fs, 1));
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--t-text-dim);
+}
+
+.sync-next {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--t-accent);
+  background: rgba(var(--t-accent-rgb), 0.06);
+  font-size: calc(12px * var(--t-fs, 1));
+  line-height: 1.5;
+  white-space: pre-line;
+  color: var(--t-text-dim);
+}
+
 /* ── Settings header meta buttons (Export / Import) ──────────────────────
  * Smaller, less prominent than Cancel/Apply — sit on the LEFT of the
  * action row as secondary actions. Same dim chrome as inactive tabs;

@@ -20,6 +20,8 @@ import { buildThemeVars } from './lib/themes.js';
 import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
 import { buildAutoAnnouncements } from './lib/autoAnnouncements.js';
 import { shouldReload } from './lib/dailyReload.js';
+import { settingsNeedPin, settingsToSheetCsv } from './lib/remoteSettings.js';
+import useRemoteSettings from './hooks/useRemoteSettings.js';
 import { DAILY_PRAYER_KEYS, buildCongregations, findPendingIqamah } from './lib/congregations.js';
 import { suggestRegionSettings } from './lib/regionDefaults.js';
 
@@ -344,6 +346,10 @@ export default function App() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
   const [showSett, setShowSett] = useState(false);
+
+  // Shared masjid settings (docs/remote-settings.md): follows the masjid
+  // code given in the address or in Settings; waits while Settings is open.
+  const remoteSync = useRemoteSettings({ applied, updateApplied, paused: showSett || showPin });
   // ── Printable monthly schedule view ─────────────────────────────────
   // When true, App swaps out the live dashboard for the static printable
   // schedule. Triggered from Settings → Display tab. Plain boolean state
@@ -443,6 +449,9 @@ export default function App() {
     if (didAutoGeoRef.current) return;
     didAutoGeoRef.current = true;
     if (hasSavedSettings()) return;
+    // A screen following a masjid takes the masjid's location: don't ask
+    // for the device's.
+    if (remoteSync.code) return;
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -917,8 +926,16 @@ export default function App() {
     setShowSett(true);
   }, [beginEditing, masjidName, logoDataUrl]);
 
+  // The PIN guards masjid screens (and screens not following a masjid).
+  // A follower's Settings holds only their own display choices, so it's
+  // never asked there.
+  const needPin = settingsNeedPin({
+    pinSet: Boolean(SETTINGS_PIN),
+    code: remoteSync.code,
+    mode: remoteSync.mode,
+  });
   const openSettings = useCallback(() => {
-    if (SETTINGS_PIN) {
+    if (needPin) {
       // Always ask PIN — never cache the unlock
       setPinInput('');
       setPinError(false);
@@ -926,7 +943,7 @@ export default function App() {
       return;
     }
     doOpenSettings();
-  }, [doOpenSettings]);
+  }, [doOpenSettings, needPin]);
 
   function submitPin() {
     if (pinInput === SETTINGS_PIN) {
@@ -1047,7 +1064,9 @@ export default function App() {
     updateDrafts(() => ({ ...DEFAULTS }));
   }
 
-  function applySettings() {
+  // `close: false` keeps Settings open (publishing to the masjid's sheet
+  // shows its progress there).
+  function applySettings({ close = true } = {}) {
     const jumuahOrderError = findNonAscendingSlot(drafts.jumuah);
     const eidFitrOrderError = findNonAscendingSlot(drafts.eidFitr);
     const eidAdhaOrderError = findNonAscendingSlot(drafts.eidAdha);
@@ -1059,7 +1078,7 @@ export default function App() {
 
     if (firstOrderError) {
       window.alert(firstOrderError);
-      return;
+      return null;
     }
 
     // Clamp/sanitize drafts before applying. The Settings panel inputs let
@@ -1148,7 +1167,43 @@ export default function App() {
 
     // updateApplied handles localStorage persistence automatically
     updateApplied(newApplied);
-    setShowSett(false);
+    if (close) setShowSett(false);
+    return newApplied;
+  }
+
+  // A managing screen's Apply: apply, then send the same settings to every
+  // screen of the masjid. Settings stays open until they've arrived (so a
+  // problem can be shown there), then closes. Cloudflare: runs from the
+  // click, so the Worker's sign-in tab isn't blocked as a pop-up.
+  function publishSettings() {
+    const next = applySettings({ close: false });
+    if (!next) return Promise.resolve({ ok: false });
+    return remoteSync.publish({ ...applied, ...next }).then((result) => {
+      if (result?.ok) setShowSett(false);
+      return result;
+    });
+  }
+
+  // Register this screen's settings as a new self-serve masjid (or the
+  // followed masjid again, under a new passphrase).
+  function registerMasjid({ passphrase, again = false }) {
+    const next = applySettings({ close: false });
+    if (!next) return Promise.resolve({ ok: false, reason: 'error' });
+    return remoteSync.register({ passphrase, again, settings: { ...applied, ...next } });
+  }
+
+  // The current settings as a two-column sheet to import into Google
+  // Sheets (Google Sheet source).
+  function exportSheet() {
+    const blob = new Blob([settingsToSheetCsv(applied)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'masjid-settings-sheet.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function geolocate() {
@@ -1473,6 +1528,10 @@ export default function App() {
           <SettingsPanel
             onCancel={() => setShowSett(false)}
             onApply={applySettings}
+            remoteSync={remoteSync}
+            onPublish={publishSettings}
+            onRegister={registerMasjid}
+            onExportSheet={exportSheet}
             draftMethod={draftMethod}
             setDraftMethod={setDraftMethod}
             draftAsr={draftAsr}

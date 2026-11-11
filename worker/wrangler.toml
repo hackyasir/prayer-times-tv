@@ -1,0 +1,26 @@
+# Prayer Times settings service — deploy with `npx wrangler deploy` from this
+# folder (see worker/README.md and docs/remote-settings.md).
+name = "prayer-times-settings"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+
+# One Durable Object per masjid code (SQLite storage — on the Workers Free plan).
+[[durable_objects.bindings]]
+name = "MASJID"
+class_name = "MasjidSettings"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MasjidSettings"]
+
+[vars]
+# The display app's address (origin), comma-separated if more than one,
+# e.g. "https://you.github.io,http://localhost:5173".
+ALLOWED_ORIGINS = ""
+# From Cloudflare Zero Trust → Access: your team domain and the AUD tag of
+# the application that protects /m/*/publish. Publishing stays off until
+# both are set.
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+# Optional: who may publish which code, e.g.
+# MASJID_ADMINS = '{"TOR4K7Q":["admin@example.org"],"*":["you@example.org"]}'

@@ -13,6 +13,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch: # allow manual trigger from Actions tab
+  # Every 6 hours: refresh the list of masjids people can follow (newly
+  # approved self-serve masjids, and names masjids have changed).
+  # The app's code is rebuilt identically, so screens don't re-download it.
+  schedule:
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -54,6 +59,30 @@ jobs:
           VITE_BASE_URL: /${{ github.event.repository.name }}/
           VITE_SETTINGS_PIN: ${{ secrets.VITE_SETTINGS_PIN }}
           VITE_SHOW_TEST_BUTTONS: ${{ vars.VITE_SHOW_TEST_BUTTONS || 'true' }}
+          # Shared masjid settings (docs/remote-settings.md). Set in GitHub:
+          # Settings → Secrets and variables → Actions → Variables.
+          #   SETTINGS_SOURCE   none | sheet | cloudflare
+          #   SETTINGS_API_URL  the Worker's address (cloudflare only)
+          VITE_SETTINGS_SOURCE: ${{ vars.SETTINGS_SOURCE || 'none' }}
+          VITE_SETTINGS_API_URL: ${{ vars.SETTINGS_API_URL }}
+          # Self-serve masjids (Google Sheet source):
+          #   REGISTER_FORM_URL       the registration form's pre-filled link
+          #   REGISTRATIONS_SHEET_ID  the form's responses sheet, where every
+          #                           self-serve masjid's signed settings are
+          #                           kept (public by design: view-only, and
+          #                           screens apply only signed rows)
+          VITE_REGISTER_FORM_URL: ${{ vars.REGISTER_FORM_URL }}
+          VITE_REGISTRATIONS_SHEET_ID: ${{ vars.REGISTRATIONS_SHEET_ID }}
+
+      - name: Build the masjid list
+        # dist/masjids.json: public/masjids.json plus approved self-serve
+        # masjids, with each masjid's own name and city
+        # (scripts/build-directory.mjs).
+        run: node scripts/build-directory.mjs --registry public/masjids.json --out dist/masjids.json
+        env:
+          #   REGISTRATIONS_SHEET_ID  the registration form's responses sheet
+          REGISTRATIONS_SHEET_ID: ${{ vars.REGISTRATIONS_SHEET_ID }}
+          SETTINGS_SOURCE: ${{ vars.SETTINGS_SOURCE || 'none' }}
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:

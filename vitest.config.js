@@ -26,7 +26,7 @@ export default defineConfig({
     // - .test.js for plain JS (lib/)  → run in Node env (fast)
     // - .test.jsx for components      → opt into jsdom via per-file pragma:
     //     /* @vitest-environment jsdom */
-    include: ['src/**/__tests__/**/*.test.{js,jsx}'],
+    include: ['src/**/__tests__/**/*.test.{js,jsx}', 'worker/**/__tests__/**/*.test.js'],
 
     // Default environment for lib/* tests — pure JS, no DOM needed.
     // Component tests opt in to 'jsdom' with the pragma above.

@@ -8,7 +8,10 @@
     <!--
     Explanation of each directive:
     default-src 'self'        – block everything not explicitly listed
-    script-src  'self'        – JS only from same origin (Vite handles hashes in prod)
+    script-src  'self'        – JS only from same origin (Vite handles hashes in prod);
+                                with the Google Sheet settings source, the build adds
+                                'wasm-unsafe-eval' (WebAssembly only, for the publish
+                                passphrase — see settingsSourceCsp in vite.config.js)
     style-src   'self' 'unsafe-inline'
                               – bundled CSS + inline style attributes
     font-src    'self' data:  – self-hosted fonts (@fontsource, bundled by Vite;
