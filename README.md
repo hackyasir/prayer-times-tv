@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-251-success)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-333-success)](TESTING.md)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 </div>
@@ -49,7 +49,20 @@ For a production build:
 npm run build        # static site in ./dist/ — deploy anywhere
 ```
 
-On first open the display asks for the device's location; if you allow it, it uses that position and the device's timezone. After that the saved location is always kept — open **Settings** (gear icon, top right, or <kbd>Alt</kbd>+<kbd>S</kbd>) to search for your city and set the calculation method, iqamah times and the rest. Settings are saved on each device (`localStorage`) and can be exported and imported as JSON.
+Settings are saved on each device (`localStorage`) and can be exported and imported as JSON. Open them with the gear icon (top right) or <kbd>Alt</kbd>+<kbd>S</kbd>.
+
+### First-time setup — what you need to set
+
+The defaults are chosen so a new display works straight away; only the mosque's own details need attention.
+
+| Setting                        | Where                | What happens by default                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Masjid name and location**   | Masjid tab           | The tab Settings opens on, with a short "start here" note. On first open the display asks for the device's location and uses it; if that's refused, search for your city. The saved location is kept from then on. The name shows "Prayer Times" until set.                                                                                                    |
+| **Calculation method and Asr** | Prayer Times tab     | Pre-selected for your country on first setup (e.g. ISNA in Canada and the US, University of Karachi + Hanafi in Pakistan, Umm al-Qura in Saudi Arabia). **Check it matches your mosque.** Elsewhere: Muslim World League, Standard Asr. Once saved, picking another city doesn't change it; a note under the city says what's usual there, with **Use these**. |
+| **Jumu'ah time(s)**            | Iqamah & Jumu'ah tab | One slot at 1:00 PM. **Set your mosque's time(s).**                                                                                                                                                                                                                                                                                                            |
+| **Iqamah**                     | Iqamah & Jumu'ah tab | Automatic, using your region's preset (see **Prayer-time calculation** under Features). Adjust the minutes, or switch it off and enter fixed times if your mosque posts them.                                                                                                                                                                                  |
+
+Everything else can stay as it is. The display starts in the device's language (English, Arabic or Urdu), with eco mode on, beeps off and blackout off. The text fills the screen without adjusting the size.
 
 ---
 
@@ -66,8 +79,13 @@ On first open the display asks for the device's location; if you allow it, it us
 - **6 progress styles** — Hero (default), Ring, Day Bar, Moon, Line, Orbit.
 - **6 themes** — Classic Gold, Emerald Night, Royal Blue, Midnight Teal, Warm Sand, Pure White.
 - **Viewing-distance scaling** — Manual (70–130%), By distance (presets for room size), or Calibrate by eye. Text grows as far as the screen allows; it can't be pushed off the edge.
-- **Eco mode** (on by default) — stops decorative animation and dims the background art for always-on panels.
-- **Dark backgrounds** to limit OLED burn-in, with subtle Islamic geometric background art.
+- **Eco mode** (on by default) — stops decorative animation and dims the background art for always-on panels. The announcement ticker keeps scrolling.
+- **Dark backgrounds** to limit OLED burn-in, with subtle Islamic geometric background art, built by the traditional methods so the shapes are exact:
+  - a star pattern made by Hankin's method on the octagon-and-square tiling (regular eight-pointed stars, lines running straight through every tile edge), covering the whole screen;
+  - a central rosette (shamsa) with one 8-fold symmetry throughout;
+  - islimi scrolls that spring from the rosette's lobes and coil into true spirals;
+  - top and bottom friezes of cartouches holding paired boteh (paisley), with star rosettes between them.
+    The art follows the active prayer's colours and gets slightly stronger at night, using the sun's real elevation.
 
 </details>
 
@@ -76,10 +94,26 @@ On first open the display asks for the device's location; if you allow it, it us
 
 - **12 calculation methods** — Muslim World League, ISNA, Moonsighting Committee, Egyptian Authority, Umm al-Qura (Makkah), Dubai, Qatar, Kuwait, University of Karachi, MUIS Singapore, Diyanet (Turkey), University of Tehran.
 - **Two Asr conventions** — Standard (Shafi'i, Maliki, Hanbali) and Hanafi.
+- **The country's usual method, suggested** — ISNA for Canada and the US; University of Karachi + Hanafi Asr for Pakistan, India, Bangladesh and Afghanistan; Umm al-Qura for Saudi Arabia; Dubai, Qatar, Kuwait, Egyptian Authority and University of Tehran for their countries; Diyanet + Hanafi Asr for Türkiye; MUIS for Singapore, Malaysia, Indonesia and Brunei.
+  - During first-time setup (nothing saved yet), picking a city or allowing the device's location pre-selects these.
+  - After that, picking a city never changes a saved method. A note under the location (Masjid tab) and under the method (Prayer Times tab) shows either "Matches what's usual in Canada: ISNA – North America, Standard Asr" or, if your choice differs, what's usual there with a **Use these** button. Nothing is saved until **Apply**.
+  - For other countries the note asks you to check the method against your mosque's timetable.
 - **High-latitude rules** — Middle of the Night, Seventh of the Night, Twilight Angle (for cities above about 48°).
 - **Manual or automatic iqamah**:
   - Manual: a fixed number of minutes after each adhan.
-  - Automatic: adds a per-prayer buffer to the adhan, then rounds to the nearest quarter-hour. It's never earlier than the adhan, so the gap can come out a few minutes shorter or longer than the buffer. A buffer of 0 means iqamah at the adhan time.
+  - Automatic — a formula per prayer: **(1)** the adhan plus a **minimum wait**, **(2)** rounded **up** to the rounding step (quarter-hour, 5 minutes or exact), **(3)** for Fajr, optionally no earlier than **N minutes before sunrise**, and **(4)** Fajr never later than 15 minutes before sunrise. Maghrib always uses its exact minutes; 0 minutes means iqamah at the adhan. Rounding to the quarter-hour keeps the time the same for days at a time, like a posted schedule.
+  - **Regional presets** (Iqamah & Jumu'ah tab → "Start from typical times for"), applied automatically during first-time setup:
+
+    | Preset           | Where                                           | Minimum wait (Fajr / Dhuhr / Asr / Maghrib / Isha) | Rounding     | Fajr                  |
+    | ---------------- | ----------------------------------------------- | -------------------------------------------------- | ------------ | --------------------- |
+    | Rounded schedule | Default; North America, Europe                  | 20 / 10 / 10 / 5 / 10                              | Quarter-hour | —                     |
+    | Gulf             | Saudi Arabia, UAE, Qatar, Kuwait, Bahrain, Oman | 25 / 20 / 20 / 10 / 20                             | Exact        | —                     |
+    | South Asia       | Pakistan, India, Bangladesh, Afghanistan        | 20 / 15 / 10 / 5 / 15                              | Quarter-hour | 35 min before sunrise |
+    | Maldives         | Maldives (Islamic Ministry, 2025)               | 15 / 12 / 12 / 8 / 10                              | Exact        | —                     |
+
+    These are starting points: there is no single official rule in most countries, and Gulf ministries shorten the gaps in Ramadan and during Hajj, so check your mosque's or ministry's current times.
+
+  - Displays set up before this rule: if they still had the old default minutes they move to these minimums (their iqamah times change, mostly a few minutes later — the old defaults could put Isha as little as 3 minutes after the adhan). If the mosque had set its own minutes, they are converted to the equivalent minimum, so those iqamah times stay the same.
 
 </details>
 
@@ -98,8 +132,11 @@ On first open the display asks for the device's location; if you allow it, it us
 
 - **Ticker** — scrolling or one-at-a-time, right-to-left aware, sized to be read across the hall.
 - **Per-line markup** — start a line with `!` to mark it urgent; add `@YYYY-MM-DD` to hide it after that date (in the city's timezone).
-- **Automatic notices** (optional) — next prayer and next congregation, Jumu'ah today, Eid countdown, and Sunnah-fast reminders.
-- **Sunnah fasts** — Monday/Thursday, White Days (13–15), Arafah, Ashura, Tasu'a and the six of Shawwal. Overlapping fasts combine into one line, and no fast is suggested on the two Eids or the days of Tashreeq.
+- **Automatic notices** (optional), phrased as a mosque would post them and given as times rather than live countdowns, so the ticker doesn't jump every minute:
+  - the next prayer ("Asr: adhan 2:36 PM, iqamah 3:00 PM"), a pending iqamah (highlighted in its last 10 minutes), "Sunrise at … — Fajr time ends", and "Prayer in progress — please silence your phone" during the blackout;
+  - Jumu'ah: today's remaining times on Friday, "Jumu'ah tomorrow" on Thursday, and the Surah al-Kahf and salawat reminder from Thursday's Maghrib to Friday's Maghrib;
+  - Ramadan and Eid as _expected_ dates, "subject to moon sighting" (the Hijri calendar is calculated), with Eid prayer times and venue; greetings on 1 Ramadan and Eid day; the last ten nights of Ramadan; the first ten days of Dhul-Hijjah.
+- **Sunnah fasts** — Monday/Thursday, White Days (13–15), Arafah, Ashura, Tasu'a and the six days of Shawwal. Today's fast is shown until Maghrib, then tomorrow's. Overlapping fasts combine into one line; Arafah and Ashura add their virtue with the reference (Sahih Muslim). No voluntary fast is ever suggested on the two Eids, the days of Tashreeq, in Ramadan, or on 29–30 Sha'ban. The rules and their hadith references are in `src/lib/sunnahFasts.js`.
 
 </details>
 
@@ -108,7 +145,7 @@ On first open the display asks for the device's location; if you allow it, it us
 
 - **Hijri date** with a ±3-day offset to match local moon sighting.
 - **Qibla** — bearing to the Kaaba in degrees with a 16-point direction.
-- **Sun arc** by day (sunrise, solar noon, sunset) and **moon arc** at night (moonrise, transit, moonset, current phase).
+- **Sun arc** by day (sunrise, solar noon, sunset) and **moon arc** at night (moonrise, transit, moonset, and the moon as it looks: lit fraction, lit side and tilt from the moon's real position).
 - **Fasting bar** — Suhoor → Iftar progress with time remaining.
 - **Weather** — temperature, conditions and high/low; hidden when offline.
 
@@ -137,6 +174,7 @@ On first open the display asks for the device's location; if you allow it, it us
 <summary><strong>Languages</strong></summary>
 
 - **English**, **Arabic** and **Urdu** (both right-to-left).
+- Starts in the device's language (Arabic or Urdu when the device uses it, otherwise English); change it on the Masjid tab.
 - Prayer names always show in two scripts, whatever the interface language.
 - An optional per-screen label (e.g. "Main Hall", "Women's Section") for mosques with several screens.
 
@@ -145,11 +183,12 @@ On first open the display asks for the device's location; if you allow it, it us
 <details>
 <summary><strong>Settings & administration</strong></summary>
 
+- **Grouped by task**: **Masjid** (name, logo, location, language — where setup starts) · **Prayer Times** (method, Asr, high-latitude rule, Hijri adjustment, printable schedule) · **Iqamah & Jumu'ah** (iqamah, Jumu'ah, Eid) · **Screen** (theme, eco mode, text size, progress style) · **Announcements** · **During Prayer** (blackout, beeps).
 - **Made for a TV** — on large screens the Settings panel is scaled up for reading from a few feet away, with a clear focus outline. With a TV remote, Up/Down move between controls, OK opens a dropdown or moves on from a text or time field, and Left/Right switch tabs on the tab row. Escape closes the panel.
 - **Optional PIN** before Settings opens (see [Configuration](#configuration)).
 - **Export, import and reset** settings as JSON; imports are validated and cleaned before use.
 - **City search** via [Open-Meteo geocoding](https://open-meteo.com/) — about 600,000 cities, free, no key.
-- **Beeps** (optional) at adhan and/or iqamah. Jumu'ah and Eid slots beep when either is on.
+- **Beeps** (off by default) at adhan and/or iqamah. Jumu'ah and Eid slots beep when either is on. Browsers only allow sound after someone has touched or clicked the page once.
 - **Installable** as a PWA for a fullscreen launch.
 
 </details>
@@ -223,18 +262,22 @@ prayer-times-tv/
     ├── main.jsx                # Entry: providers, styles, fonts, perf monitor
     ├── App.jsx                 # Orchestrator
     ├── sw.js                   # Service worker (Workbox precache + offline navigation)
-    ├── IslamicGeometryEngine.jsx  # Background art (memoised SVG)
+    ├── IslamicGeometryEngine.jsx  # Background art: sizes, colours, one <path> per layer
     ├── lib/                    # Pure JS, no React
     │   ├── prayerCalc.js       # adhan wrapper, qibla, timezone offset
     │   ├── hijri.js            # Gregorian ↔ Hijri, Eid detection
     │   ├── iqamah.js           # Manual / automatic iqamah
     │   ├── congregations.js    # Today's congregations; pending-iqamah lookup
     │   ├── sunnahFasts.js      # Recommended-fast rules (screen + print)
+    │   ├── autoAnnouncements.js  # Automatic ticker lines
+    │   ├── geometryArt.js      # Background-art geometry (star pattern, rosette, scrolls, borders)
+    │   ├── moonPhase.js        # The moon's lit shape and tilt
     │   ├── viewingScale.js     # Viewing-distance scaling
     │   ├── scheduleValidation.js
     │   ├── settingsImport.js   # Validates and cleans imported settings
     │   ├── formatters.js       # Time and countdown formatting (cached formatters)
     │   ├── perfMonitor.js      # ?perf overlay
+    │   ├── regionDefaults.js   # Usual method/Asr and iqamah preset by country; device language
     │   ├── audio.js            # Beep playback
     │   ├── weather.js          # Weather code → icon / text
     │   ├── themes.js           # Theme colour variables
@@ -274,7 +317,7 @@ VITE_SETTINGS_PIN=4826
 
 ### Runtime settings
 
-Everything else is set in the **Settings** panel and saved on the device: location, calculation method, Asr convention, high-latitude rule, iqamah (manual or automatic), Jumu'ah and Eid schedules, Eid venue, theme, text size, viewing distance, progress style, language, masjid name, logo and screen label, eco mode, blackout, announcements and ticker style, automatic notices, and beeps.
+Everything else is set in the **Settings** panel and saved on the device, grouped into six tabs: **Masjid** (name, screen label, logo, location, language), **Prayer Times** (calculation method, Asr convention, high-latitude rule, Hijri adjustment, printable schedule), **Iqamah & Jumu'ah** (automatic or manual iqamah with regional presets, Jumu'ah, Eid schedules and venue), **Screen** (theme, eco mode, text size, viewing distance, progress style), **Announcements** (ticker text and style, automatic notices) and **During Prayer** (blackout, beeps).
 
 Because settings live on each device, the quickest way to set up several screens is to configure one, **Export** the settings, and **Import** the file on the others.
 
@@ -303,7 +346,7 @@ Because settings live on each device, the quickest way to set up several screens
 
 ### Testing
 
-**251 tests across 18 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
+**333 tests across 23 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the regional method note, the automatic announcements, the background-art geometry and moon phases, the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
 
 ```bash
 npm test

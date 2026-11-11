@@ -17,12 +17,12 @@
 //     is no Dhuhr iqamah beep. The Dhuhr adhan beep (prayer entry) remains.
 //
 // Common configurations:
-//   - Iqamah only (default): most mosques play the real adhan from speakers
-//     and just want a "stand up" signal on the dashboard
+//   - Iqamah only: most mosques play the real adhan from speakers and just
+//     want a "stand up" signal on the dashboard
 //   - Both: smaller jamaa'ats or home use, where the dashboard provides
 //     both notifications
 //   - Adhan only: rare but supported
-//   - Neither: dashboard stays silent
+//   - Neither (default): dashboard stays silent
 //
 // Caller passes the data the hook needs:
 //   chimeAdhan / chimeIqamah — booleans from settings

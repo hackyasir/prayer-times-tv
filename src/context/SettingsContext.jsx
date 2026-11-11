@@ -27,6 +27,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { STORAGE_KEY } from '../lib/constants.js';
 import { normalizeImportedSettings } from '../lib/settingsImport.js';
+import { deviceLanguage, IQAMAH_PRESETS } from '../lib/regionDefaults.js';
 
 // ── Defaults & localStorage helpers ──────────────────────────────────────────
 //
@@ -58,13 +59,34 @@ export const DEFAULTS = {
   iqamah: { fajr: 30, dhuhr: 30, asr: 30, maghrib: 0, isha: 20 },
   // ── Auto-iqamah (Smart Mode) ─────────────────────────────────────────────
   // When iqamahAutoCalc is true, the iqamah offsets above are IGNORED at
-  // runtime. Instead, iqamah is computed daily as:
-  //   adhan + iqamahAutoBuffers[key] minutes, then rounded UP to the next
-  //   :00 / :15 / :30 / :45.
-  // Maghrib's default buffer is 0 (immediate iqamah is common at sunset).
-  // OPT-IN: default OFF so existing setups behave identically.
+  // runtime. Instead (lib/iqamah.js), each iqamah is at least
+  // iqamahAutoBuffers[key] minutes after the adhan, moved up to the next
+  // :00 / :15 / :30 / :45; Maghrib is exactly adhan + its minutes.
+  // ON by default, so a new display shows sensible iqamah times without
+  // setup; mosques with fixed posted times switch it off.
+  //
+  // Default minimum waits, and the waits they produce:
+  //   Fajr 20 → 20–34 min   time for the two sunnah rak'ahs; people arrive
+  //                          in the dark
+  //   Dhuhr 10, Asr 10 → 10–24 min   wudu + the sunnah before Dhuhr
+  //   Maghrib 5 → 5 min     short window; prayed soon after the adhan
+  //   Isha 10 → 10–24 min
   iqamahAutoCalc: true,
-  iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 },
+  // The "rounded" preset (lib/regionDefaults.js). First-time setup switches
+  // to the usual preset for the country (Gulf, South Asia, Maldives).
+  iqamahAutoBuffers: { ...IQAMAH_PRESETS.rounded.buffers },
+  // Rounding step for automatic iqamah, in minutes: 15 (quarter-hour), 5 or
+  // 1 (exact). Maghrib is never rounded.
+  iqamahRoundTo: IQAMAH_PRESETS.rounded.roundTo,
+  // Fajr only: hold iqamah until this many minutes before sunrise (0 = off),
+  // for mosques that pray Fajr late (common Hanafi practice).
+  iqamahFajrBeforeSunrise: IQAMAH_PRESETS.rounded.fajrBeforeSunrise,
+  // Which auto-iqamah rule the buffers above were saved under. Rule 2 =
+  // "minimum wait, rounded up; Maghrib exact". Settings saved without it
+  // used rule 1 (nearest quarter-hour): untouched rule-1 defaults move to the
+  // minimums above, customised ones are converted so their times stay the
+  // same — see lib/settingsImport.js.
+  iqamahRule: 2,
   // Jumu'ah slots are adhan-time-only (no separate iqamah field).
   // The board shows a single congregational time per slot.
   jumuah: [
@@ -108,13 +130,14 @@ export const DEFAULTS = {
   theme: 'Classic Gold',
   ecoMode: true,
   // Prayer beeps — split into adhan + iqamah so admins can enable either
-  // independently. Default: iqamah ON (the "stand up, prayer starting now"
-  // signal everyone wants), adhan OFF (most mosques play the actual adhan
-  // from speakers; a beep would compete with that audio).
+  // independently. Both OFF by default: browsers block sound until someone
+  // has interacted with the page, so on an unattended TV a default beep
+  // would play on some days and not others; and in a prayer hall the real
+  // adhan / iqamah call is the signal. Mosques that want a beep turn it on.
   // Legacy `chimeEnabled` from earlier versions is migrated in loadSettings:
   // a stored true value sets BOTH new flags true; false sets both false.
   chimeAdhan: false,
-  chimeIqamah: true,
+  chimeIqamah: false,
   fontScale: 100, // % — 100 = default, 70..130 manual fine-tune in settings
   // ── Viewing-distance scaling ─────────────────────────────────────────────
   // Legibility at distance is governed by ANGULAR size (cap-height ÷ distance),
@@ -128,7 +151,8 @@ export const DEFAULTS = {
   viewingDistance: 'medium', // 'close' | 'medium' | 'large' | 'grand'
   viewingCalibrated: 1.0, // custom multiplier from calibrate mode (0.8..3.0)
   progressStyle: 'hero', // 'ring' | 'daybar' | 'moon' | 'hero' | 'line'
-  lang: 'en', // UI language: 'en' | 'ar' | 'ur' — see src/i18n/
+  lang: 'en', // UI language: 'en' | 'ar' | 'ur' — see src/i18n/. A brand-new
+  //            display starts in the device's language (see loadSettings).
   autoAnnouncements: false, // prepend basic computed notices to ticker
   announcements: '', // Newline-separated list shown in the bottom ticker.
   tickerMode: 'scroll', // 'scroll' | 'static'
@@ -171,7 +195,8 @@ export function hasSavedSettings() {
 function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULTS;
+    // First run: start in the device's language (Arabic / Urdu / English).
+    if (!raw) return { ...DEFAULTS, lang: deviceLanguage() };
     const stored = JSON.parse(raw);
     const normalized = normalizeImportedSettings(stored, DEFAULTS);
     return normalized.ok ? normalized.value : DEFAULTS;

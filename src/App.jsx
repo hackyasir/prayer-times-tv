@@ -13,13 +13,14 @@ import { HADITHS, GEO_API, SETTINGS_PIN, SHOW_TEST_BTNS, PRAYERS } from './lib/c
 import { calcQibla, tzOffsetHours } from './lib/prayerCalc.js';
 import { toHijri, toHijriParts, findUpcomingEid } from './lib/hijri.js';
 import { addMins, fmt12 } from './lib/formatters.js';
-import { computeIqamah } from './lib/iqamah.js';
+import { iqamahFromSettings } from './lib/iqamah.js';
 import { findNonAscendingSlot, buildOrderErrorMessage } from './lib/scheduleValidation.js';
 import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
 import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
-import { fastReasonsFor, buildFastLine } from './lib/sunnahFasts.js';
+import { buildAutoAnnouncements } from './lib/autoAnnouncements.js';
 import { buildCongregations, findPendingIqamah } from './lib/congregations.js';
+import { suggestRegionSettings } from './lib/regionDefaults.js';
 
 // Custom hooks — pure logic extracted to their own files
 import useCityTime from './hooks/useCityTime.js';
@@ -53,6 +54,7 @@ const PrintableSchedule = lazy(() => import('./components/PrintableSchedule.jsx'
 // only widget set after removing the classic bottom-band cards.
 import SunArc from './components/widgets/SunArc.jsx';
 import MoonArc from './components/widgets/MoonArc.jsx';
+import SunCalc from 'suncalc';
 import WeatherStrip from './components/widgets/WeatherStrip.jsx';
 import FastBar from './components/widgets/FastBar.jsx';
 import HeaderQibla from './components/widgets/HeaderQibla.jsx';
@@ -461,9 +463,13 @@ export default function App() {
           lng: pos.coords.longitude,
           locName: formatGeoLabel(pos.coords.latitude, pos.coords.longitude),
           ...(tz ? { cityTz: tz } : {}),
+          // First run only: the country's usual calculation method, Asr
+          // convention and iqamah preset (from the device timezone), so the
+          // admin just confirms.
+          ...suggestRegionSettings({ timeZone: tz }),
         });
       },
-      () => { },
+      () => {},
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -488,22 +494,10 @@ export default function App() {
   } = usePrayerTimes({ cityNow, now, lat, lng, method, shadow, cityTz, highLatRule });
 
   // ── Effective iqamah offsets ─────────────────────────────────────────────
-  // When `iqamahAutoCalc` is ON, compute each prayer's iqamah by:
-  //   1. Take today's adhan time
-  //   2. Add `iqamahAutoBuffers[key]` minutes → target
-  //   3. Round target to the NEAREST quarter-hour (:00 / :15 / :30 / :45)
-  //   4. SAFETY FLOOR: if rounded result < adhan, bump to the next
-  //      quarter-hour ≥ adhan. Iqamah must never be before adhan.
-  //   5. Express as minute-offset from adhan
-  //
-  // Rounding policy rationale:
-  //   - 10:18 adhan + 15min buffer = 10:33 → nearest quarter = 10:30 ✓
-  //     (3 min away vs 12 min to 10:45 — closer)
-  //   - 4:17 adhan + 1min buffer = 4:18 → nearest = 4:15 → SAFETY → 4:30
-  //     (4:15 is before adhan! Bump up to next quarter ≥ 4:17)
-  //   - When buf=0 we skip rounding entirely (iqamah=adhan exactly) since
-  //     rounding 8:37 with buf=0 would shift to 8:45 which is wrong for
-  //     mosques that follow "iqamah immediately after adhan" convention.
+  // When iqamahAutoCalc is ON, each prayer's iqamah comes from
+  // computeIqamah (lib/iqamah.js): at least iqamahAutoBuffers[key] minutes
+  // after the adhan, moved up to the next quarter-hour; Maghrib uses the
+  // exact minutes. The result is expressed as a minute-offset from adhan.
   //
   // Computed once per day (the dependency on todayTimes.fajr's date string
   // makes useMemo recalc only at midnight or when settings change).
@@ -517,9 +511,11 @@ export default function App() {
         continue;
       }
 
-      const iqamahTime = computeIqamah(adhan, {
-        autoCalc: true,
-        bufferMinutes: iqamahAutoBuffers?.[key] ?? 0,
+      const iqamahTime = iqamahFromSettings(todayTimes, key, {
+        iqamahAutoCalc: true,
+        iqamahAutoBuffers,
+        iqamahRoundTo: applied.iqamahRoundTo,
+        iqamahFajrBeforeSunrise: applied.iqamahFajrBeforeSunrise,
       });
       out[key] = iqamahTime ? Math.round((iqamahTime - adhan) / 60000) : rawIqamah[key] || 0;
     }
@@ -528,6 +524,8 @@ export default function App() {
     iqamahAutoCalc,
     rawIqamah,
     iqamahAutoBuffers,
+    applied.iqamahRoundTo,
+    applied.iqamahFajrBeforeSunrise,
     todayTimes,
   ]);
 
@@ -551,31 +549,17 @@ export default function App() {
   const qibla = useMemo(() => Math.round(calcQibla(lat, lng)), [lat, lng]);
 
   // ── Parametric inputs for IslamicGeometryEngine ──────────────────────────
-  // Sun elevation: 0° = horizon, +90° = zenith, negative = below horizon
-  // Approximated from current time relative to sunrise/solar-noon/sunset
-  const sunElevation = useMemo(() => {
-    const sr = todayTimes.sunrise,
-      ss = todayTimes.maghrib;
-    if (!sr || !ss) return -10;
-    const nowMs = now.getTime();
-    const srMs = sr.getTime(),
-      ssMs = ss.getTime();
-    if (nowMs < srMs || nowMs > ssMs) {
-      // Night — interpolate descent below horizon (max -18° astronomical twilight)
-      return nowMs < srMs
-        ? -18 + (18 * (nowMs - (srMs - 3600000))) / 3600000
-        : -18 * Math.min(1, (nowMs - ssMs) / 3600000);
-    }
-    // Day — sine arc peaking at solar noon
-    const maxEl = 90 - Math.abs(lat - 23.5); // approximate max elevation
-    return maxEl * Math.sin((Math.PI * (nowMs - srMs)) / (ssMs - srMs));
-  }, [now, todayTimes, lat]);
-  // Whole degrees: the background art redraws when this visibly changes
-  // (every few minutes) rather than on every tick.
-  const sunElevationDeg = Math.round(sunElevation);
+  // The sun's actual elevation at the masjid (0° = horizon, +90° = overhead,
+  // negative = below the horizon), from suncalc's solar-position formulas.
+  // Whole degrees, once a minute: the background art redraws when this
+  // visibly changes rather than on every tick.
+  const sunElevationDeg = useMemo(() => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return -10;
+    return Math.round((SunCalc.getPosition(nowMinute, lat, lng).altitude * 180) / Math.PI);
+  }, [nowMinute, lat, lng]);
 
-  // Lunar phase — owned by useLunarPhase hook (computed from Hijri day)
-  const lunarPhase = useLunarPhase(hijri);
+  // Moon illumination (0 = new, 1 = full), from the moon's real position.
+  const lunarPhase = useLunarPhase(hourKey);
 
   // Jumu'ah / Eid date helpers — must produce ABSOLUTE UTC instants whose
   // wall-clock value in the city's timezone equals (today_in_city @ HH:MM).
@@ -682,7 +666,11 @@ export default function App() {
   );
   // Auto-generated label based on detected Eid kind
   const eidLabelAuto =
-    upcomingEid.kind === 'fitr' ? 'Eid ul-Fitr' : upcomingEid.kind === 'adha' ? 'Eid ul-Adha' : '';
+    upcomingEid.kind === 'fitr'
+      ? t('auto.eid.fitr')
+      : upcomingEid.kind === 'adha'
+        ? t('auto.eid.adha')
+        : '';
 
   // Eid time helper — anchors HH:MM to the actual upcoming Eid Gregorian date
   // (not "today" — that was the bug). If upcomingEid has no date yet (no Eid
@@ -784,160 +772,69 @@ export default function App() {
       }
     : { mode: 'adhan', next, secs: secsToNext };
 
-  const autoAnnouncementText = (() => {
+  // Automatic ticker lines — see lib/autoAnnouncements.js. Hijri dates use
+  // the masjid's adjustment; times are the city's clock. The lines only
+  // change at minute boundaries, so they are rebuilt once a minute rather
+  // than on every tick.
+  const blackoutActive = Boolean(blackout?.active);
+  const autoAnnouncementText = useMemo(() => {
     if (!autoAnnouncements) return '';
-
-    const lines = [];
-    const seen = new Set();
-    const pushLine = (line) => {
-      const text = (line || '').trim();
-      if (!text || seen.has(text)) return;
-      seen.add(text);
-      lines.push(text);
+    const hijriAt = (days) => {
+      const d = new Date(cityDay);
+      d.setDate(d.getDate() + hijriOffset + days);
+      return toHijriParts(d);
     };
-
-    const splitHM = (totalMinutes) => {
-      const mins = Math.max(0, totalMinutes);
-      return { h: Math.floor(mins / 60), m: mins % 60 };
-    };
-
-    const nowHijriDate = new Date(cityNow);
-    nowHijriDate.setDate(nowHijriDate.getDate() + hijriOffset);
-    const tomorrowHijriDate = new Date(nowHijriDate);
-    tomorrowHijriDate.setDate(tomorrowHijriDate.getDate() + 1);
-
-    const todayHijri = toHijriParts(nowHijriDate);
-    const tomorrowHijri = toHijriParts(tomorrowHijriDate);
-    const todayWeekday = cityNow.getDay();
-    const tomorrowWeekday = (todayWeekday + 1) % 7;
-
-    // ── Sunnah fast awareness — unified, ranked, with a forbidden-day gate ──
-    //
-    // Multiple recommended fasts often coincide (e.g. a Thursday that is also a
-    // White Day, or Arafah falling on a Monday). Per authentic narrations these
-    // overlap into ONE fast with a combined intention (tashreek) — they are not
-    // separate fasts. So we emit a SINGLE announcement that leads with the most
-    // significant reason and notes the others as "also …".
-    //
-    // Ranking (by reward/significance): Arafah > Ashura > Tasu'a > White Days
-    //   > Monday/Thursday.
-    //
-    // SAFETY GATE: fasting is PROHIBITED on Eid al-Fitr (1 Shawwal), Eid al-Adha
-    // (10 Dhul-Hijjah) and the days of Tashreeq (11–13 Dhul-Hijjah). On those
-    // days we suggest no fast at all, even if it is also a Mon/Thu/White Day.
-    // Sunnah-fast reasons come from the shared lib (single source of truth,
-    // also used by the printable calendar). Here we only handle PRESENTATION:
-    // map each reason to a localized tag and compose the "lead + also" line.
-    const reasonTag = (r) => {
-      switch (r.key) {
-        case 'arafah': return t('auto.fast.tag.arafah');
-        case 'ashura': return t('auto.fast.tag.ashura');
-        case 'tasua': return t('auto.fast.tag.tasua');
-        case 'shawwal': return t('auto.fast.tag.shawwal');
-        case 'white': return fmtStr(t('auto.fast.tag.white'), { day: String(r.day) });
-        case 'monday': return t('auto.fast.tag.monday');
-        case 'thursday': return t('auto.fast.tag.thursday');
-        default: return '';
-      }
-    };
-    const fastPhrases = {
-      lead: (when, fast) => fmtStr(t(`auto.fast.${when}`), { fast }),
-      also: (list) => fmtStr(t('auto.fast.also'), { list }),
-      sep: t('auto.fast.alsoSep'),
-    };
-
-    // Prefer TODAY if it has a fast; otherwise look at TOMORROW (lead-up notice).
-    const todayReasons = fastReasonsFor(todayHijri, todayWeekday);
-    const tomorrowReasons = fastReasonsFor(tomorrowHijri, tomorrowWeekday);
-    if (todayReasons.length > 0) {
-      pushLine(buildFastLine(todayReasons, 'today', reasonTag, fastPhrases));
-    } else if (tomorrowReasons.length > 0) {
-      pushLine(buildFastLine(tomorrowReasons, 'tomorrow', reasonTag, fastPhrases));
-    }
-
-    // Sunrise is the END of Fajr's window and a boundary, not a congregational
-    // prayer — "Now in Sunrise" is misleading (and prayer is makruh at sunrise).
-    // Skip the "now in prayer" line for it; the forenoon until Dhuhr has no
-    // active congregation to announce.
-    if (active?.key && active.key !== 'sunrise') {
-      const prayerLabel = t(`prayer.${active.key}`) || active.en || '';
-      pushLine(fmtStr(t('auto.announcement.nowInPrayer'), { prayer: prayerLabel }));
-    }
-
-    if (next && Number.isFinite(secsToNext)) {
-      const { h, m } = splitHM(Math.floor(secsToNext / 60));
-      const prayerLabel = t(`prayer.${next.key}`) || next.en || '';
-      pushLine(
-        fmtStr(t('auto.announcement.nextPrayer'), {
-          prayer: prayerLabel,
-          h: String(h),
-          m: String(m),
-        })
-      );
-    }
-
-    // Same list the chime and blackout use (already sorted by time).
-    const nextCongregation = congregations.find((c) => c.time > now) || null;
-
-    if (nextCongregation) {
-      const minsAway = Math.max(0, Math.floor((nextCongregation.time - now) / 60000));
-      const { h, m } = splitHM(minsAway);
-      const urgentPrefix = minsAway <= 10 ? '! ' : '';
-      pushLine(
-        `${urgentPrefix}${fmtStr(t('auto.announcement.nextCongregation'), {
-          prayer: t(`prayer.${nextCongregation.key}`),
-          time: fmt12(nextCongregation.time, cityTz),
-          h: String(h),
-          m: String(m),
-        })}`
-      );
-    }
-
-    if (blackout?.active && blackout?.endsAt) {
-      const minsLeft = Math.max(0, Math.ceil((blackout.endsAt - now) / 60000));
-      const { h, m } = splitHM(minsLeft);
-      pushLine(
-        `! ${fmtStr(t('auto.announcement.blackoutActive'), {
-          time: fmt12(blackout.endsAt, cityTz),
-          h: String(h),
-          m: String(m),
-        })}`
-      );
-    }
-
-    if (isFridayEffective && activeJumuahSlots.length > 0) {
-      const times = activeJumuahSlots
-        .map((slot) => fmt12(jumuahDate(slot.time), cityTz))
-        .join(' • ');
-      pushLine(fmtStr(t('auto.announcement.jumuahToday'), { times }));
-    }
-
-    if (showEidBanner && upcomingEid?.kind) {
-      const venue = eidLocation ? ` — ${eidLocation}` : '';
-      if (upcomingEid.daysUntil > 0) {
-        const eidLabel =
-          upcomingEid.kind === 'fitr' ? t('auto.eid.fitr') : t('auto.eid.adha');
-        pushLine(
-          fmtStr(t('auto.announcement.eidInDays'), {
-            eid: eidLabel,
-            days: String(upcomingEid.daysUntil),
-          }) + venue
-        );
-      } else {
-        const times = activeEidSlots
-          .map((slot) => fmt12(eidDate(slot.time), cityTz))
-          .join(' • ');
-        pushLine(fmtStr(t('auto.announcement.eidToday'), { times }) + venue);
+    const hijriToday = hijriAt(0);
+    let daysToRamadan = null;
+    if (hijriToday.m === 8) {
+      for (let i = 1; i <= 10 && daysToRamadan === null; i++) {
+        const h = hijriAt(i);
+        if (h.m === 9 && h.d === 1) daysToRamadan = i;
       }
     }
-
-    if (upcomingEid?.kind && upcomingEid.daysUntil === 0) {
-      const eidLabel = upcomingEid.kind === 'fitr' ? t('auto.eid.fitr') : t('auto.eid.adha');
-      pushLine(`! ${fmtStr(t('auto.announcement.eidGreeting'), { eid: eidLabel })}`);
-    }
-
-    return lines.join('\n');
-  })();
+    return buildAutoAnnouncements({
+      t,
+      fmt: fmtStr,
+      time: (d) => fmt12(d, cityTz),
+      now: nowMinute,
+      weekday: cityDay.getDay(),
+      hijriToday,
+      hijriTomorrow: hijriAt(1),
+      daysToRamadan,
+      times: todayTimes,
+      next,
+      congregations,
+      pendingIqamah,
+      blackoutActive,
+      isFriday: isFridayEffective,
+      jumuahTimes: activeJumuahSlots.map((slot) => jumuahDate(slot.time)),
+      eid: {
+        kind: upcomingEid?.kind || null,
+        daysUntil: upcomingEid?.daysUntil ?? null,
+        times: activeEidSlots.map((slot) => eidDate(slot.time)),
+        venue: eidLocation || '',
+      },
+    }).join('\n');
+  }, [
+    autoAnnouncements,
+    t,
+    cityTz,
+    nowMinute,
+    cityDay,
+    hijriOffset,
+    todayTimes,
+    next,
+    congregations,
+    pendingIqamah,
+    blackoutActive,
+    isFridayEffective,
+    activeJumuahSlots,
+    jumuahDate,
+    upcomingEid,
+    activeEidSlots,
+    eidDate,
+    eidLocation,
+  ]);
 
   const manualAnnouncements = (announcements || '').trim();
   const mergedAnnouncements = autoAnnouncementText
@@ -1034,6 +931,7 @@ export default function App() {
           lat: r.latitude,
           lng: r.longitude,
           tz: r.timezone || '',
+          countryCode: r.country_code || '',
         }));
         setSearchResults(results);
         setSearchStatus(results.length ? 'done' : 'empty');
@@ -1044,6 +942,13 @@ export default function App() {
   }
 
   function handleSelectCity(city) {
+    // First-time setup only (nothing saved yet): pre-select the country's
+    // usual calculation method, Asr convention and iqamah preset. Never
+    // overrides a choice that has already been saved.
+    if (!hasSavedSettings()) {
+      const suggested = suggestRegionSettings({ countryCode: city.countryCode, timeZone: city.tz });
+      updateDrafts((prev) => ({ ...prev, ...suggested }));
+    }
     setSelectedCity(city);
     setSearchQuery(city.name);
     setSearchResults([]);
@@ -1191,6 +1096,13 @@ export default function App() {
       blackoutDurations: sanitizedBlackoutDur,
       blackoutOpacity: sanitizedBlackoutOpacity,
       iqamahAutoBuffers: sanitizedAutoBuf,
+      iqamahRoundTo: [1, 5, 15].includes(Number(drafts.iqamahRoundTo))
+        ? Number(drafts.iqamahRoundTo)
+        : DEFAULTS.iqamahRoundTo,
+      iqamahFajrBeforeSunrise: Math.min(
+        90,
+        Math.max(0, Number(drafts.iqamahFajrBeforeSunrise) || 0)
+      ),
       masjidName: newMasjid,
       logoDataUrl: draftLogo || '',
     };
@@ -1231,10 +1143,7 @@ export default function App() {
         if (err && typeof err.code === 'number') {
           if (err.code === err.PERMISSION_DENIED) {
             msg = t('alert.geoDenied');
-          } else if (
-            err.code === err.POSITION_UNAVAILABLE ||
-            err.code === err.TIMEOUT
-          ) {
+          } else if (err.code === err.POSITION_UNAVAILABLE || err.code === err.TIMEOUT) {
             msg = t('alert.geoUnavailable');
           }
         }
@@ -1300,23 +1209,25 @@ export default function App() {
     return (
       <Suspense fallback={null}>
         <PrintableSchedule
-        lat={lat}
-        lng={lng}
-        cityTz={cityTz}
-        method={method}
-        shadow={shadow}
-        highLatRule={highLatRule}
-        iqamah={rawIqamah}
-        iqamahAutoCalc={iqamahAutoCalc}
-        iqamahAutoBuffers={iqamahAutoBuffers}
-        hijriOffset={hijriOffset}
-        masjidName={masjidName}
-        locName={locName}
-        logoDataUrl={logoDataUrl}
-        jumuah={jumuah}
-        eidFitr={eidFitr}
-        eidAdha={eidAdha}
-        onClose={() => setShowPrint(false)}
+          lat={lat}
+          lng={lng}
+          cityTz={cityTz}
+          method={method}
+          shadow={shadow}
+          highLatRule={highLatRule}
+          iqamah={rawIqamah}
+          iqamahAutoCalc={iqamahAutoCalc}
+          iqamahAutoBuffers={iqamahAutoBuffers}
+          iqamahRoundTo={applied.iqamahRoundTo}
+          iqamahFajrBeforeSunrise={applied.iqamahFajrBeforeSunrise}
+          hijriOffset={hijriOffset}
+          masjidName={masjidName}
+          locName={locName}
+          logoDataUrl={logoDataUrl}
+          jumuah={jumuah}
+          eidFitr={eidFitr}
+          eidAdha={eidAdha}
+          onClose={() => setShowPrint(false)}
         />
       </Suspense>
     );
@@ -1339,8 +1250,9 @@ export default function App() {
         <IslamicGeometryEngine
           activePrayer={testPrayer || active?.key || 'fajr'}
           sunElevation={sunElevationDeg}
-          minutesToNext={secsToNext ? Math.floor(secsToNext / 60) : 60}
-          lunarPhase={lunarPhase}
+          // Only the last half hour matters to the art (the rosette grows),
+          // so cap it: the memoised art then skips a re-render every minute.
+          minutesToNext={secsToNext ? Math.min(31, Math.floor(secsToNext / 60)) : 31}
           theme={theme}
           ecoMode={ecoMode}
         />
@@ -1527,99 +1439,99 @@ export default function App() {
       {/* Settings overlay — extracted to components/settings/SettingsPanel.jsx */}
       {showSett && (
         <Suspense fallback={null}>
-        <SettingsPanel
-          onCancel={() => setShowSett(false)}
-          onApply={applySettings}
-          draftMethod={draftMethod}
-          setDraftMethod={setDraftMethod}
-          draftAsr={draftAsr}
-          setDraftAsr={setDraftAsr}
-          draftIqamah={draftIqamah}
-          setDraftIqamah={setDraftIqamah}
-          draftIqamahAutoCalc={draftIqamahAutoCalc}
-          setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
-          draftIqamahAutoBuffers={draftIqamahAutoBuffers}
-          setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
-          draftJumuah={draftJumuah}
-          setDraftJumuah={setDraftJumuah}
-          draftEidFitr={draftEidFitr}
-          setDraftEidFitr={setDraftEidFitr}
-          draftEidAdha={draftEidAdha}
-          setDraftEidAdha={setDraftEidAdha}
-          draftEidDays={draftEidDays}
-          setDraftEidDays={setDraftEidDays}
-          draftEidLocation={draftEidLocation}
-          setDraftEidLocation={setDraftEidLocation}
-          draftHijri={draftHijri}
-          setDraftHijri={setDraftHijri}
-          draftHighLat={draftHighLat}
-          setDraftHighLat={setDraftHighLat}
-          draftTheme={draftTheme}
-          setDraftTheme={setDraftTheme}
-          draftEcoMode={draftEcoMode}
-          setDraftEcoMode={setDraftEcoMode}
-          draftChimeAdhan={draftChimeAdhan}
-          setDraftChimeAdhan={setDraftChimeAdhan}
-          draftChimeIqamah={draftChimeIqamah}
-          setDraftChimeIqamah={setDraftChimeIqamah}
-          draftFontScale={draftFontScale}
-          setDraftFontScale={setDraftFontScale}
-          draftViewingMode={draftViewingMode}
-          setDraftViewingMode={setDraftViewingMode}
-          draftViewingDistance={draftViewingDistance}
-          setDraftViewingDistance={setDraftViewingDistance}
-          draftViewingCalibrated={draftViewingCalibrated}
-          setDraftViewingCalibrated={setDraftViewingCalibrated}
-          draftProgress={draftProgress}
-          setDraftProgress={setDraftProgress}
-          draftMasjid={draftMasjid}
-          setDraftMasjid={setDraftMasjid}
-          draftScreenLabel={draftScreenLabel}
-          setDraftScreenLabel={setDraftScreenLabel}
-          draftLogo={draftLogo}
-          setDraftLogo={setDraftLogo}
-          draftLang={draftLang}
-          setDraftLang={setDraftLang}
-          draftAutoAnnouncements={draftAutoAnnouncements}
-          setDraftAutoAnnouncements={setDraftAutoAnnouncements}
-          draftAnnouncements={draftAnnouncements}
-          setDraftAnnouncements={setDraftAnnouncements}
-          draftTickerMode={draftTickerMode}
-          setDraftTickerMode={setDraftTickerMode}
-          draftTickerStaticSeconds={draftTickerStaticSeconds}
-          setDraftTickerStaticSeconds={setDraftTickerStaticSeconds}
-          draftBlackoutEnabled={draftBlackoutEnabled}
-          setDraftBlackoutEnabled={setDraftBlackoutEnabled}
-          draftBlackoutDurations={draftBlackoutDurations}
-          setDraftBlackoutDurations={setDraftBlackoutDurations}
-          draftBlackoutOpacity={draftBlackoutOpacity}
-          setDraftBlackoutOpacity={setDraftBlackoutOpacity}
-          searchQuery={searchQuery}
-          searchResults={searchResults}
-          searchStatus={searchStatus}
-          onSearchInput={handleSearchInput}
-          onSelectCity={handleSelectCity}
-          onClearCity={() => {
-            setSelectedCity(null);
-            setSearchQuery('');
-            setSearchStatus('idle');
-          }}
-          selectedCity={selectedCity}
-          onGeolocate={geolocate}
-          onExportSettings={exportSettings}
-          onImportSettings={importSettings}
-          onResetSettings={resetSettings}
-          onPrintSchedule={() => {
-            setShowSett(false);
-            setShowPrint(true);
-          }}
-          cityNow={cityDay}
-          cityTz={cityTz}
-          currentLocName={locName}
-          currentLat={lat}
-          currentLng={lng}
-          todayTimes={todayTimes}
-        />
+          <SettingsPanel
+            onCancel={() => setShowSett(false)}
+            onApply={applySettings}
+            draftMethod={draftMethod}
+            setDraftMethod={setDraftMethod}
+            draftAsr={draftAsr}
+            setDraftAsr={setDraftAsr}
+            draftIqamah={draftIqamah}
+            setDraftIqamah={setDraftIqamah}
+            draftIqamahAutoCalc={draftIqamahAutoCalc}
+            setDraftIqamahAutoCalc={setDraftIqamahAutoCalc}
+            draftIqamahAutoBuffers={draftIqamahAutoBuffers}
+            setDraftIqamahAutoBuffers={setDraftIqamahAutoBuffers}
+            draftJumuah={draftJumuah}
+            setDraftJumuah={setDraftJumuah}
+            draftEidFitr={draftEidFitr}
+            setDraftEidFitr={setDraftEidFitr}
+            draftEidAdha={draftEidAdha}
+            setDraftEidAdha={setDraftEidAdha}
+            draftEidDays={draftEidDays}
+            setDraftEidDays={setDraftEidDays}
+            draftEidLocation={draftEidLocation}
+            setDraftEidLocation={setDraftEidLocation}
+            draftHijri={draftHijri}
+            setDraftHijri={setDraftHijri}
+            draftHighLat={draftHighLat}
+            setDraftHighLat={setDraftHighLat}
+            draftTheme={draftTheme}
+            setDraftTheme={setDraftTheme}
+            draftEcoMode={draftEcoMode}
+            setDraftEcoMode={setDraftEcoMode}
+            draftChimeAdhan={draftChimeAdhan}
+            setDraftChimeAdhan={setDraftChimeAdhan}
+            draftChimeIqamah={draftChimeIqamah}
+            setDraftChimeIqamah={setDraftChimeIqamah}
+            draftFontScale={draftFontScale}
+            setDraftFontScale={setDraftFontScale}
+            draftViewingMode={draftViewingMode}
+            setDraftViewingMode={setDraftViewingMode}
+            draftViewingDistance={draftViewingDistance}
+            setDraftViewingDistance={setDraftViewingDistance}
+            draftViewingCalibrated={draftViewingCalibrated}
+            setDraftViewingCalibrated={setDraftViewingCalibrated}
+            draftProgress={draftProgress}
+            setDraftProgress={setDraftProgress}
+            draftMasjid={draftMasjid}
+            setDraftMasjid={setDraftMasjid}
+            draftScreenLabel={draftScreenLabel}
+            setDraftScreenLabel={setDraftScreenLabel}
+            draftLogo={draftLogo}
+            setDraftLogo={setDraftLogo}
+            draftLang={draftLang}
+            setDraftLang={setDraftLang}
+            draftAutoAnnouncements={draftAutoAnnouncements}
+            setDraftAutoAnnouncements={setDraftAutoAnnouncements}
+            draftAnnouncements={draftAnnouncements}
+            setDraftAnnouncements={setDraftAnnouncements}
+            draftTickerMode={draftTickerMode}
+            setDraftTickerMode={setDraftTickerMode}
+            draftTickerStaticSeconds={draftTickerStaticSeconds}
+            setDraftTickerStaticSeconds={setDraftTickerStaticSeconds}
+            draftBlackoutEnabled={draftBlackoutEnabled}
+            setDraftBlackoutEnabled={setDraftBlackoutEnabled}
+            draftBlackoutDurations={draftBlackoutDurations}
+            setDraftBlackoutDurations={setDraftBlackoutDurations}
+            draftBlackoutOpacity={draftBlackoutOpacity}
+            setDraftBlackoutOpacity={setDraftBlackoutOpacity}
+            searchQuery={searchQuery}
+            searchResults={searchResults}
+            searchStatus={searchStatus}
+            onSearchInput={handleSearchInput}
+            onSelectCity={handleSelectCity}
+            onClearCity={() => {
+              setSelectedCity(null);
+              setSearchQuery('');
+              setSearchStatus('idle');
+            }}
+            selectedCity={selectedCity}
+            onGeolocate={geolocate}
+            onExportSettings={exportSettings}
+            onImportSettings={importSettings}
+            onResetSettings={resetSettings}
+            onPrintSchedule={() => {
+              setShowSett(false);
+              setShowPrint(true);
+            }}
+            cityNow={cityDay}
+            cityTz={cityTz}
+            currentLocName={locName}
+            currentLat={lat}
+            currentLng={lng}
+            todayTimes={todayTimes}
+          />
         </Suspense>
       )}
 

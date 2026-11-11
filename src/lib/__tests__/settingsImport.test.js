@@ -53,3 +53,81 @@ describe('normalizeImportedSettings', () => {
     expect(result.value.eidFitr).toEqual(DEFAULTS.eidFitr);
   });
 });
+
+// Settings saved before the minimum-wait rule (no `iqamahRule`) rounded to
+// the nearest quarter-hour; their buffers are converted so the displayed
+// iqamah times stay the same.
+describe('normalizeImportedSettings — auto-iqamah rule migration', () => {
+  it('moves untouched rule-1 defaults to the new default minimums', () => {
+    const result = normalizeImportedSettings(
+      { iqamahAutoBuffers: { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 } },
+      DEFAULTS
+    );
+    expect(result.ok).toBe(true);
+    expect(result.value.iqamahAutoBuffers).toEqual(DEFAULTS.iqamahAutoBuffers);
+    expect(result.value.iqamahRule).toBe(2);
+  });
+
+  it('converts customised rule-1 buffers (b → b − 7) and leaves Maghrib as it was', () => {
+    const result = normalizeImportedSettings(
+      { iqamahAutoBuffers: { fajr: 25, dhuhr: 20, asr: 15, maghrib: 5, isha: 15 } },
+      DEFAULTS
+    );
+    expect(result.value.iqamahAutoBuffers).toEqual({
+      fajr: 18,
+      dhuhr: 13,
+      asr: 8,
+      maghrib: 5,
+      isha: 8,
+    });
+  });
+
+  it('maps small rule-1 buffers to 1 and keeps 0 as 0', () => {
+    const result = normalizeImportedSettings(
+      { iqamahAutoBuffers: { fajr: 5, dhuhr: 0, asr: 7, maghrib: 10, isha: 1 } },
+      DEFAULTS
+    );
+    expect(result.value.iqamahAutoBuffers).toEqual({
+      fajr: 1,
+      dhuhr: 0,
+      asr: 1,
+      maghrib: 10,
+      isha: 1,
+    });
+  });
+
+  it('leaves rule-2 buffers untouched', () => {
+    const buffers = { fajr: 20, dhuhr: 10, asr: 10, maghrib: 5, isha: 10 };
+    const result = normalizeImportedSettings(
+      { iqamahRule: 2, iqamahAutoBuffers: buffers },
+      DEFAULTS
+    );
+    expect(result.value.iqamahAutoBuffers).toEqual(buffers);
+  });
+
+  it('uses the new default minimum waits when no buffers were saved', () => {
+    const result = normalizeImportedSettings({ method: 'ISNA' }, DEFAULTS);
+    expect(result.value.iqamahAutoBuffers).toEqual(DEFAULTS.iqamahAutoBuffers);
+    expect(DEFAULTS.iqamahAutoBuffers).toEqual({
+      fajr: 20,
+      dhuhr: 10,
+      asr: 10,
+      maghrib: 5,
+      isha: 10,
+    });
+  });
+});
+
+describe('normalizeImportedSettings — automatic iqamah options', () => {
+  it('keeps valid rounding steps and Fajr sunrise minutes', () => {
+    const r = normalizeImportedSettings({ iqamahRoundTo: 5, iqamahFajrBeforeSunrise: 35 }, DEFAULTS);
+    expect(r.value.iqamahRoundTo).toBe(5);
+    expect(r.value.iqamahFajrBeforeSunrise).toBe(35);
+  });
+
+  it('rejects unknown steps and clamps the sunrise minutes', () => {
+    const r = normalizeImportedSettings({ iqamahRoundTo: 7, iqamahFajrBeforeSunrise: 500 }, DEFAULTS);
+    expect(r.value.iqamahRoundTo).toBe(DEFAULTS.iqamahRoundTo);
+    expect(r.value.iqamahFajrBeforeSunrise).toBe(90);
+  });
+});

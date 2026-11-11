@@ -168,6 +168,18 @@ body {
   transition-duration: 0.01ms !important;
 }
 
+/* …except the announcement ticker's scroll, which is how a scrolling
+   ticker shows its text at all. Stopping it left long announcements cut off
+   at the screen edge (eco mode and scrolling are both defaults). It only
+   animates transform, which the GPU composites cheaply. Reduced-motion
+   users still get the static fallback from ticker.css. */
+@media (prefers-reduced-motion: no-preference) {
+  .app--eco .ticker-track {
+    animation-duration: 40s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
 /* Shared animations (used across multiple components) */
 @keyframes blink {
 

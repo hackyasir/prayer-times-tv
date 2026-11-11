@@ -338,3 +338,28 @@ describe('DEFAULTS — blackout durations', () => {
     });
   });
 });
+
+describe('first-run defaults', () => {
+  it('start in the device language and with beeps off', () => {
+    const original = Object.getOwnPropertyDescriptor(window.navigator, 'languages');
+    Object.defineProperty(window.navigator, 'languages', {
+      value: ['ur-PK', 'en'],
+      configurable: true,
+    });
+    try {
+      const { result } = renderHook(() => useSettings(), { wrapper });
+      expect(result.current.applied.lang).toBe('ur');
+      expect(result.current.applied.chimeAdhan).toBe(false);
+      expect(result.current.applied.chimeIqamah).toBe(false);
+    } finally {
+      if (original) Object.defineProperty(window.navigator, 'languages', original);
+      else delete window.navigator.languages;
+    }
+  });
+
+  it('keep a saved language on later loads', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ lang: 'ar' }));
+    const { result } = renderHook(() => useSettings(), { wrapper });
+    expect(result.current.applied.lang).toBe('ar');
+  });
+});

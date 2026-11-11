@@ -2,8 +2,8 @@
 // ── useChime.test.jsx ────────────────────────────────────────────────────
 //
 // Which events beep under which settings. Regressions guarded here:
-//   - Jumu'ah/Eid slots must beep with the DEFAULT settings (iqamah beep on,
-//     adhan beep off) — they used to be adhan-only and stayed silent.
+//   - Jumu'ah/Eid slots must beep with only the iqamah beep on (adhan beep
+//     off) — they used to be adhan-only and stayed silent.
 //   - On Fridays with Jumu'ah slots there is no Dhuhr iqamah beep.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -37,7 +37,7 @@ function beepsAt(now, { chimeAdhan = false, chimeIqamah = true, ...congregationO
 describe('useChime', () => {
   beforeEach(() => playBeep.mockClear());
 
-  it('beeps at a daily iqamah with the default settings', () => {
+  it('beeps at a daily iqamah with only the iqamah beep on', () => {
     expect(beepsAt(at(17, 15))).toBe(1);
   });
 
@@ -46,7 +46,7 @@ describe('useChime', () => {
     expect(beepsAt(at(17, 0), { chimeAdhan: true })).toBe(1);
   });
 
-  it("beeps at each Jumu'ah slot with the default settings", () => {
+  it("beeps at each Jumu'ah slot with only the iqamah beep on", () => {
     const friday = { isFriday: true, jumuahTimes: [at(18, 0)] };
     expect(beepsAt(at(18, 0), friday)).toBe(1);
   });

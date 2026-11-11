@@ -433,16 +433,16 @@
 }
 
 /* Moon disk components */
+/* lit part (crescent / gibbous shape, lib/moonPhase.js) */
 .moon-arc-lit {
   fill: var(--moon-accent-hi);
 }
 
-/* lit (bright) disk */
+/* unlit disc, drawn under the lit part */
 .moon-arc-dark {
   fill: var(--moon-surface);
 }
 
-/* dark side overlay */
 .moon-arc-ring {
   /* subtle outline */
   fill: none;

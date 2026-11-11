@@ -28,7 +28,7 @@ import { PRAYERS, METHOD_LABELS } from '../lib/constants.js';
 import { calcTimes } from '../lib/prayerCalc.js';
 import { fmt12 } from '../lib/formatters.js';
 import { toHijriParts, findUpcomingEid } from '../lib/hijri.js';
-import { computeIqamah } from '../lib/iqamah.js';
+import { iqamahFromSettings } from '../lib/iqamah.js';
 import { fastReasonsFor } from '../lib/sunnahFasts.js';
 
 const HIJRI_MONTHS = [
@@ -59,6 +59,8 @@ export default function PrintableSchedule({
   iqamah,
   iqamahAutoCalc,
   iqamahAutoBuffers,
+  iqamahRoundTo,
+  iqamahFajrBeforeSunrise,
   hijriOffset,
   masjidName,
   locName,
@@ -103,10 +105,12 @@ export default function PrintableSchedule({
       // to lib/iqamah.js so the printed schedule uses the EXACT same
       // logic as the live dashboard — no risk of drift.
       const iqamahFor = (key) =>
-        computeIqamah(times[key], {
-          autoCalc: !!iqamahAutoCalc,
-          bufferMinutes: iqamahAutoBuffers?.[key] ?? 0,
-          offsetMinutes: iqamah?.[key] ?? 0,
+        iqamahFromSettings(times, key, {
+          iqamahAutoCalc: !!iqamahAutoCalc,
+          iqamahAutoBuffers,
+          iqamahRoundTo,
+          iqamahFajrBeforeSunrise,
+          iqamah,
         });
 
       // ── Jumu'ah substitution on Friday rows ───────────────────────────
@@ -188,6 +192,8 @@ export default function PrintableSchedule({
     iqamah,
     iqamahAutoCalc,
     iqamahAutoBuffers,
+    iqamahRoundTo,
+    iqamahFajrBeforeSunrise,
     hijriOffset,
     jumuah,
   ]);

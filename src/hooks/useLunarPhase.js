@@ -1,24 +1,22 @@
-// ── useLunarPhase — approximate moon phase from Hijri day ──────────────────
+// ── useLunarPhase — the moon's illuminated fraction ─────────────────────────
 //
-// The Islamic (Hijri) calendar is lunar, so the day of the Hijri month tells
-// us where we are in the lunar cycle:
-//   1st  → new moon (phase ≈ 0)
-//   7th  → waxing quarter
-//   15th → full moon (phase ≈ 1)
-//   22nd → waning quarter
-//   29th → near-new again
+// 0 = new moon (dark), 1 = full moon, from the moon's real position
+// (suncalc). Used for the brightness of the crescent in the header's mosque
+// icon.
 //
-// We use |sin(π · (hDay - 1) / 29.5)| so the value smoothly cycles 0→1→0.
-// This is approximate but accurate enough for the visual indicator (crescent
-// brightness in MosqueIcon, Moon progress style, etc).
+// Earlier versions estimated this from the Hijri day, which runs a day or
+// two behind the astronomical new moon (the month starts with the first
+// sighting) and moves with the Hijri adjustment setting.
+//
+// `hourKey` (hours since the epoch) keeps the value steady between hours, so
+// components that use it re-render at most once an hour.
 
 import { useMemo } from 'react';
+import SunCalc from 'suncalc';
 
-export default function useLunarPhase(hijri) {
-  return useMemo(() => {
-    // Hijri string starts with "D Month YYYY AH" — extract D
-    const dayMatch = hijri.match(/^(\d+)/);
-    const hDay = dayMatch ? parseInt(dayMatch[1], 10) : 1;
-    return Math.abs(Math.sin((Math.PI * (hDay - 1)) / 29.5));
-  }, [hijri]);
+export default function useLunarPhase(hourKey) {
+  return useMemo(
+    () => SunCalc.getMoonIllumination(new Date(hourKey * 3600000)).fraction,
+    [hourKey]
+  );
 }
