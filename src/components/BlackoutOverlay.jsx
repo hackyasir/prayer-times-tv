@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 import { fmtCountdown } from '../lib/formatters.js';
+import StableDigits from './StableDigits.jsx';
 
 const HOLD_DURATION_MS = 3000;
 
@@ -96,7 +97,7 @@ export default function BlackoutOverlay({ active, endsAt, now, opacity = 100, on
 
       {/* Resume countdown — small, at the bottom edge, dim */}
       <div className="blackout-resume">
-        {fmtStr(t('blackout.resumingIn'), { time: fmtCountdown(secsRemaining) })}
+        <StableDigits text={fmtStr(t('blackout.resumingIn'), { time: fmtCountdown(secsRemaining) })} />
       </div>
 
       {/* Hold-to-dismiss hint + progress bar — only visible WHILE holding,

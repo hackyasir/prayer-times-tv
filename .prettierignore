@@ -28,7 +28,3 @@ prayer-times-tv.zip
 # Logs and temp
 *.log
 *.tmp
-
-# Public assets — don't touch the shipped service worker, manifest, etc.
-# (Prettier can rewrite minified output undesirably.)
-public/sw.js

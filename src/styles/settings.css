@@ -39,6 +39,15 @@
   overflow: hidden;
 }
 
+/* Focus ring inside the panel — thicker and brighter than the global one so
+ * a remote-control user can see which control is selected from the couch.
+ * Also overrides `outline: none` on the select and text inputs below. */
+.sbox :focus-visible,
+.pin-box :focus-visible {
+  outline: 3px solid var(--t-accent-hi, #f0d080);
+  outline-offset: 2px;
+}
+
 .sbox-hdr {
   display: flex;
   align-items: center;
@@ -575,6 +584,27 @@
   margin-top: 2px;
   letter-spacing: 0.03em;
   overflow-wrap: anywhere;
+}
+
+/* "Usual in {country}" note under the location card and the method picker
+ * (components/settings/RegionHint.jsx). Gold when the choice differs. */
+.region-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 8px;
+  font-size: calc(12px * var(--t-fs, 1));
+  line-height: 1.4;
+  color: var(--t-text-dim);
+}
+
+.region-hint[data-state='differs'] {
+  color: var(--t-accent);
+}
+
+.region-hint .sbtn-meta {
+  margin-right: 0;
 }
 
 /* ── Settings header meta buttons (Export / Import) ──────────────────────

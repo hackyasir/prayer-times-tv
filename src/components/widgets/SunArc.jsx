@@ -13,6 +13,7 @@
 // matches the rest of the project (QiblaCompass, MosqueIcon) and makes
 // the component easy to restyle by editing CSS alone.
 
+import { memo } from 'react';
 import { fmt12 } from '../../lib/formatters.js';
 import { useT } from '../../i18n/I18nContext.jsx';
 
@@ -39,7 +40,7 @@ function bezierPoint(t) {
   };
 }
 
-export default function SunArc({ todayTimes, now, cityTz }) {
+function SunArc({ todayTimes, now, cityTz }) {
   const { t } = useT();
   const { sunrise, dhuhr: solarNoon, maghrib: sunset } = todayTimes;
   if (!sunrise || !sunset) return null;
@@ -136,3 +137,6 @@ export default function SunArc({ todayTimes, now, cityTz }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(SunArc);

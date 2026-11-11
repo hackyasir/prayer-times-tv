@@ -6,13 +6,12 @@
 //
 // Focus areas:
 //   - Manual mode: simple adhan + offset addition
-//   - Auto mode with buf > 0: rounds to nearest quarter-hour
-//   - Auto mode with buf = 0: iqamah = adhan (Maghrib convention)
-//   - Safety floor: iqamah never lands BEFORE adhan even at rounding edges
+//   - Auto mode: at least the buffer after adhan, rounded UP to a quarter-hour
+//   - Auto mode, Maghrib or buf = 0: exact, no rounding
 //   - Edge inputs: null adhan, missing options, hour wrap at :45 → :00
 
 import { describe, it, expect } from 'vitest';
-import { computeIqamah } from '../iqamah.js';
+import { computeIqamah, iqamahFromSettings } from '../iqamah.js';
 
 // Small helper — build a Date at a given HH:MM today. Iqamah math operates
 // purely on the time-of-day; the calendar date is irrelevant as long as
@@ -55,83 +54,69 @@ describe('computeIqamah — manual mode', () => {
   });
 });
 
-describe('computeIqamah — auto mode (round to nearest quarter-hour)', () => {
-  it('rounds DOWN when target is closer to previous quarter', () => {
-    // 5:00 adhan + 15m buffer = 5:15 target. Exactly on a quarter → 5:15.
-    const result = computeIqamah(at(5, 0), { autoCalc: true, bufferMinutes: 15 });
-    expect(hm(result)).toBe('5:15');
+describe('computeIqamah — auto mode (minimum wait, rounded up to a quarter-hour)', () => {
+  it('keeps a target that is already on a quarter-hour', () => {
+    // 5:00 adhan + 15 = 5:15 → already a quarter → 5:15.
+    expect(hm(computeIqamah(at(5, 0), { autoCalc: true, bufferMinutes: 15 }))).toBe('5:15');
   });
 
-  it('rounds DOWN when target is 3 min past a quarter (closer to past)', () => {
-    // 10:15 adhan + 18m buffer = 10:33 target. Nearest quarter = 10:30
-    // (3 min back vs 12 min forward).
-    const result = computeIqamah(at(10, 15), { autoCalc: true, bufferMinutes: 18 });
-    expect(hm(result)).toBe('10:30');
+  it('rounds UP, never down — the buffer is a guaranteed minimum', () => {
+    // 10:15 + 18 = 10:33 → next quarter 10:45 (the old "nearest" rule gave
+    // 10:30, only 15 minutes after the adhan).
+    expect(hm(computeIqamah(at(10, 15), { autoCalc: true, bufferMinutes: 18 }))).toBe('10:45');
+    // 13:08 + 4 = 13:12 → 13:15.
+    expect(hm(computeIqamah(at(13, 8), { autoCalc: true, bufferMinutes: 4 }))).toBe('13:15');
   });
 
-  it('rounds UP when target is closer to next quarter', () => {
-    // 13:08 adhan + 4m buffer = 13:12 target. Nearest quarter = 13:15.
-    const result = computeIqamah(at(13, 8), { autoCalc: true, bufferMinutes: 4 });
-    expect(hm(result)).toBe('13:15');
+  it('never gives a wait shorter than the buffer, nor 15+ minutes longer', () => {
+    for (let m = 0; m < 60; m++) {
+      for (const buf of [1, 5, 10, 20, 30]) {
+        const adhan = at(12, m);
+        const wait = (computeIqamah(adhan, { autoCalc: true, bufferMinutes: buf }) - adhan) / 60000;
+        expect(wait).toBeGreaterThanOrEqual(buf);
+        expect(wait).toBeLessThan(buf + 15);
+      }
+    }
   });
 
-  it('rounds correctly when target lands exactly between quarters', () => {
-    // 13:00 adhan + 7m = 13:07 → equidistant from 13:00 and 13:15 would
-    // be 13:07.5. JS Math.round on .5 rounds toward +Inf (banker's rule
-    // does not apply here), so 13:07 → 7/15 = 0.46 → rounds to 0 → 13:00.
-    // But 13:07 is 7 min from :00 and 8 min from :15 → :00 is closer → 13:00.
-    const result = computeIqamah(at(13, 0), { autoCalc: true, bufferMinutes: 7 });
-    expect(hm(result)).toBe('13:00');
+  it('wraps to the next hour', () => {
+    // 11:45 + 12 = 11:57 → 12:00.
+    expect(hm(computeIqamah(at(11, 45), { autoCalc: true, bufferMinutes: 12 }))).toBe('12:00');
   });
 
-  it('wraps to next hour when rounding crosses :45 → :00', () => {
-    // 11:45 adhan + 12m buffer = 11:57 target → nearest quarter = 12:00.
-    const result = computeIqamah(at(11, 45), { autoCalc: true, bufferMinutes: 12 });
-    expect(hm(result)).toBe('12:00');
+  it('keeps the same iqamah for days while the adhan drifts a minute a day', () => {
+    // Dhuhr drifting 12:01 → 12:05 with a 10-minute minimum → 12:15 every day.
+    const times = [1, 2, 3, 4, 5].map((m) =>
+      hm(computeIqamah(at(12, m), { autoCalc: true, bufferMinutes: 10 }))
+    );
+    expect(new Set(times)).toEqual(new Set(['12:15']));
   });
 });
 
-describe('computeIqamah — auto mode with buf=0 (Maghrib convention)', () => {
+describe('computeIqamah — auto mode, no rounding (Maghrib, or 0 minutes)', () => {
+  it('Maghrib is exactly adhan + its minutes', () => {
+    expect(
+      hm(computeIqamah(at(16, 57), { autoCalc: true, bufferMinutes: 5, prayerKey: 'maghrib' }))
+    ).toBe('17:02');
+    expect(
+      hm(computeIqamah(at(20, 53), { autoCalc: true, bufferMinutes: 10, prayerKey: 'maghrib' }))
+    ).toBe('21:03');
+  });
+
+  it('other prayers with the same minutes are still rounded', () => {
+    expect(
+      hm(computeIqamah(at(16, 57), { autoCalc: true, bufferMinutes: 5, prayerKey: 'asr' }))
+    ).toBe('17:15');
+  });
+
   it('returns adhan-exact when bufferMinutes is 0', () => {
-    // Common for Maghrib — iqamah immediately at sunset, no rounding.
-    const result = computeIqamah(at(8, 37), { autoCalc: true, bufferMinutes: 0 });
-    expect(hm(result)).toBe('8:37');
+    expect(hm(computeIqamah(at(8, 37), { autoCalc: true, bufferMinutes: 0 }))).toBe('8:37');
+    expect(hm(computeIqamah(at(20, 53), { autoCalc: true, bufferMinutes: 0 }))).toBe('20:53');
   });
 
-  it('returns adhan-exact even at odd-minute times', () => {
-    const result = computeIqamah(at(20, 53), { autoCalc: true, bufferMinutes: 0 });
-    expect(hm(result)).toBe('20:53');
-  });
-
-  it('coerces buf=null to 0 (no NaN, no rounding)', () => {
-    const result = computeIqamah(at(8, 37), { autoCalc: true, bufferMinutes: null });
-    expect(hm(result)).toBe('8:37');
-  });
-});
-
-describe('computeIqamah — safety floor (iqamah never before adhan)', () => {
-  it('bumps forward when nearest-rounding would land BEFORE adhan', () => {
-    // The motivating bug: 4:17 adhan + 1m buffer = 4:18 target → nearest
-    // quarter = 4:15, which is BEFORE adhan. Safety floor must bump to
-    // 4:30 (next quarter ≥ adhan).
-    const result = computeIqamah(at(4, 17), { autoCalc: true, bufferMinutes: 1 });
-    expect(hm(result)).toBe('4:30');
-  });
-
-  it('does NOT bump when nearest-rounding lands AFTER adhan', () => {
-    // 4:17 adhan + 5m buffer = 4:22 → nearest = 4:15 (before) → bump 4:30
-    const result1 = computeIqamah(at(4, 17), { autoCalc: true, bufferMinutes: 5 });
-    expect(hm(result1)).toBe('4:30');
-
-    // 4:17 adhan + 18m buffer = 4:35 → nearest = 4:30 (after, OK)
-    const result2 = computeIqamah(at(4, 17), { autoCalc: true, bufferMinutes: 18 });
-    expect(hm(result2)).toBe('4:30');
-  });
-
-  it('keeps iqamah ≥ adhan at the rounding boundary', () => {
-    // 4:07 adhan + 1m = 4:08 → nearest = 4:15 (after, OK). Should NOT bump.
-    const result = computeIqamah(at(4, 7), { autoCalc: true, bufferMinutes: 1 });
-    expect(hm(result)).toBe('4:15');
+  it('coerces buf=null or a negative buffer to 0 (no NaN, no rounding)', () => {
+    expect(hm(computeIqamah(at(8, 37), { autoCalc: true, bufferMinutes: null }))).toBe('8:37');
+    expect(hm(computeIqamah(at(8, 37), { autoCalc: true, bufferMinutes: -5 }))).toBe('8:37');
   });
 });
 
@@ -146,8 +131,7 @@ describe('computeIqamah — edge / negative cases', () => {
 
   it('defaults to manual mode (autoCalc=false) when opts omitted', () => {
     // No opts means autoCalc=false, offsetMinutes=0 → iqamah = adhan exactly.
-    const result = computeIqamah(at(5, 0));
-    expect(hm(result)).toBe('5:00');
+    expect(hm(computeIqamah(at(5, 0)))).toBe('5:00');
   });
 
   it('does not mutate the input adhan Date', () => {
@@ -158,24 +142,120 @@ describe('computeIqamah — edge / negative cases', () => {
   });
 });
 
-describe('computeIqamah — known mosque scenarios', () => {
-  it('typical Fajr: 5:00 + 30m buf rounds to 5:30', () => {
-    const result = computeIqamah(at(5, 0), { autoCalc: true, bufferMinutes: 30 });
-    expect(hm(result)).toBe('5:30');
+describe('computeIqamah — default minimum waits', () => {
+  // Defaults: Fajr 20, Dhuhr 10, Asr 10, Maghrib 5, Isha 10.
+  it('typical Fajr: 5:44 + at least 20 → 6:15', () => {
+    expect(hm(computeIqamah(at(5, 44), { autoCalc: true, bufferMinutes: 20 }))).toBe('6:15');
   });
 
-  it('typical Dhuhr: 1:18 + 15m buf rounds to 1:30', () => {
-    const result = computeIqamah(at(13, 18), { autoCalc: true, bufferMinutes: 15 });
-    expect(hm(result)).toBe('13:30');
+  it('typical Dhuhr: 12:04 + at least 10 → 12:15', () => {
+    expect(hm(computeIqamah(at(12, 4), { autoCalc: true, bufferMinutes: 10 }))).toBe('12:15');
   });
 
-  it('typical Maghrib: 8:37 + 0 buf stays at 8:37', () => {
-    const result = computeIqamah(at(20, 37), { autoCalc: true, bufferMinutes: 0 });
-    expect(hm(result)).toBe('20:37');
+  it('typical Isha: 18:38 + at least 10 → 19:00 (old defaults gave 18:45, 7 minutes)', () => {
+    expect(hm(computeIqamah(at(18, 38), { autoCalc: true, bufferMinutes: 10 }))).toBe('19:00');
   });
 
-  it('manual fallback: same prayer with 5m manual offset gives 8:42', () => {
-    const result = computeIqamah(at(20, 37), { autoCalc: false, offsetMinutes: 5 });
-    expect(hm(result)).toBe('20:42');
+  it('typical Maghrib: 16:59 + 5 → 17:04', () => {
+    expect(
+      hm(computeIqamah(at(16, 59), { autoCalc: true, bufferMinutes: 5, prayerKey: 'maghrib' }))
+    ).toBe('17:04');
+  });
+
+  it('manual fallback: 5-minute manual offset gives 8:42', () => {
+    expect(hm(computeIqamah(at(20, 37), { autoCalc: false, offsetMinutes: 5 }))).toBe('20:42');
+  });
+});
+
+describe('computeIqamah — rounding step', () => {
+  it('rounds up to 5 minutes', () => {
+    expect(hm(computeIqamah(at(12, 4), { autoCalc: true, bufferMinutes: 10, roundTo: 5 }))).toBe(
+      '12:15'
+    );
+    expect(hm(computeIqamah(at(12, 6), { autoCalc: true, bufferMinutes: 10, roundTo: 5 }))).toBe(
+      '12:20'
+    );
+  });
+
+  it('exact minutes (Gulf / Maldives style) — adhan + wait, no rounding', () => {
+    expect(hm(computeIqamah(at(12, 4), { autoCalc: true, bufferMinutes: 20, roundTo: 1 }))).toBe(
+      '12:24'
+    );
+  });
+
+  it('falls back to a quarter-hour for an unknown step', () => {
+    expect(hm(computeIqamah(at(12, 4), { autoCalc: true, bufferMinutes: 10, roundTo: 7 }))).toBe(
+      '12:15'
+    );
+  });
+});
+
+describe('computeIqamah — Fajr and sunrise', () => {
+  const fajr = (adhan, sunrise, extra) =>
+    hm(
+      computeIqamah(adhan, {
+        autoCalc: true,
+        prayerKey: 'fajr',
+        sunrise,
+        bufferMinutes: 20,
+        ...extra,
+      })
+    );
+
+  it('holds Fajr until N minutes before sunrise (rounded down)', () => {
+    // Adhan 5:44, sunrise 7:05, 35 min before sunrise → 6:30 (rounded down
+    // from 6:30). The minimum wait alone would give 6:15.
+    expect(fajr(at(5, 44), at(7, 5), { fajrBeforeSunrise: 35 })).toBe('6:30');
+    // Sunrise 7:12 → 6:37 → rounded DOWN to 6:30, keeping at least 35 min.
+    expect(fajr(at(5, 44), at(7, 12), { fajrBeforeSunrise: 35 })).toBe('6:30');
+  });
+
+  it('never goes earlier than the minimum wait', () => {
+    // Short twilight: adhan 6:00, sunrise 6:50, 35 before → 6:15, but the
+    // 20-minute minimum (rounded up) is 6:30... capped below by safety.
+    expect(fajr(at(6, 0), at(6, 50), { fajrBeforeSunrise: 35 })).toBe('6:30');
+  });
+
+  it('is never later than 15 minutes before sunrise', () => {
+    // Adhan 6:00, sunrise 6:40, minimum 20 → 6:30 would leave 10 minutes;
+    // pulled back to 6:25 rounded down to the quarter → 6:15.
+    expect(fajr(at(6, 0), at(6, 40), {})).toBe('6:15');
+    // …but never before the adhan itself.
+    expect(fajr(at(6, 0), at(6, 10), {})).toBe('6:00');
+  });
+
+  it('ignores the sunrise rule for other prayers', () => {
+    expect(
+      hm(
+        computeIqamah(at(12, 4), {
+          autoCalc: true,
+          prayerKey: 'dhuhr',
+          bufferMinutes: 10,
+          sunrise: at(7, 5),
+          fajrBeforeSunrise: 35,
+        })
+      )
+    ).toBe('12:15');
+  });
+});
+
+describe('iqamahFromSettings', () => {
+  const times = { fajr: at(5, 44), sunrise: at(7, 5), dhuhr: at(12, 4), maghrib: at(16, 59) };
+
+  it('uses the automatic formula with all its settings', () => {
+    const settings = {
+      iqamahAutoCalc: true,
+      iqamahAutoBuffers: { fajr: 20, dhuhr: 15, maghrib: 5 },
+      iqamahRoundTo: 15,
+      iqamahFajrBeforeSunrise: 35,
+    };
+    expect(hm(iqamahFromSettings(times, 'fajr', settings))).toBe('6:30');
+    expect(hm(iqamahFromSettings(times, 'dhuhr', settings))).toBe('12:30');
+    expect(hm(iqamahFromSettings(times, 'maghrib', settings))).toBe('17:04');
+  });
+
+  it('uses manual offsets when automatic is off', () => {
+    const settings = { iqamahAutoCalc: false, iqamah: { dhuhr: 26 } };
+    expect(hm(iqamahFromSettings(times, 'dhuhr', settings))).toBe('12:30');
   });
 });

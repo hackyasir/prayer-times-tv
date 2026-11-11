@@ -9,6 +9,7 @@
  *   768px+ portrait          kiosk portrait — stack, clock first
  *   768px+ AND max-h 500px   landscape phone — compress cards, hide hadith
  *   1200px+                  kiosk/TV — larger gaps
+ *   1600px+ AND 800px+ tall  TV — zoom the Settings panel + PIN box
  *   2400px+                  4K landscape — font bumps
  *   min-height 2400px        4K portrait — font bumps
  */
@@ -73,6 +74,12 @@
   }
   .pcol {
     align-self: stretch;
+  }
+  /* Give the prayer list the column's full height so the rows (and their
+     times) grow into the space instead of leaving a gap above the weather
+     strip. */
+  .pcol-wrap > .pcol {
+    flex: 1 1 auto;
   }
   .pcard {
     flex: 1;
@@ -170,6 +177,32 @@
   }
 }
 
+/* ── Settings panel + PIN box on TVs ─────────────────────────────────────
+ * Settings are saved on each device, so admins set up each screen on the TV
+ * itself, from a few feet away and often with a remote. The panel is full of
+ * inline pixel sizes that font-size rules can't reach, so `zoom` scales the
+ * whole panel (text, controls, spacing) evenly. Width and height are divided
+ * by the zoom so the zoomed panel still fits on screen. */
+@media (min-width: 1600px) and (min-height: 800px) {
+  .sbox,
+  .pin-box {
+    --s-zoom: 1.5;
+
+    zoom: var(--s-zoom);
+  }
+  .sbox {
+    width: min(760px, calc(94vw / var(--s-zoom)));
+    height: min(calc(92vh / var(--s-zoom)), 860px);
+  }
+}
+
+@media (min-width: 2400px) and (min-height: 1300px) {
+  .sbox,
+  .pin-box {
+    --s-zoom: 2.25;
+  }
+}
+
 /* ── 2400px+ — 4K landscape ──────────────────────────────────────────────── */
 @media (min-width: 2400px) {
   .app {
@@ -207,25 +240,8 @@
     font-size: calc(clamp(0.8rem, 1.1vw, 1.8rem) * var(--t-fs, 1));
   }
 
-  .pen {
-    font-size: calc(clamp(1.5rem, 2.2vw, 5rem) * var(--t-fs, 1));
-  }
-  .par {
-    font-size: calc(clamp(1.1rem, 1.6vw, 3.5rem) * var(--t-fs, 1));
-  }
-  /* ptime bigger than ptime-iqamah — different sizes, wider columns */
-  .ptime {
-    font-size: calc(clamp(1.5rem, 2.4vw, 5rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
-  .ptime-iqamah {
-    font-size: calc(clamp(1.2rem, 1.9vw, 4rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
-  .pheader-col {
-    font-size: calc(clamp(0.6rem, 0.85vw, 1.4rem) * var(--t-fs, 1));
-    width: calc(clamp(120px, 18cqi, 320px) * var(--t-fs, 1));
-  }
+  /* Prayer names and times need no 4K overrides — they scale with the
+     prayer column's width (cqi) in prayer-cards.css. */
 
   .app-title {
     font-size: calc(clamp(1.5rem, 2.2vw, 4rem) * var(--t-fs, 1));
@@ -284,23 +300,6 @@
   .next-ar {
     font-size: calc(clamp(1.5rem, 3vw, 6rem) * var(--t-fs, 1));
   }
-  .pen {
-    font-size: calc(clamp(1.2rem, 2vw, 4rem) * var(--t-fs, 1));
-  }
-  .par {
-    font-size: calc(clamp(1rem, 1.8vw, 3rem) * var(--t-fs, 1));
-  }
-  .ptime {
-    font-size: calc(clamp(1.2rem, 2.2vw, 4rem) * var(--t-fs, 1));
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
-  }
-  .ptime-iqamah {
-    font-size: calc(clamp(1rem, 1.8vw, 3.2rem) * var(--t-fs, 1));
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
-  }
-  .pheader-col {
-    width: calc(clamp(100px, 18cqi, 280px) * var(--t-fs, 1));
-  }
   .pcard {
     flex: 1;
     max-height: 22vh;
@@ -313,5 +312,170 @@
   .eid-banner {
     flex: 1;
     max-height: 22vh;
+  }
+}
+
+/* ── Fit-to-space sizing ──────────────────────────────────────────────────
+ * Wherever container query units work (most browsers since 2022/23), the
+ * main text is sized from the space it actually has — so the layout fills
+ * any screen shape (16:9, 16:10, 4:3, ultra-wide, portrait) without leaving
+ * gaps or cutting anything off. Older browsers skip this block and keep the
+ * vw/vmax sizes above and in the component stylesheets.
+ *
+ * Units: cqi/cqw = % of the container's width, cqh = % of its height.
+ * The viewing-distance scale (--t-fs) still enlarges text, but only up to
+ * what fits; it can't push content off screen. */
+@supports (width: 1cqh) {
+  @media (min-width: 768px) {
+    /* Each prayer row and the clock column become size containers, so
+       their text can follow their own height as well as width. */
+    .pcard,
+    .ccol {
+      container-type: size;
+    }
+  }
+
+  /* ── Prayer list ─────────────────────────────────────────────────────
+   * Column width comes from the list's width (the header row and each card
+   * resolve it against .pcol), capped so both time columns never take more
+   * than ~62% of a row. Text then fits BOTH the row's height (cqh — rows
+   * shrink on Fridays / Eid when banners join the list) and the width. */
+  .pheader,
+  .pcard {
+    --ptime-w: min(calc(28cqi * var(--t-fs, 1)), 31cqi);
+  }
+  .pheader-name,
+  .pheader-col {
+    font-size: max(0.75rem, min(calc(2.4cqi * var(--t-fs, 1)), 4.5cqi));
+  }
+  .pen {
+    font-size: clamp(0.8rem, min(calc(5.2cqi * var(--t-fs, 1)), 6.5cqi, 44cqh), 5rem);
+  }
+  .par {
+    font-size: clamp(0.625rem, min(calc(3.4cqi * var(--t-fs, 1)), 4.5cqi, 28cqh), 3.5rem);
+  }
+  .ptime,
+  .ptime-iqamah {
+    /* One line at line-height 1.1 — 80% of the row's content height leaves
+       a small margin. */
+    font-size: clamp(1.05rem, min(calc(var(--ptime-w) * 0.25), 80cqh), 8rem);
+  }
+
+  /* ── Clock column ────────────────────────────────────────────────────
+   * Each element gets a share of the column's height (--fit-h, in %) and a
+   * width limit (--fit-w, % of the column's width) so its line fits. The
+   * viewing-distance scale can grow it to at most 10% past its share. The
+   * shares add up to about 85% of the column (with the sun arc and fast
+   * bar), leaving room for the final-minute countdown. Pure CSS on purpose:
+   * the size depends only on the screen, so nothing re-measures or jitters
+   * while the clock ticks. */
+  .ccol .clock-main,
+  .ccol .clock-sec,
+  .ccol .clock-date,
+  .ccol .next-lbl,
+  .ccol .next-name,
+  .ccol .next-ar,
+  .ccol .countdown,
+  .ccol .countdown-big,
+  .ccol .countdown-lbl,
+  .ccol .clock-complete,
+  .ccol .hadith-ar,
+  .ccol .hadith-en {
+    font-size: max(
+      var(--fit-min, 0.75rem),
+      calc(
+        min(var(--fit-h) * 1cqh * var(--t-fs, 1), var(--fit-h) * 1.1cqh, var(--fit-w) * 1cqw) *
+          var(--fit-k, 1)
+      )
+    );
+  }
+  /* The sun / moon arc keeps its 400:84 shape, so its height follows its
+     width. Cap the width at 66% of the column's height so the arc never
+     takes more than ~14% of the height (on short, wide screens it took
+     ~20% and squeezed everything else). */
+  .ccol .sun-arc {
+    width: min(92%, 600px, 66cqh);
+  }
+
+  @media (min-width: 768px) and (orientation: portrait) {
+    /* The portrait rule's 2vh gaps cost ~23% of the column at 1080×1920;
+       justify-content: space-between spreads any spare room instead. */
+    .ccol {
+      gap: 0.6vh;
+    }
+  }
+  /* The ring, moon, orbit and day-bar progress styles add a graphic of their own —
+     keep it within a share of the height and give the text a little less. */
+  .ccol:has(.ring-wrap, .moon-prog-wrap, .orbit-wrap, .daybar-wrap) {
+    --fit-k: 0.85;
+  }
+  /* Day bar: full column width, labels sized to the column so neighbouring
+     labels (alternating above/below the bar) never touch. */
+  .ccol .daybar-wrap {
+    width: 85cqw;
+  }
+  .ccol .daybar-labels {
+    font-size: max(0.6rem, min(calc(2.2cqh * var(--t-fs, 1)), 2.6cqw));
+  }
+  .ccol .ring-svg,
+  .ccol .moon-prog-svg,
+  .ccol .orbit-svg {
+    width: min(clamp(64px, 9vw, 150px), 13cqh);
+    height: min(clamp(64px, 9vw, 150px), 13cqh);
+  }
+  .ccol .clock-main {
+    --fit-h: 19;
+    --fit-w: 24;
+    --fit-min: 2.75rem;
+  }
+  .ccol .clock-sec {
+    --fit-h: 6.1;
+    --fit-w: 7.7;
+    --fit-min: 1.125rem;
+  }
+  .ccol .clock-date {
+    --fit-h: 2.6;
+    --fit-w: 4.3;
+    --fit-min: 0.85rem;
+  }
+  .ccol .next-lbl {
+    --fit-h: 2.5;
+    --fit-w: 10;
+  }
+  .ccol .next-name {
+    --fit-h: 7;
+    --fit-w: 22;
+    --fit-min: 1.25rem;
+  }
+  .ccol .next-ar {
+    --fit-h: 3.4;
+    --fit-w: 12;
+    --fit-min: 0.8rem;
+  }
+  .ccol .countdown {
+    --fit-h: 11;
+    --fit-w: 20;
+    --fit-min: 1.625rem;
+  }
+  .ccol .countdown-big {
+    --fit-h: 16;
+    --fit-w: 60;
+    --fit-min: 4rem;
+  }
+  .ccol .countdown-lbl {
+    --fit-h: 2.5;
+    --fit-w: 4.2;
+  }
+  .ccol .clock-complete {
+    --fit-h: 2.5;
+    --fit-w: 4;
+  }
+  .ccol .hadith-ar {
+    --fit-h: 2.8;
+    --fit-w: 5;
+  }
+  .ccol .hadith-en {
+    --fit-h: 2.4;
+    --fit-w: 3.4;
   }
 }

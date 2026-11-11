@@ -58,7 +58,8 @@ For an end-to-end check before pushing, see "Pre-push quality gate" below.
 prayer-times-tv/
 ├── src/
 │   ├── App.jsx              Main app shell (large; do not split casually)
-│   ├── main.jsx             Entry point
+│   ├── main.jsx             Entry point (also imports self-hosted fonts)
+│   ├── sw.js                Service worker (Workbox precache, offline)
 │   ├── components/          Visual components (Header, Footer, PrayerCard, ...)
 │   │   ├── settings/        Settings panel + its sub-pieces
 │   │   ├── widgets/         Optional dashboard widgets (weather, moon, etc.)
@@ -69,13 +70,14 @@ prayer-times-tv/
 │   │   ├── prayerCalc.js    Adhan + sunrise calculation
 │   │   ├── hijri.js         Hijri date conversion
 │   │   ├── iqamah.js        Iqamah time computation (shared helper)
+│   │   ├── congregations.js Today's iqamah/Jumu'ah/Eid list (ticker, chime, blackout)
 │   │   ├── formatters.js    Display formatting (fmt12, fmtCountdown, ...)
 │   │   ├── themes.js        Theme palette definitions
 │   │   └── __tests__/       Lib tests
 │   ├── i18n/                Internationalization (en, ar, ur)
 │   ├── styles/              CSS files (per-concern, not per-component)
 │   └── tests/               Vitest setup file
-├── public/                  Static assets (icons, manifest, sw.js)
+├── public/                  Static assets (icons, ornament, sounds)
 ├── .github/
 │   ├── workflows/
 │   │   └── deploy.yml       CI/CD: lint + test + build + deploy

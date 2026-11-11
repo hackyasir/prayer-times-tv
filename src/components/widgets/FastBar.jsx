@@ -15,10 +15,11 @@
 // This mirrors how dedicated fasting apps behave: information is always
 // "what's the current fast or the next one?" — never empty/hidden.
 
+import { memo } from 'react';
 import { fmt12 } from '../../lib/formatters.js';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 
-export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
+function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
   const { t } = useT();
   const todayFajr = todayTimes?.fajr;
   const todayMaghrib = todayTimes?.maghrib;
@@ -96,3 +97,6 @@ export default function FastBar({ todayTimes, tomorrowTimes, now, cityTz }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(FastBar);

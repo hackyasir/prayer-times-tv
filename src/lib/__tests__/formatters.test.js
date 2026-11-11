@@ -13,6 +13,7 @@ import {
   fmt12,
   addMins,
   fmtCountdown,
+  fmtCountdownShort,
   bearingToCompass,
   bearingToCompassLong,
 } from '../formatters.js';
@@ -206,5 +207,38 @@ describe('bearingToCompassLong', () => {
   it('falls back to "North" for completely invalid input', () => {
     // Pure-NaN input → bearingToCompass returns undefined → fallback.
     expect(bearingToCompassLong(NaN)).toBe('North');
+  });
+});
+
+describe('fmtCountdownShort', () => {
+  it('shows MM:SS under an hour', () => {
+    expect(fmtCountdownShort(492)).toBe('08:12');
+    expect(fmtCountdownShort(59)).toBe('00:59');
+  });
+
+  it('falls back to HH:MM:SS from one hour', () => {
+    expect(fmtCountdownShort(3600)).toBe('01:00:00');
+  });
+
+  it('never goes negative', () => {
+    expect(fmtCountdownShort(-5)).toBe('00:00');
+  });
+});
+
+// fmt12 reuses one Intl formatter per timezone (creating them is slow on TV
+// browsers). The cache must not change results or swallow the fallback.
+describe('fmt12 — cached formatters', () => {
+  it('gives the same result on repeated calls and across zones', () => {
+    const d = new Date('2026-05-18T12:00:00Z');
+    expect(fmt12(d, 'UTC')).toBe('12:00 PM');
+    expect(fmt12(d, 'America/Toronto')).toBe('8:00 AM');
+    expect(fmt12(d, 'UTC')).toBe('12:00 PM');
+    expect(fmt12(d, 'Asia/Karachi')).toBe('5:00 PM');
+  });
+
+  it('still falls back to device-local time for an invalid zone, every time', () => {
+    const d = new Date(2026, 4, 18, 14, 5);
+    expect(fmt12(d, 'Not/AZone')).toBe('2:05 PM');
+    expect(fmt12(d, 'Not/AZone')).toBe('2:05 PM');
   });
 });

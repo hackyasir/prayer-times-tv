@@ -1,275 +1,38 @@
 /**
- * PersianArtEngine — subtle procedural Persian art background
- * ════════════════════════════════════════════════════════════
- * Six motifs from Persian carpet / Safavid manuscript tradition:
- *   ① Toranj medallion  ② Islimi vine scrolls  ③ Shah Abbasi palmette
- *   ④ Boteh (paisley)  ⑤ Decagram (10-pt star)  ⑥ Border cartouche
+ * IslamicGeometryEngine — the background art
+ * ════════════════════════════════════════════
+ * A star pattern built by Hankin's method on the 4.8.8 tiling, a central
+ * shamsa (rosette), islimi scrolls, and top and bottom borders of cartouches
+ * with boteh. The geometry lives in lib/geometryArt.js; this component picks
+ * sizes, colours and per-prayer layer weights, and draws one <path> per
+ * layer (a handful of elements rather than hundreds — cheap for TV
+ * browsers).
  *
- * All drawn at 6–14 % opacity so UI content is always fully readable.
+ * Drawn at low opacity so the content above always stays readable; lines
+ * are at least 1 px wide so they render crisply instead of as blurred
+ * hairlines.
  */
 
-import { useMemo, useRef, useEffect, useState } from 'react';
+import { memo, useMemo, useRef, useEffect, useState } from 'react';
+import {
+  starPatternPath,
+  starHighlightPath,
+  shamsaPaths,
+  islimiPaths,
+  borderPaths,
+} from './lib/geometryArt.js';
 
-// ── tiny math helpers ─────────────────────────────────────────────────────────
-const TAU = Math.PI * 2;
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
-const c = (x, y) => `${x.toFixed(2)},${y.toFixed(2)}`;
 
-function ngon(n, cx, cy, r, a0 = 0) {
-  const pts = [];
-  for (let i = 0; i < n; i++) {
-    const a = a0 + (TAU * i) / n;
-    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
-  }
-  return pts;
-}
-
-// ── ⓪ Girih lattice — the geometric backbone (4.8.8 Archimedean tiling) ─────
-/**
- * Returns an array of polygon outline path strings tiling the viewport.
- * This is the canonical Persian/Islamic girih grid: octagons + squares.
- * Each octagon has circumradius r; squares fill the diagonal gaps.
- */
-function buildGirihLattice(W, H, r) {
-  const s = 2 * r * Math.sin(Math.PI / 8); // octagon side
-  const step = r * Math.sqrt(2) + s; // unit cell size
-  const paths = [];
-  const pad = step * 1.5;
-  const cols = Math.ceil((W + pad * 2) / step) + 2;
-  const rows = Math.ceil((H + pad * 2) / step) + 2;
-
-  const poly = (pts) => 'M ' + pts.map(([x, y]) => c(x, y)).join(' L ') + ' Z';
-
-  for (let row = -2; row < rows; row++) {
-    for (let col = -2; col < cols; col++) {
-      const ox = col * step + step / 2;
-      const oy = row * step + step / 2;
-      // Octagon
-      paths.push(poly(ngon(8, ox, oy, r, Math.PI / 8)));
-      // Square in the +x,+y diagonal gap
-      const sq = step / 2;
-      const sqR = ((s * Math.SQRT2) / 2) * 0.85;
-      paths.push(poly(ngon(4, ox + sq, oy + sq, sqR, Math.PI / 4)));
-    }
-  }
-  return paths;
-}
-
-// ── ① Toranj medallion ───────────────────────────────────────────────────────
-function buildToranj(cx, cy, r) {
-  const paths = [];
-
-  // outer 12-lobe scallop ring
-  const outer = ngon(12, cx, cy, r, -Math.PI / 2);
-  const inner = ngon(12, cx, cy, r * 0.72, -Math.PI / 2 + Math.PI / 12);
-  let s = `M ${c(outer[0][0], outer[0][1])}`;
-  for (let i = 0; i < 12; i++) {
-    const [ix, iy] = inner[i];
-    const [ox, oy] = outer[(i + 1) % 12];
-    s += ` L ${c(ix, iy)} L ${c(ox, oy)}`;
-  }
-  paths.push(s + ' Z');
-
-  // 8 tapered petals in the middle ring
-  for (let i = 0; i < 8; i++) {
-    const a1 = (TAU * i) / 8 - Math.PI / 2;
-    const a2 = a1 + TAU / 8;
-    const am = (a1 + a2) / 2;
-    const tr = r * 0.63;
-    const br = r * 0.28;
-    const tx = cx + tr * Math.cos(am),
-      ty = cy + tr * Math.sin(am);
-    const lx = cx + br * Math.cos(a1),
-      ly = cy + br * Math.sin(a1);
-    const rx = cx + br * Math.cos(a2),
-      ry = cy + br * Math.sin(a2);
-    const lcp = [lerp(lx, tx, 0.5) - (ly - ty) * 0.25, lerp(ly, ty, 0.5) + (lx - tx) * 0.25];
-    const rcp = [lerp(rx, tx, 0.5) + (ry - ty) * 0.25, lerp(ry, ty, 0.5) - (rx - tx) * 0.25];
-    paths.push(
-      `M ${c(lx, ly)} C ${c(lcp[0], lcp[1])} ${c(tx, ty)} ${c(tx, ty)} ` +
-        `C ${c(tx, ty)} ${c(rcp[0], rcp[1])} ${c(rx, ry)} Z`
-    );
-  }
-
-  // 10-pointed star core (decagram)
-  paths.push(...buildDecagram(cx, cy, r * 0.32, r * 0.15));
-
-  // centre circle
-  const cr = r * 0.08;
-  paths.push(
-    `M ${c(cx + cr, cy)} A ${cr.toFixed(2)} ${cr.toFixed(2)} 0 1 1 ${c(cx + cr - 0.01, cy)} Z`
-  );
-
-  return paths;
-}
-
-// ── ② Islimi vine scrolls ────────────────────────────────────────────────────
-function buildIslimi(cx, cy, fieldR, arms) {
-  const scrolls = [],
-    palms = [];
-
-  for (let i = 0; i < arms; i++) {
-    const base = (TAU * i) / arms;
-
-    // parametric spiral point
-    const sp = (t) => {
-      const a = base + t * 1.35;
-      const r = fieldR * (0.18 + t * 0.78);
-      return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-    };
-
-    const [p0x, p0y] = sp(0);
-    const [p1x, p1y] = sp(0.35);
-    const [p2x, p2y] = sp(0.65);
-    const [p3x, p3y] = sp(1.0);
-
-    // S-curve cubic bézier
-    const cp1x = lerp(p0x, p1x, 0.5) - (p1y - p0y) * 0.35;
-    const cp1y = lerp(p0y, p1y, 0.5) + (p1x - p0x) * 0.35;
-    const cp2x = lerp(p2x, p3x, 0.5) + (p3y - p2y) * 0.35;
-    const cp2y = lerp(p2y, p3y, 0.5) - (p3x - p2x) * 0.35;
-    const mcp1x = lerp(p1x, p2x, 0.3) - (p2y - p1y) * 0.4;
-    const mcp1y = lerp(p1y, p2y, 0.3) + (p2x - p1x) * 0.4;
-    const mcp2x = lerp(p1x, p2x, 0.7) + (p2y - p1y) * 0.4;
-    const mcp2y = lerp(p1y, p2y, 0.7) - (p2x - p1x) * 0.4;
-
-    scrolls.push(
-      `M ${c(p0x, p0y)} C ${c(cp1x, cp1y)} ${c(mcp1x, mcp1y)} ${c(p1x, p1y)} ` +
-        `C ${c(mcp2x, mcp2y)} ${c(cp2x, cp2y)} ${c(p3x, p3y)}`
-    );
-
-    // bifurcation branch from ~65% along scroll
-    const ba = base - 0.55;
-    const bx = p2x + fieldR * 0.22 * Math.cos(ba);
-    const by = p2y + fieldR * 0.22 * Math.sin(ba);
-    const bcx = lerp(p2x, bx, 0.5) - (by - p2y) * 0.4;
-    const bcy = lerp(p2y, by, 0.5) + (bx - p2x) * 0.4;
-    scrolls.push(`M ${c(p2x, p2y)} Q ${c(bcx, bcy)} ${c(bx, by)}`);
-
-    // palmette at primary tip + bifurcation tip
-    palms.push(...buildPalmette(p3x, p3y, fieldR * 0.09, base + Math.PI / 2));
-    palms.push(...buildPalmette(bx, by, fieldR * 0.065, ba + Math.PI / 2));
-  }
-
-  return { scrolls, palms };
-}
-
-// ── ③ Shah Abbasi palmette ───────────────────────────────────────────────────
-function buildPalmette(cx, cy, r, a) {
-  const paths = [];
-  const n = 7,
-    fan = Math.PI * 0.82;
-  const bx = cx + r * 0.14 * Math.cos(a);
-  const by = cy + r * 0.14 * Math.sin(a);
-
-  for (let i = 0; i < n; i++) {
-    const t = i / (n - 1);
-    const pa = a - fan / 2 + t * fan;
-    const tx = cx + r * Math.cos(pa);
-    const ty = cy + r * Math.sin(pa);
-    const cpx = cx + r * 0.62 * Math.cos(pa + (t - 0.5) * 0.28);
-    const cpy = cy + r * 0.62 * Math.sin(pa + (t - 0.5) * 0.28);
-    paths.push(`M ${c(bx, by)} Q ${c(cpx, cpy)} ${c(tx, ty)}`);
-  }
-
-  // stamen circle
-  const sr = r * 0.11;
-  const sx = cx + r * 0.18 * Math.cos(a),
-    sy = cy + r * 0.18 * Math.sin(a);
-  paths.push(
-    `M ${c(sx + sr, sy)} A ${sr.toFixed(2)} ${sr.toFixed(2)} 0 1 1 ${c(sx + sr - 0.01, sy)} Z`
-  );
-
-  return paths;
-}
-
-// ── ④ Boteh / paisley ────────────────────────────────────────────────────────
-function buildBoteh(cx, cy, r, angle) {
-  const br = r * 0.44;
-  const tx = cx + r * Math.cos(angle);
-  const ty = cy + r * Math.sin(angle);
-  const lx = cx + br * Math.cos(angle + Math.PI * 0.64);
-  const ly = cy + br * Math.sin(angle + Math.PI * 0.64);
-  const rx = cx + br * Math.cos(angle - Math.PI * 0.64);
-  const ry = cy + br * Math.sin(angle - Math.PI * 0.64);
-  const crx = tx + r * 0.17 * Math.cos(angle + Math.PI * 0.38);
-  const cry = ty + r * 0.17 * Math.sin(angle + Math.PI * 0.38);
-  const lcp = [lerp(lx, crx, 0.6) - (ty - ly) * 0.28, lerp(ly, cry, 0.6) + (tx - lx) * 0.28];
-  const rcp = [lerp(rx, crx, 0.6) + (ty - ry) * 0.28, lerp(ry, cry, 0.6) - (tx - rx) * 0.28];
-
-  return [
-    `M ${c(lx, ly)} C ${c(lcp[0], lcp[1])} ${c(crx, cry)} ${c(crx, cry)} ` +
-      `C ${c(crx, cry)} ${c(rcp[0], rcp[1])} ${c(rx, ry)} ` +
-      `A ${br.toFixed(2)} ${br.toFixed(2)} 0 0 1 ${c(lx, ly)} Z`,
-    `M ${c(cx, cy)} Q ${c(lerp(cx, tx, 0.38), lerp(cy, ty, 0.38))} ${c(lerp(cx, tx, 0.68), lerp(cy, ty, 0.68))}`,
-  ];
-}
-
-function buildBotehField(W, H, r) {
-  const all = [],
-    step = r * 2.35;
-  const rows = Math.ceil(H / step) + 3;
-  const cols = Math.ceil(W / step) + 3;
-  for (let row = -1; row < rows; row++) {
-    for (let col = -1; col < cols; col++) {
-      const x = col * step + (row % 2 ? step / 2 : 0) - step;
-      const y = row * step - step;
-      const a = -Math.PI / 2 + ((row % 4) * Math.PI) / 14;
-      all.push(...buildBoteh(x, y, r, a));
-    }
-  }
-  return all;
-}
-
-// ── ⑤ Decagram (10-pt star) ──────────────────────────────────────────────────
-function buildDecagram(cx, cy, outerR, innerR) {
-  const outer = ngon(10, cx, cy, outerR, -Math.PI / 2);
-  const inner = ngon(10, cx, cy, innerR, -Math.PI / 2 + Math.PI / 10);
-  const full = [];
-  for (let i = 0; i < 10; i++) {
-    full.push(outer[i]);
-    full.push(inner[i]);
-  }
-  const poly = (pts) => 'M ' + pts.map(([x, y]) => c(x, y)).join(' L ') + ' Z';
-  return [poly(full), poly(outer)];
-}
-
-// ── ⑥ Border cartouches ──────────────────────────────────────────────────────
-function buildBorderCartouches(W, H, count, r) {
-  const paths = [];
-  const cw = W / count;
-  for (let side = 0; side < 2; side++) {
-    const y = side === 0 ? r * 1.4 : H - r * 1.4;
-    const d = side === 0 ? 1 : -1;
-    for (let i = 0; i < count; i++) {
-      const x = cw * i + cw / 2;
-      const hw = cw * 0.36,
-        hh = r * 0.85;
-      // ogival pointed oval
-      paths.push(
-        `M ${c(x, y)} C ${c(x - hw, y)} ${c(x - hw, y + d * hh)} ${c(x, y + d * hh)} ` +
-          `C ${c(x + hw, y + d * hh)} ${c(x + hw, y)} ${c(x, y)} Z`
-      );
-      // inner smaller repeat
-      const s = 0.58;
-      paths.push(
-        `M ${c(x, y)} C ${c(x - hw * s, y)} ${c(x - hw * s, y + d * hh * s)} ${c(x, y + d * hh * s)} ` +
-          `C ${c(x + hw * s, y + d * hh * s)} ${c(x + hw * s, y)} ${c(x, y)} Z`
-      );
-    }
-  }
-  return paths;
-}
-
-// ── prayer config ─────────────────────────────────────────────────────────────
+// ── Per-prayer layer weights (0 = hidden) ────────────────────────────────────
 const LAYERS = {
-  fajr: { lattice: 0.35, toranj: 1.0, scrolls: 0.0, boteh: 0.55, deka: 0.45, border: 0.5 },
-  sunrise: { lattice: 0.2, toranj: 0.5, scrolls: 1.0, boteh: 0.3, deka: 0.2, border: 0.4 },
-  dhuhr: { lattice: 0.55, toranj: 0.6, scrolls: 0.4, boteh: 0.3, deka: 1.0, border: 0.8 },
-  asr: { lattice: 0.3, toranj: 0.5, scrolls: 1.0, boteh: 0.4, deka: 0.5, border: 0.6 },
-  maghrib: { lattice: 0.45, toranj: 1.0, scrolls: 0.8, boteh: 0.6, deka: 0.6, border: 1.0 },
-  isha: { lattice: 0.6, toranj: 0.7, scrolls: 0.3, boteh: 0.4, deka: 1.0, border: 0.7 },
+  fajr: { lattice: 0.5, shamsa: 1.0, scrolls: 0.0, boteh: 0.55, stars: 0.45, border: 0.5 },
+  sunrise: { lattice: 0.35, shamsa: 0.5, scrolls: 1.0, boteh: 0.3, stars: 0.2, border: 0.4 },
+  dhuhr: { lattice: 0.7, shamsa: 0.6, scrolls: 0.4, boteh: 0.3, stars: 1.0, border: 0.8 },
+  asr: { lattice: 0.45, shamsa: 0.5, scrolls: 1.0, boteh: 0.4, stars: 0.5, border: 0.6 },
+  maghrib: { lattice: 0.6, shamsa: 1.0, scrolls: 0.8, boteh: 0.6, stars: 0.6, border: 1.0 },
+  isha: { lattice: 0.75, shamsa: 0.7, scrolls: 0.3, boteh: 0.4, stars: 1.0, border: 0.7 },
 };
 
 const PALETTES = {
@@ -281,9 +44,8 @@ const PALETTES = {
   isha: { a: '#2a3870', b: '#4a5090', bg: '#0a0a30' },
 };
 
-// Per-theme colour families for the Persian art layer.
-// Three roles: hi = brightest accent, mid = body colour, lo = shadow/depth
-// These blend with the prayer palette via lerp() to produce the final gradient.
+// Per-theme colour families: hi = brightest accent, mid = body colour,
+// lo = shadow. Blended with the prayer palette below.
 const THEME_PALETTES = {
   'Classic Gold': { hi: '#F0C96A', mid: '#C9A84C', lo: '#5a3a08', tint: 0.45 },
   'Emerald Night': { hi: '#7eeaaa', mid: '#2ecc71', lo: '#083820', tint: 0.5 },
@@ -293,43 +55,37 @@ const THEME_PALETTES = {
   'Pure White': { hi: '#ffffff', mid: '#8a7060', lo: '#2a2018', tint: 0.35 },
 };
 
-// Helper: blend prayer palette with theme palette
-// tint=0 → pure prayer colours, tint=1 → pure theme colours
+function mixHex(hex1, hex2, t) {
+  const parse = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const a = parse(hex1);
+  const b = parse(hex2);
+  return (
+    '#' +
+    a
+      .map((v, i) =>
+        Math.round(v * (1 - t) + b[i] * t)
+          .toString(16)
+          .padStart(2, '0')
+      )
+      .join('')
+  );
+}
+
+// tint = 0 → pure prayer colours, tint = 1 → pure theme colours
 function blendPal(prayerPal, themePal) {
   const t = themePal.tint;
-  // simple hex lerp via numeric blend
-  const mix = (hex1, hex2, t) => {
-    const parse = (h) => [
-      parseInt(h.slice(1, 3), 16),
-      parseInt(h.slice(3, 5), 16),
-      parseInt(h.slice(5, 7), 16),
-    ];
-    const [r1, g1, b1] = parse(hex1),
-      [r2, g2, b2] = parse(hex2);
-    const r = Math.round(r1 * (1 - t) + r2 * t)
-      .toString(16)
-      .padStart(2, '0');
-    const g = Math.round(g1 * (1 - t) + g2 * t)
-      .toString(16)
-      .padStart(2, '0');
-    const b = Math.round(b1 * (1 - t) + b2 * t)
-      .toString(16)
-      .padStart(2, '0');
-    return '#' + r + g + b;
-  };
   return {
-    a: mix(prayerPal.a, themePal.mid, t),
-    b: mix(prayerPal.b, themePal.hi, t),
-    bg: mix(prayerPal.bg, themePal.lo, t * 0.6),
+    a: mixHex(prayerPal.a, themePal.mid, t),
+    b: mixHex(prayerPal.b, themePal.hi, t),
+    bg: mixHex(prayerPal.bg, themePal.lo, t * 0.6),
   };
 }
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function IslamicGeometryEngine({
+function IslamicGeometryEngine({
   activePrayer = 'dhuhr',
   sunElevation = 45,
   minutesToNext = 60,
-  lunarPhase = 0.5,
   theme = 'Classic Gold',
   ecoMode = false,
 }) {
@@ -338,85 +94,81 @@ export default function IslamicGeometryEngine({
 
   useEffect(() => {
     const el = svgRef.current?.parentElement;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      setSize({ W: Math.ceil(e.contentRect.width), H: Math.ceil(e.contentRect.height) });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (!el) return undefined;
+    const measure = (w, h) => setSize((s) => (s.W === w && s.H === h ? s : { W: w, H: h }));
+    if (typeof ResizeObserver === 'function') {
+      const ro = new ResizeObserver(([e]) => {
+        measure(Math.ceil(e.contentRect.width), Math.ceil(e.contentRect.height));
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    // Chromium < 64 (Samsung's 2019 TVs) has no ResizeObserver: follow the
+    // window instead (the art fills the window).
+    const onResize = () => {
+      const r = el.getBoundingClientRect();
+      measure(Math.ceil(r.width), Math.ceil(r.height));
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const { W, H } = size;
   const prayer = LAYERS[activePrayer] ? activePrayer : 'dhuhr';
   const lw = LAYERS[prayer];
   const themePal = THEME_PALETTES[theme] || THEME_PALETTES['Classic Gold'];
-  // Blend prayer colours with theme colours for a cohesive look
   const pal = blendPal(PALETTES[prayer], themePal);
-  const accent = themePal.hi; // brightest theme colour for fine stroke details
+  const accent = themePal.hi;
 
-  // master opacity — visible but non-intrusive background art
-  const ecoScalar = ecoMode ? 0.72 : 1;
+  // Redrawing this full-screen SVG is the costliest thing the display does
+  // on a TV, so it should happen only a few times a day:
+  //   - Brightness follows the sun continuously, but as the opacity of the
+  //     SVG's own compositing layer (style below), which the compositor
+  //     applies without redrawing anything.
+  //   - Line width changes in three steps: night, low sun, high sun.
+  //   - The rosette grows in three steps before a prayer, not every minute.
+  // (Each of these used to redraw the whole screen — 270–360 times a day.)
+  const ecoScalar = ecoMode ? 0.56 : 1; // eco mode: dimmer background
   const masterOp =
     sunElevation > 0
       ? lerp(0.18, 0.26, clamp(sunElevation / 90, 0, 1))
       : lerp(0.22, 0.3, clamp(-sunElevation / 18, 0, 1));
+  const sw = sunElevation <= 0 ? 1.6 : sunElevation < 30 ? 1.35 : 1.1; // CSS px, never < 1
+  const scale =
+    minutesToNext <= 5 ? 1.18 : minutesToNext <= 15 ? 1.12 : minutesToNext <= 30 ? 1.06 : 1;
 
-  const sw = lerp(1.6, 0.9, clamp(sunElevation / 90, 0, 1));
-  const scale = minutesToNext <= 30 ? lerp(1.0, 1.18, clamp(1 - minutesToNext / 30, 0, 1)) : 1.0;
+  const minSide = Math.min(W, H);
+  const medR = minSide * 0.21 * scale;
 
-  const medR = Math.min(W, H) * 0.21 * scale;
-  const fieldR = Math.min(W, H) * 0.36;
-  const botehR = Math.min(W, H) * 0.026;
-  const dekaR = Math.min(W, H) * 0.048;
-  const isNight = sunElevation < -3;
+  // The pattern and borders depend only on the screen size, so they are
+  // built once. The rosette and scrolls are rebuilt at each growth step —
+  // measured cheaper than scaling them with an SVG transform, which makes
+  // the browser redraw the masked layer.
+  const field = useMemo(() => {
+    if (W < 10 || H < 10) return null;
+    const lattice = starPatternPath(W, H, minSide * 0.075, W / 2, H / 2);
+    const count = Math.max(3, Math.round(W / (H * 0.27)));
+    const border = borderPaths(W, H, count, H * 0.081, H * 0.028);
+    return {
+      lattice: lattice.d,
+      stars: starHighlightPath(lattice.octagons, minSide * 0.075),
+      frames: border.frames,
+      boteh: border.boteh,
+      bands: border.bands,
+    };
+  }, [W, H, minSide]);
+  const centre = useMemo(() => {
+    if (W < 10 || H < 10) return null;
+    const shamsa = shamsaPaths(W / 2, H / 2, medR);
+    const islimi = islimiPaths(W / 2, H / 2, medR, medR * 1.75);
+    return { rim: shamsa.rim, detail: shamsa.detail, stems: islimi.stems, leaves: islimi.leaves };
+  }, [W, H, medR]);
+  const data = field && centre ? { ...field, ...centre } : null;
 
-  const gId = `pg_${prayer}`;
-  const g2Id = `pg2_${prayer}`;
-  const glId = `pg_glow`;
-
-  const data = useMemo(() => {
-    if (W < 10 || H < 10) return {};
-    const cx = W / 2,
-      cy = H / 2;
-
-    // Geometric backbone — the girih lattice underneath everything
-    const latticeR = Math.min(W, H) * 0.075;
-    const latticePaths = buildGirihLattice(W, H, latticeR).slice(0, 200);
-
-    const toranjPaths = buildToranj(cx, cy, medR);
-
-    const { scrolls, palms } = buildIslimi(cx, cy, fieldR, 8);
-
-    const botehPaths = buildBotehField(W, H, botehR).slice(0, 280);
-
-    const dekaPos = [
-      [cx - fieldR * 0.62, cy - fieldR * 0.38],
-      [cx + fieldR * 0.62, cy - fieldR * 0.38],
-      [cx - fieldR * 0.62, cy + fieldR * 0.38],
-      [cx + fieldR * 0.62, cy + fieldR * 0.38],
-      [cx, cy - fieldR * 0.72],
-      [cx, cy + fieldR * 0.72],
-      [cx - fieldR * 0.88, cy],
-      [cx + fieldR * 0.88, cy],
-    ];
-    const dekaPaths = dekaPos.flatMap(([dx, dy]) => buildDecagram(dx, dy, dekaR, dekaR * 0.44));
-
-    const bc = Math.max(3, Math.round(W / (H * 0.27)));
-    const borderPaths = buildBorderCartouches(W, H, bc, H * 0.058);
-
-    return { latticePaths, toranjPaths, scrolls, palms, botehPaths, dekaPaths, borderPaths };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayer, W, H, medR, fieldR, botehR, dekaR]);
-
-  const {
-    latticePaths = [],
-    toranjPaths = [],
-    scrolls = [],
-    palms = [],
-    botehPaths = [],
-    dekaPaths = [],
-    borderPaths = [],
-  } = data;
+  if (!data) {
+    return <svg ref={svgRef} aria-hidden="true" className="geometry-engine" />;
+  }
 
   return (
     <svg
@@ -425,151 +177,119 @@ export default function IslamicGeometryEngine({
       className="geometry-engine"
       style={{
         position: 'absolute',
-        inset: 0,
+        top: 0, // not `inset` — Chromium < 87 lacks it, and inline styles aren't rewritten
+        left: 0,
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
         overflow: 'hidden',
-        transition: 'opacity 1s ease',
+        // Applied to the SVG's own layer, so changing it doesn't redraw the art.
+        opacity: +(masterOp * ecoScalar).toFixed(3),
       }}
       viewBox={`0 0 ${W} ${H}`}
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <radialGradient id={gId} cx="50%" cy="50%" r="60%">
+        {/* One colour field for the whole screen (userSpaceOnUse), so shapes
+            share a single gradient instead of each getting its own. */}
+        <radialGradient
+          id="geo-radial"
+          gradientUnits="userSpaceOnUse"
+          cx={W / 2}
+          cy={H / 2}
+          r={Math.max(W, H) * 0.55}
+        >
           <stop offset="0%" stopColor={pal.b} />
-          <stop offset="50%" stopColor={pal.a} />
-          <stop offset="100%" stopColor={pal.bg} />
+          <stop offset="45%" stopColor={pal.a} />
+          <stop offset="100%" stopColor={mixHex(pal.a, pal.bg, 0.5)} />
         </radialGradient>
-        <linearGradient id={g2Id} x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="geo-linear" gradientUnits="userSpaceOnUse" x1={0} y1={0} x2={W} y2={H}>
           <stop offset="0%" stopColor={accent} />
-          <stop offset="60%" stopColor={pal.a} />
+          <stop offset="55%" stopColor={pal.a} />
           <stop offset="100%" stopColor={pal.b} />
         </linearGradient>
-        <filter id={glId} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation={isNight ? '1.5' : '0.5'} result="b" />
-          <feBlend in="SourceGraphic" in2="b" mode="screen" />
-        </filter>
+        {/* The rosette and the borders sit on the pattern: hide the pattern
+            beneath them. */}
+        <mask id="geo-under-shamsa" maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={H}>
+          <rect width={W} height={H} fill="white" />
+          {lw.shamsa > 0 && <path d={data.rim} fill="black" />}
+          {lw.border > 0 &&
+            data.bands.map((b) => (
+              <rect key={b.top} x={0} y={b.top} width={W} height={b.bottom - b.top} fill="black" />
+            ))}
+        </mask>
       </defs>
 
-      <g opacity={masterOp * ecoScalar}>
-        {/* ── Girih lattice — geometric backbone, drawn first (deepest) ── */}
-        {lw.lattice > 0 && (
-          <g
-            fill="none"
-            stroke={`url(#${g2Id})`}
-            strokeWidth={sw * 0.45}
-            opacity={lw.lattice * 0.55}
-            strokeLinejoin="round"
-          >
-            {latticePaths.map((d, i) => (
-              <path key={`lt${i}`} d={d} />
-            ))}
-          </g>
-        )}
+      <g fill="none" strokeLinejoin="round" strokeLinecap="round">
+        <g mask="url(#geo-under-shamsa)">
+          {lw.lattice > 0 && (
+            <path
+              d={data.lattice}
+              stroke="url(#geo-linear)"
+              strokeWidth={Math.max(1, sw * 0.7)}
+              opacity={lw.lattice * 0.55}
+            />
+          )}
+          {lw.stars > 0 && (
+            <path
+              d={data.stars}
+              stroke="url(#geo-radial)"
+              strokeWidth={Math.max(1, sw * 0.85)}
+              opacity={lw.stars * 0.8}
+            />
+          )}
+        </g>
 
-        {/* boteh field — lowest organic layer */}
-        {lw.boteh > 0 && (
-          <g fill="none" stroke={`url(#${g2Id})`} strokeWidth={sw * 0.8} opacity={lw.boteh * 0.75}>
-            {botehPaths.map((d, i) => (
-              <path key={`b${i}`} d={d} />
-            ))}
-          </g>
-        )}
-
-        {/* decagram geometric stars */}
-        {lw.deka > 0 && (
-          <g
-            fill="none"
-            stroke={`url(#${gId})`}
-            strokeWidth={sw * 0.9}
-            opacity={lw.deka * 0.88}
-            filter={isNight ? `url(#${glId})` : undefined}
-          >
-            {dekaPaths.map((d, i) => (
-              <path key={`d${i}`} d={d} />
-            ))}
-          </g>
-        )}
-
-        {/* islimi vine scrolls */}
-        {lw.scrolls > 0 && (
-          <g
-            fill="none"
-            stroke={`url(#${g2Id})`}
-            strokeWidth={sw * 1.1}
-            strokeLinecap="round"
-            opacity={lw.scrolls * 0.9}
-          >
-            {scrolls.map((d, i) => (
-              <path key={`s${i}`} d={d} />
-            ))}
-          </g>
-        )}
-
-        {/* Shah Abbasi palmettes at scroll tips */}
-        {lw.scrolls > 0 && (
-          <g
-            fill="none"
-            stroke={`url(#${g2Id})`}
-            strokeWidth={sw * 0.8}
-            strokeLinecap="round"
-            opacity={lw.scrolls * 0.78}
-          >
-            {palms.map((d, i) => (
-              <path key={`p${i}`} d={d} />
-            ))}
-          </g>
-        )}
-
-        {/* border cartouches */}
         {lw.border > 0 && (
-          <g fill="none" stroke={`url(#${gId})`} strokeWidth={sw * 1.0} opacity={lw.border * 0.72}>
-            {borderPaths.map((d, i) => (
-              <path key={`br${i}`} d={d} />
-            ))}
-          </g>
+          <path
+            d={data.frames}
+            stroke="url(#geo-linear)"
+            strokeWidth={Math.max(1, sw * 0.85)}
+            opacity={lw.border * 0.72}
+          />
+        )}
+        {lw.boteh > 0 && (
+          <path
+            d={data.boteh}
+            stroke="url(#geo-linear)"
+            strokeWidth={Math.max(1, sw * 0.75)}
+            opacity={lw.boteh * 0.85}
+          />
         )}
 
-        {/* central Toranj medallion — top layer */}
-        {lw.toranj > 0 && (
-          <g
-            stroke={`url(#${gId})`}
-            strokeWidth={sw}
-            strokeLinejoin="round"
-            fill={`url(#${gId})`}
-            fillOpacity={0.16}
-            opacity={lw.toranj * 0.95}
-            filter={isNight ? `url(#${glId})` : undefined}
-          >
-            {toranjPaths.map((d, i) => (
-              <path key={`t${i}`} d={d} />
-            ))}
-          </g>
+        {lw.scrolls > 0 && (
+          <>
+            <path
+              d={data.stems}
+              stroke="url(#geo-radial)"
+              strokeWidth={Math.max(1.2, sw * 1.1)}
+              opacity={lw.scrolls * 0.9}
+            />
+            <path
+              d={data.leaves}
+              stroke="url(#geo-radial)"
+              strokeWidth={Math.max(1, sw * 0.85)}
+              opacity={lw.scrolls * 0.8}
+            />
+          </>
         )}
 
-        {/* lunar crescent */}
-        {lunarPhase > 0.06 &&
-          (() => {
-            const cr = Math.min(W, H) * 0.052 * lunarPhase;
-            const lx = W * 0.93,
-              ly = H * 0.06;
-            return (
-              <g opacity={lunarPhase * 0.07}>
-                <circle cx={lx} cy={ly} r={cr.toFixed(1)} fill={accent} />
-                {lunarPhase < 0.88 && (
-                  <circle
-                    cx={lx - Math.min(W, H) * 0.028 * (1 - lunarPhase)}
-                    cy={ly}
-                    r={(cr * 0.94).toFixed(1)}
-                    fill="var(--t-bg,#000)"
-                  />
-                )}
-              </g>
-            );
-          })()}
+        {lw.shamsa > 0 && (
+          <g stroke="url(#geo-radial)" opacity={lw.shamsa * 0.95}>
+            <path
+              d={data.rim}
+              fill="url(#geo-radial)"
+              fillOpacity={0.14}
+              strokeWidth={Math.max(1.2, sw)}
+            />
+            <path d={data.detail} strokeWidth={Math.max(1, sw * 0.85)} />
+          </g>
+        )}
       </g>
     </svg>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(IslamicGeometryEngine);

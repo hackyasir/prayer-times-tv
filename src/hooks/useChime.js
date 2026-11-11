@@ -1,90 +1,62 @@
 // ── useChime — fire adhan/iqamah beep at correct times ─────────────────────
 //
 // Watches `now` (tick every second from useCityTime) and fires playBeep()
-// whenever any of the configured prayer/Jumu'ah/Eid times falls within a
-// ±2 second window of now. Tracks already-fired keys in a ref so each beep
-// fires exactly once per day per event.
+// whenever any configured beep time falls within a ±2 second window of now.
+// Tracks already-fired keys in a ref so each beep fires exactly once per day
+// per event.
 //
 // Beeps are split into TWO independent flags:
-//   chimeAdhan  — fires at the adhan time (prayer entry)
-//   chimeIqamah — fires at the iqamah time (offset minutes after adhan)
+//   chimeAdhan  — fires at the adhan time of each daily prayer (prayer entry)
+//   chimeIqamah — fires when a congregation starts (see lib/congregations.js)
+//
+// Congregations:
+//   - Daily prayers beep at their iqamah time when chimeIqamah is on.
+//   - Jumu'ah and Eid slots have no separate adhan/iqamah pair — the slot
+//     time IS the congregation — so they beep when EITHER flag is on.
+//   - On Fridays with Jumu'ah slots, Dhuhr is not a congregation, so there
+//     is no Dhuhr iqamah beep. The Dhuhr adhan beep (prayer entry) remains.
 //
 // Common configurations:
-//   - Iqamah only (default): most mosques play the real adhan from speakers
-//     and just want a "stand up" signal on the dashboard
+//   - Iqamah only: most mosques play the real adhan from speakers and just
+//     want a "stand up" signal on the dashboard
 //   - Both: smaller jamaa'ats or home use, where the dashboard provides
 //     both notifications
 //   - Adhan only: rare but supported
-//   - Neither: dashboard stays silent
+//   - Neither (default): dashboard stays silent
 //
 // Caller passes the data the hook needs:
 //   chimeAdhan / chimeIqamah — booleans from settings
 //   now             — current Date (from useCityTime)
-//   todayTimes      — prayer times (from usePrayerTimes)
-//   iqamah          — { fajr: 45, dhuhr: 30, ... } minute offsets from adhan
-//   isFriday        — boolean
-//   activeJumuahSlots — list of { time:'HH:MM' } for the day
-//   showEidBanner   — whether Eid is in effect
-//   activeEidSlots  — list of { time:'HH:MM' } for the day
-//   jumuahDate      — helper from parent: (timeStr) → Date
-//   eidDate         — helper from parent: (timeStr) → Date
+//   todayTimes      — adhan times (from usePrayerTimes)
+//   congregations   — today's congregations (from buildCongregations)
 
 import { useEffect, useRef } from 'react';
-import { PRAYERS } from '../lib/constants.js';
-import { addMins } from '../lib/formatters.js';
+import { DAILY_PRAYER_KEYS } from '../lib/congregations.js';
 import { playBeep } from '../lib/audio.js';
 
-export default function useChime({
-  chimeAdhan,
-  chimeIqamah,
-  now,
-  todayTimes,
-  iqamah,
-  isFriday,
-  activeJumuahSlots,
-  showEidBanner,
-  activeEidSlots,
-  jumuahDate,
-  eidDate,
-}) {
+export default function useChime({ chimeAdhan, chimeIqamah, now, todayTimes, congregations }) {
   const firedRef = useRef(new Set());
 
   useEffect(() => {
     // Both flags off → nothing to schedule
     if (!chimeAdhan && !chimeIqamah) return;
 
-    // Build the list of beep times. Each entry is tagged with `kind` so we
-    // can skip adhan or iqamah events when the corresponding flag is off.
     const checks = [];
-    for (const p of PRAYERS) {
-      if (p.key === 'sunrise') continue; // no congregational sunrise prayer
-      const adhanT = todayTimes[p.key];
-      if (!adhanT) continue;
-      const iqamahT = addMins(adhanT, iqamah[p.key] || 0);
-      checks.push({ key: `${p.key}_adhan`, time: adhanT, kind: 'adhan' });
-      checks.push({ key: `${p.key}_iqamah`, time: iqamahT, kind: 'iqamah' });
-    }
-    if (isFriday) {
-      for (const j of activeJumuahSlots) {
-        const jt = jumuahDate(j.time);
-        checks.push({ key: `jumuah_${j.time}_adhan`, time: jt, kind: 'adhan' });
+    if (chimeAdhan) {
+      for (const key of DAILY_PRAYER_KEYS) {
+        const adhanT = todayTimes?.[key];
+        if (adhanT) checks.push({ key: `${key}_adhan`, time: adhanT });
       }
     }
-    if (showEidBanner) {
-      for (const e of activeEidSlots) {
-        const et = eidDate(e.time);
-        checks.push({ key: `eid_${e.time}_adhan`, time: et, kind: 'adhan' });
-      }
+    for (const c of congregations || []) {
+      const isSlot = c.key === 'jumuah' || c.key === 'eid';
+      if (isSlot || chimeIqamah) checks.push({ key: `${c.id}_congregation`, time: c.time });
     }
 
     // Fire each beep once within a ±2 second window of its target time.
-    // Skip entries whose `kind` flag is disabled — this is the per-event
-    // gate that makes "iqamah only" vs "both" actually different.
     const dateStr = now.toDateString();
     for (const ch of checks) {
       if (!ch.time) continue;
-      if (ch.kind === 'adhan' && !chimeAdhan) continue;
-      if (ch.kind === 'iqamah' && !chimeIqamah) continue;
       const diff = Math.abs(now - ch.time) / 1000;
       const id = `${dateStr}:${ch.key}:${ch.time.getHours()}${ch.time.getMinutes()}`;
       if (diff <= 2 && !firedRef.current.has(id)) {

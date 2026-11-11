@@ -1,8 +1,25 @@
 /* ── prayer-cards.css — prayer list content only ─────────────────────────
  * Styles for .pcol and all its children.
  * No layout overrides. No @media blocks (all in responsive.css).
- * Typography uses cqi (container-query units) — scales with .pcol width.
+ *
+ * Sizing has two layers:
+ *   - The rules in this file are the FALLBACK, based on vmax (the screen's
+ *     longer side). Older TV browsers (roughly pre-2023 built-in browsers)
+ *     don't support container query units, and a size written with them
+ *     would collapse to the default 16px there.
+ *   - The fit-to-space rules at the end of responsive.css override them
+ *     wherever container query units work, sizing each row's text from the
+ *     row's own height and the column's width.
  */
+
+/* Registered so --ptime-w is resolved to a length on the element that sets
+ * it (the header row / each card, against the .pcol container) and inherited
+ * as that length — not re-resolved against each card's own container. */
+@property --ptime-w {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 120px;
+}
 
 /* ── Prayer column container ─────────────────────────────────────────────── */
 .pcol {
@@ -16,6 +33,9 @@
   gap: 0.5vh;
   container-type: inline-size;
   container-name: pcol;
+  /* Width of each time column, shared by the header labels, both time
+   * columns and the active-dot offset so they always line up. */
+  --ptime-w: calc(clamp(56px, 12.5vmax, 560px) * var(--t-fs, 1));
 }
 
 /* ── Column header (Adhan / Iqamah labels) ───────────────────────────────── */
@@ -34,7 +54,7 @@
 
 .pheader-name {
   flex: 1;
-  font-size: calc(clamp(0.75rem, 2.4cqi, 1.125rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.75rem, 1.1vmax, 2.5rem) * var(--t-fs, 1));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--t-accent);
@@ -43,10 +63,10 @@
 }
 
 .pheader-col {
-  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  width: var(--ptime-w);
   text-align: center;
   white-space: nowrap;
-  font-size: calc(clamp(0.75rem, 2.4cqi, 1.125rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.75rem, 1.1vmax, 2.5rem) * var(--t-fs, 1));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--t-accent);
@@ -94,6 +114,19 @@
 .pcard.active {
   background: var(--t-active-bg);
   border-color: var(--t-accent);
+}
+
+/* Pulsing outline on the active card — a static ring whose opacity is
+   animated (GPU-composited), instead of animating box-shadow itself. Inset,
+   because .pcard clips overflow. */
+.pcard.active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--t-card-pulse);
+  opacity: 0;
+  pointer-events: none;
   animation: cardpulse 2.8s ease-in-out infinite;
 }
 
@@ -106,19 +139,23 @@
 }
 
 /* ── Prayer name ─────────────────────────────────────────────────────────── */
+/* Fallback sizes (see the note at the top of this file). High caps, so on
+ * a TV — 1080p or 4K — names and times grow with the screen. */
 .pen {
-  font-size: calc(clamp(0.8rem, 5cqi, 1.9rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.8rem, 2.3vmax, 5rem) * var(--t-fs, 1));
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--t-text);
+  line-height: 1.1;
 }
 
 .par {
   font-family: 'Noto Naskh Arabic', serif;
-  font-size: calc(clamp(0.625rem, 3.5cqi, 1.125rem) * var(--t-fs, 1));
+  font-size: calc(clamp(0.625rem, 1.5vmax, 3.5rem) * var(--t-fs, 1));
   color: var(--t-text-dim);
   direction: rtl;
+  line-height: 1.35;
 }
 
 .pcard.active .pen {
@@ -131,25 +168,37 @@
 
 /* ── Time columns ────────────────────────────────────────────────────────── */
 .ptime {
-  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  width: var(--ptime-w);
   text-align: center;
   white-space: nowrap;
-  font-size: calc(clamp(1.05rem, 6.5cqi, 2.5rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.05rem, 3.1vmax, 8rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-text);
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .ptime-iqamah {
-  width: calc(clamp(56px, 26cqi, 160px) * var(--t-fs, 1));
+  width: var(--ptime-w);
   text-align: center;
   white-space: nowrap;
-  font-size: calc(clamp(1.05rem, 6.5cqi, 2.5rem) * var(--t-fs, 1));
+  font-size: calc(clamp(1.05rem, 3.1vmax, 8rem) * var(--t-fs, 1));
   font-weight: 700;
   color: var(--t-accent);
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  opacity: 0.85;
+}
+
+/* AM/PM suffix — half size so the digits carry the row and the times fit
+ * their columns at TV sizes. */
+.ptime-ampm {
+  font-size: 0.5em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-left: 0.2em;
   opacity: 0.85;
 }
 
@@ -169,7 +218,7 @@
  * of the time block; it never participates in the flex flow. */
 .abadge {
   position: absolute;
-  right: calc((clamp(56px, 26cqi, 160px) * var(--t-fs, 1)) * 2 + 1.2vw + 1.2vw);
+  right: calc(var(--ptime-w) * 2 + 1.2vw + 1.2vw);
   top: 50%;
   transform: translateY(-50%);
   display: flex;

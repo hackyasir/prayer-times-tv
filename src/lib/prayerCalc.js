@@ -158,22 +158,32 @@ export function calcQibla(lat, lng) {
 // Returns the UTC offset in hours for the given IANA timezone on the given
 // date. Falls back to the device's offset if the timezone string is invalid.
 
+// One formatter per timezone, reused (creating them is slow on TV browsers).
+const offsetFormatters = new Map();
+function offsetFormatter(tz) {
+  let fmt = offsetFormatters.get(tz);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    offsetFormatters.set(tz, fmt);
+  }
+  return fmt;
+}
+
 export function tzOffsetHours(ianaTimezone, date) {
   if (!ianaTimezone) return -date.getTimezoneOffset() / 60;
   try {
     // Intl trick: format the same instant in UTC and in the target tz,
     // then diff them to get the UTC offset without a timezone database.
-    const fmt = (tz) =>
-      new Intl.DateTimeFormat('en-US', {
-        timeZone: tz,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(date);
+    const fmt = (tz) => offsetFormatter(tz).format(date);
     const local = fmt(ianaTimezone);
     const utc = fmt('UTC');
     const parse = (s) => {

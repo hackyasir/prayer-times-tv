@@ -102,7 +102,6 @@ export default function NumberStepper({
           fontSize: 15,
           fontWeight: 700,
           textAlign: 'center',
-          outline: 'none',
           // Belt-and-suspenders: hide any browser-native number spinner that
           // might leak through (iOS Safari, some Android browsers). With
           // type="text" these rules are normally moot but cost nothing.

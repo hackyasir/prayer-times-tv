@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isForbiddenFastDay,
+  isRamadanOrEve,
   fastReasonsFor,
   buildFastLine,
   FAST_RANK,
@@ -90,13 +91,33 @@ describe('fastReasonsFor — forbidden gate beats every overlap', () => {
   it('Eid al-Adha (10 Dhul-Hijjah) on a Thursday → no fast', () => {
     expect(fastReasonsFor({ m: 12, d: 10 }, 4)).toEqual([]);
   });
+  it('Ramadan: no voluntary-fast prompts (the fast is obligatory)', () => {
+    expect(fastReasonsFor({ m: 9, d: 14 }, 1)).toEqual([]); // White Day + Monday
+    expect(fastReasonsFor({ m: 9, d: 3 }, 4)).toEqual([]);
+    expect(isRamadanOrEve({ m: 9, d: 30 })).toBe(true);
+  });
+  it("29–30 Sha'ban: nothing, so Ramadan is not preceded by a fast", () => {
+    expect(fastReasonsFor({ m: 8, d: 29 }, 1)).toEqual([]);
+    expect(fastReasonsFor({ m: 8, d: 30 }, 4)).toEqual([]);
+    expect(keys(fastReasonsFor({ m: 8, d: 28 }, 1))).toEqual(['monday']);
+  });
+  it('30 Shawwal still counts toward the six days', () => {
+    expect(keys(fastReasonsFor({ m: 10, d: 30 }, 2))).toEqual(['shawwal']);
+  });
 });
 
 describe('buildFastLine — presentation', () => {
   const tag = (r) =>
-    r.key === 'white' ? `White Day ${r.day}` :
-    ({ arafah: 'Day of Arafah', ashura: 'Ashura', tasua: "Tasu'a",
-       shawwal: 'Six of Shawwal', monday: 'Monday', thursday: 'Thursday' })[r.key];
+    r.key === 'white'
+      ? `White Day ${r.day}`
+      : {
+          arafah: 'Day of Arafah',
+          ashura: 'Ashura',
+          tasua: "Tasu'a",
+          shawwal: 'Six of Shawwal',
+          monday: 'Monday',
+          thursday: 'Thursday',
+        }[r.key];
   const phrases = {
     lead: (when, fast) => `Sunnah fast ${when} (${fast})`,
     also: (list) => `— also ${list}`,

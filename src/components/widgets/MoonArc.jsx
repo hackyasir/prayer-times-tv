@@ -17,9 +17,11 @@
 // STYLING: all visual styling lives in CSS (.moon-arc-* classes in
 // src/styles/widgets.css). JSX = structure + data only.
 
+import { memo } from 'react';
 import SunCalc from 'suncalc';
 import { fmt12 } from '../../lib/formatters.js';
 import { useT } from '../../i18n/I18nContext.jsx';
+import { moonLitPath, brightLimbRotation, phaseShape } from '../../lib/moonPhase.js';
 
 // Same viewBox as SunArc so the two components render at identical size
 // when swapped. See SunArc.jsx for full geometry explanation.
@@ -45,81 +47,35 @@ function bezierPoint(t) {
 }
 
 /**
- * Render the moon phase as an SVG group at position (cx, cy) with radius r.
- *
- * The "phase fraction" from SunCalc is 0..1:
- *   0     = new moon (fully dark)
- *   0.25  = first quarter (right half lit)
- *   0.5   = full moon (fully lit)
- *   0.75  = last quarter (left half lit)
- *   1     = new moon again
- *
- * Approach: render a bright lit disk, then overlay a dark ellipse positioned
- * to cover the unlit portion. The ellipse's rx is determined by phase:
- *   - At new moon (phase=0): ellipse rx=r, centered on disk → covers all
- *   - At first quarter (0.25): ellipse rx=0, but positioned at right edge
- *     → covers nothing (actually we render no ellipse, half is naturally lit)
- *   - At full moon (0.5): ellipse rx=0 → no dark overlay
- *
- * Simpler mental model: use cos(phase * 2π) which gives:
- *   phase 0:   cos = 1     (full dark cover)
- *   phase .25: cos = 0     (no cover, but lit half visible)
- *   phase .5:  cos = -1    (no cover, fully lit)
- *   phase .75: cos = 0     (no cover, other half lit)
- *   phase 1:   cos = 1     (full dark cover again)
- *
- * The sign of cos also tells us WHICH SIDE is lit:
- *   waxing (0..0.5):  RIGHT side lit (sun on right of moon)
- *   waning (0.5..1):  LEFT side lit
- *
- * We render the lit disk, then a dark ellipse on the dark side.
+ * The moon at (cx, cy), radius r: the dark disc, the lit part on top, and a
+ * faint outline. `fraction` is the illuminated fraction (0..1);
+ * `rotation` (degrees) turns the bright limb toward the sun — see
+ * lib/moonPhase.js for the geometry.
  */
-function MoonPhase({ cx, cy, r, phase }) {
-  // Cosine of phase angle. Range [-1, 1].
-  const c = Math.cos(phase * 2 * Math.PI);
-  // Absolute value = ellipse rx normalized to r.
-  const ellipseRx = Math.abs(c) * r;
-
-  // During waxing (phase 0..0.5) the dark side is on the LEFT.
-  // During waning (phase 0.5..1) the dark side is on the RIGHT.
-  // The ellipse covers the dark side.
-  //
-  // When phase < 0.5 AND c > 0: new→quarter1 (mostly dark, dark on left,
-  //   ellipse should sit covering the left side, extending into the disk)
-  // When phase < 0.5 AND c < 0: quarter1→full (mostly lit, dark sliver on left)
-  // Symmetric on the waning side.
-  //
-  // For the simple case: the ellipse is centered at (cx, cy) but its
-  // horizontal radius shrinks as the moon gets fuller. We then offset
-  // it left or right depending on which side should be dark.
-  const waxing = phase < 0.5;
-  const direction = waxing ? -1 : 1; // -1 = dark on left, +1 = dark on right
-  // Ellipse needs to be offset so its visible edge meets the moon's centerline
-  // exactly when c crosses 0 (quarter moon). offset = (r - ellipseRx) * direction
-  const offsetX = (r - ellipseRx) * direction * (c > 0 ? 1 : -1);
-
-  // Halo glow — brightest at full moon, none at new moon
-  const haloOpacity = Math.sin(Math.PI * phase) * 0.4;
-
+function MoonPhase({ cx, cy, r, fraction, rotation }) {
+  const lit = moonLitPath(cx, cy, r, fraction);
+  // Halo glow — strongest at full moon, none at new moon.
+  const haloOpacity = fraction * 0.4;
   return (
     <g className="moon-arc-phase">
       {haloOpacity > 0.02 && (
         <circle cx={cx} cy={cy} r={r * 1.8} className="moon-arc-halo" opacity={haloOpacity} />
       )}
-      {/* Lit disk */}
-      <circle cx={cx} cy={cy} r={r} className="moon-arc-lit" />
-      {/* Dark ellipse covering the unlit portion. Skip when phase exactly
-       * 0.5 (full moon) to avoid a zero-radius render. */}
-      {ellipseRx > 0.05 && (
-        <ellipse cx={cx + offsetX} cy={cy} rx={ellipseRx} ry={r} className="moon-arc-dark" />
+      <circle cx={cx} cy={cy} r={r} className="moon-arc-dark" />
+      {lit && (
+        <path
+          d={lit}
+          className="moon-arc-lit"
+          transform={`rotate(${rotation.toFixed(1)} ${cx.toFixed(2)} ${cy.toFixed(2)})`}
+        />
       )}
-      {/* Subtle outline so the moon is visible even at near-new phase */}
+      {/* Subtle outline so the moon is visible even near new moon */}
       <circle cx={cx} cy={cy} r={r} className="moon-arc-ring" />
     </g>
   );
 }
 
-export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
+function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
   const { t } = useT();
 
   // Calculate moon rise/set for TODAY at this location
@@ -154,11 +110,20 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
   // transit requires more astronomy, but visually the arc apex matches).
   const moonTransit = new Date((moonrise.getTime() + moonset.getTime()) / 2);
 
-  // Current moon illumination data — phase is 0..1.
-  // If phaseOverride is provided (from the Test Phase footer button),
-  // ignore real illumination and use the test value instead.
-  const illum = SunCalc.getMoonIllumination(now);
-  const moonPhase = phaseOverride != null ? phaseOverride : illum.phase;
+  // The real moon: lit fraction, and the bright limb's angle from the
+  // zenith (suncalc), so the crescent is lit on the correct side and tilted
+  // as it looks from this location. The Test Phase footer button
+  // (phaseOverride, 0..1 through the cycle) shows an untilted preview.
+  let moonFraction;
+  let moonRotation;
+  if (phaseOverride != null) {
+    ({ fraction: moonFraction, rotation: moonRotation } = phaseShape(phaseOverride));
+  } else {
+    const illum = SunCalc.getMoonIllumination(now);
+    const pos = SunCalc.getMoonPosition(now, lat, lng);
+    moonFraction = illum.fraction;
+    moonRotation = brightLimbRotation(illum.angle - pos.parallacticAngle);
+  }
 
   // Position along arc — 0 at moonrise, 1 at moonset
   const total = moonset - moonrise;
@@ -202,7 +167,15 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
         <circle cx={endPos.x} cy={endPos.y} r="2.5" className="sun-arc-marker moon-arc-marker" />
 
         {/* Current moon — phase visualization */}
-        {inMoonNight && <MoonPhase cx={moonPos.x} cy={moonPos.y} r={6} phase={moonPhase} />}
+        {inMoonNight && (
+          <MoonPhase
+            cx={moonPos.x}
+            cy={moonPos.y}
+            r={6}
+            fraction={moonFraction}
+            rotation={moonRotation}
+          />
+        )}
 
         {/* Labels — moonrise / transit / moonset */}
         <text x={startPos.x} y={ARC_Y0 + 12} className="sun-arc-label">
@@ -229,3 +202,6 @@ export default function MoonArc({ lat, lng, now, cityTz, phaseOverride }) {
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(MoonArc);

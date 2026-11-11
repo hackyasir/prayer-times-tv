@@ -42,6 +42,42 @@ function normalizeNumberMap(source, defaults) {
   return normalized;
 }
 
+// ── Auto-iqamah rule migration ─────────────────────────────────────────────
+// Rule 2 (current): each buffer is the MINIMUM wait after the adhan, rounded
+// UP to the quarter-hour; Maghrib is exact. Rule 1 (settings saved without
+// `iqamahRule`) rounded to the NEAREST quarter-hour, which could make the
+// wait up to 7 minutes shorter than the buffer.
+//
+//   - Untouched rule-1 defaults (30 / 15 / 15 / 0 / 10) move to the new
+//     default minimums — their short waits (Isha could be ~3 minutes) were
+//     the reason for the change.
+//   - Customised buffers are converted b → b − 7, which gives exactly the
+//     same Fajr / Dhuhr / Asr / Isha times under rule 2 (buffers of 1–7
+//     become 1; that differs only on days the adhan is exactly on a
+//     quarter-hour), so a mosque's own schedule doesn't move. Maghrib keeps
+//     its minutes but is no longer rounded.
+export const IQAMAH_RULE = 2;
+const LEGACY_NEAREST_OFFSET = 7;
+const RULE1_DEFAULT_BUFFERS = { fajr: 30, dhuhr: 15, asr: 15, maghrib: 0, isha: 10 };
+
+function isRule1Default(buffers) {
+  return Object.entries(RULE1_DEFAULT_BUFFERS).every(
+    ([key, value]) => toFiniteNumber(buffers[key]) === value
+  );
+}
+
+/** Returns converted buffers, or undefined to mean "use the current defaults". */
+function migrateRule1Buffers(buffers) {
+  if (!isPlainObject(buffers) || isRule1Default(buffers)) return undefined;
+  const out = { ...buffers };
+  for (const key of ['fajr', 'dhuhr', 'asr', 'isha']) {
+    const b = toFiniteNumber(out[key]);
+    if (b === null) continue;
+    out[key] = b <= 0 ? 0 : Math.max(1, b - LEGACY_NEAREST_OFFSET);
+  }
+  return out;
+}
+
 function normalizeSlot(slot, fallback = { time: '', enabled: false }) {
   if (!isPlainObject(slot)) return { ...fallback };
   return {
@@ -108,7 +144,18 @@ export function normalizeImportedSettings(raw, defaults) {
     iqamah: normalizeNumberMap(source.iqamah, defaults.iqamah),
     iqamahAutoCalc:
       toBoolean(source.iqamahAutoCalc) ?? defaults.iqamahAutoCalc,
-    iqamahAutoBuffers: normalizeNumberMap(source.iqamahAutoBuffers, defaults.iqamahAutoBuffers),
+    iqamahAutoBuffers: normalizeNumberMap(
+      'iqamahRule' in source ? source.iqamahAutoBuffers : migrateRule1Buffers(source.iqamahAutoBuffers),
+      defaults.iqamahAutoBuffers
+    ),
+    iqamahRule: IQAMAH_RULE,
+    iqamahRoundTo: [1, 5, 15].includes(toFiniteNumber(source.iqamahRoundTo))
+      ? toFiniteNumber(source.iqamahRoundTo)
+      : defaults.iqamahRoundTo,
+    iqamahFajrBeforeSunrise: Math.min(
+      90,
+      Math.max(0, toFiniteNumber(source.iqamahFajrBeforeSunrise) ?? defaults.iqamahFajrBeforeSunrise)
+    ),
     jumuah: normalizeSlotArray(source.jumuah, defaults.jumuah),
     eidFitr: normalizeSlotArray(source.eidFitr ?? legacyEid.eidFitr, defaults.eidFitr),
     eidAdha: normalizeSlotArray(source.eidAdha ?? legacyEid.eidAdha, defaults.eidAdha),

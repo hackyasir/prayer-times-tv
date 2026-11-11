@@ -9,12 +9,13 @@
 // Sunrise is computed but never displayed in this list — it's observational,
 // not a congregational prayer. It appears in the Sun Day Cycle widget.
 
+import { memo } from 'react';
 import { PRAYERS } from '../lib/constants.js';
 import { fmt12, addMins } from '../lib/formatters.js';
 import { useT, fmtStr } from '../i18n/I18nContext.jsx';
 import PrayerCard from './PrayerCard.jsx';
 
-export default function PrayerList({
+function PrayerList({
   todayTimes,
   iqamah, // map of {fajr,dhuhr,...} → minutes offset for iqamah
   active, // current active prayer object | null
@@ -275,3 +276,6 @@ export default function PrayerList({
     </div>
   );
 }
+
+// Re-renders only when its props change (not on every clock tick).
+export default memo(PrayerList);

@@ -9,10 +9,10 @@
     Explanation of each directive:
     default-src 'self'        – block everything not explicitly listed
     script-src  'self'        – JS only from same origin (Vite handles hashes in prod)
-    style-src   'self' 'unsafe-inline' https://fonts.googleapis.com
-                              – Tailwind inline styles + Google Fonts CSS
-    font-src    'self' https://fonts.gstatic.com
-                              – Google Fonts WOFF2 files
+    style-src   'self' 'unsafe-inline'
+                              – bundled CSS + inline style attributes
+    font-src    'self' data:  – self-hosted fonts (@fontsource, bundled by Vite;
+                                data: covers any font Vite inlines)
     img-src     'self' data:  – App icons, data URIs for favicons
     connect-src 'self'        – Fetch/XHR only to same origin (adhan is local)
     worker-src  'self'        – Service worker from same origin
@@ -27,8 +27,8 @@
       content="
       default-src 'self';
       script-src  'self';
-      style-src   'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src    'self' https://fonts.gstatic.com;
+      style-src   'self' 'unsafe-inline';
+      font-src    'self' data:;
       img-src     'self' data:;
       connect-src 'self' https://geocoding-api.open-meteo.com https://api.open-meteo.com;
       worker-src  'self';
@@ -49,20 +49,16 @@
     <meta name="theme-color" content="#000000" />
 
     <!-- ── PWA ──────────────────────────────────────────────────────────────── -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- The manifest link (manifest.webmanifest) is injected at build time by
+       vite-plugin-pwa — see the `manifest` block in vite.config.js. -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <!-- Favicon: modern browsers prefer SVG (crisp at any size), fallback to
        ICO for older browsers. Both files generated as part of the build. -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
 
-    <!-- ── Fonts ─────────────────────────────────────────────────────────────── -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Rajdhani:wght@300;400;600;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fonts are self-hosted (@fontsource, imported in src/main.jsx) so they
+       work offline. -->
   </head>
 
   <body class="bg-black">

@@ -74,8 +74,25 @@ function ProgressDayBar({ prayers, todayTimes, tomorrowTimes, now }) {
     })
     .filter(Boolean);
 
+  // Labels alternate above and below the bar. Dhuhr, Asr, Maghrib and Isha
+  // sit close together on a 24-hour bar, so a single row overlapped; with two
+  // rows each label only has to clear every other neighbour. Labels at the
+  // very ends align inward so they stay inside the bar.
+  const labelClass = (m) =>
+    'daybar-label' +
+    (m.time <= now ? ' daybar-label--past' : '') +
+    (m.frac < 0.08 ? ' daybar-label--start' : m.frac > 0.92 ? ' daybar-label--end' : '');
+  const renderLabel = (m) => (
+    <div key={m.key} className={labelClass(m)} style={{ left: `${m.frac * 100}%` }}>
+      {m.en}
+    </div>
+  );
+
   return (
     <div className="daybar-wrap">
+      <div className="daybar-labels daybar-labels--top">
+        {markers.filter((_, i) => i % 2 === 0).map(renderLabel)}
+      </div>
       {/* The bar itself */}
       <div className="daybar-track">
         {/* Progress fill: from start to now. Width is the only inline value
@@ -93,18 +110,7 @@ function ProgressDayBar({ prayers, todayTimes, tomorrowTimes, now }) {
         {/* NOW dot — glowing indicator at current time. Position computed. */}
         <div className="daybar-now-dot" style={{ left: `${pos * 100}%` }} />
       </div>
-      {/* Labels under bar */}
-      <div className="daybar-labels">
-        {markers.map((m) => (
-          <div
-            key={m.key}
-            className={`daybar-label${m.time <= now ? ' daybar-label--past' : ''}`}
-            style={{ left: `${m.frac * 100}%` }}
-          >
-            {m.en}
-          </div>
-        ))}
-      </div>
+      <div className="daybar-labels">{markers.filter((_, i) => i % 2 === 1).map(renderLabel)}</div>
     </div>
   );
 }
