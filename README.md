@@ -9,7 +9,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/tests-333-success)](TESTING.md)
+[![Tests](https://img.shields.io/badge/tests-346-success)](TESTING.md)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 
 </div>
@@ -196,12 +196,14 @@ Everything else can stay as it is. The display starts in the device's language (
 <details>
 <summary><strong>Offline & performance</strong></summary>
 
-- **Offline** — a Workbox service worker precaches every file the display needs, including fonts, the beep and the print ornament. Works at a domain root or under a sub-path such as `/prayer-times-tv/` on GitHub Pages.
+- **Offline** — a Workbox service worker precaches every file the display needs: code, styles, the Latin and Arabic font files, the beep and the print ornament. Other font subsets (accented Latin, for example) are cached the first time a screen uses them. Works at a domain root or under a sub-path such as `/prayer-times-tv/` on GitHub Pages.
 - **Light on TV hardware**:
   - Only the clock and countdown update every second; the prayer list, arcs, fasting bar, weather and ticker update once a minute or once a day.
-  - The background art redraws only when it visibly changes (every few minutes), on its own layer.
+  - The background art sits on its own layer and redraws about 30 times a day (it used to be 270–360): its brightness follows the sun through the layer's opacity, which needs no redraw; line width changes in three steps; the rosette grows in three steps before each prayer.
   - Date formatters are created once and reused.
-  - Settings and the printable schedule load on demand, keeping the startup download small.
+  - Settings and the printable schedule load on demand, keeping the startup download small. React is in its own file, so updates to the app don't re-download it.
+  - Fonts declare which characters each file covers, so only the files the text on screen needs are downloaded (8 at startup).
+  - **Nightly reload** — once a day at a quiet moment (normally 1–5 a.m., never within 45 minutes before or 15 after a prayer, and never with Settings open or during a blackout), the page reloads to clear the memory TV browsers build up over days and to pick up a new version.
 - **Built-in measurements** — add `?perf` to the URL to see an on-screen performance overlay (see [Performance on TVs](#performance-on-tvs)).
 
 </details>
@@ -346,7 +348,7 @@ Because settings live on each device, the quickest way to set up several screens
 
 ### Testing
 
-**333 tests across 23 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the regional method note, the automatic announcements, the background-art geometry and moon phases, the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
+**346 tests across 25 files**, built on Vitest and Testing Library. They cover prayer and iqamah calculation, Hijri and Eid detection, Sunnah fasts, today's congregations (Friday and Eid rules), blackout windows, beeps, settings import and first-run detection, the regional method note, the automatic announcements, the background-art geometry and moon phases, the CSS fallbacks for older TVs, the nightly reload, the clock's countdown modes, and more. See [TESTING.md](TESTING.md).
 
 ```bash
 npm test
@@ -375,7 +377,7 @@ The build is a static site in `./dist/`. HTTPS is required for the service worke
 ### Smart TV / Fire Stick
 
 1. Deploy the build to an HTTPS host.
-2. Open the URL in the TV's browser. Check [Browser support](#browser-support) first — older built-in TV browsers can't run the app.
+2. Open the URL in the TV's browser. Check [Browser support](#browser-support) first — built-in TV browsers older than about 2019 (Samsung) or 2020 (LG) can't run the app.
 3. Use "Add to Home Screen" for a fullscreen launch where the browser supports it.
 4. Settings work with the TV remote (see **Settings & administration** under [Features](#features)).
 
@@ -416,16 +418,17 @@ Remove `?perf` for normal use. If a TV still struggles: keep **Eco mode** on, us
 
 ## Browser support
 
-| Browser                                                      | Status                                                                                                                                                                            |
-| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome / Edge 105+, Firefox 110+, Safari 16+                 | ✅ Full support, including fit-to-space sizing                                                                                                                                    |
-| Android TV, Fire TV or Chromecast with an up-to-date browser | ✅ Full support                                                                                                                                                                   |
-| Chromium 88–104 (common in built-in smart-TV browsers)       | ⚠️ Should work, with simpler text sizing based on screen size. Not tested on real TV hardware.                                                                                    |
-| Chromium before 88                                           | ❌ Not supported. Before 80 the app won't start (it uses ES2020 JavaScript); 80–87 lack CSS the layout relies on (`inset`, flexbox `gap`). Use a media player or mini PC instead. |
+| Browser                                                      | Status                                                                                                                                                                                                       |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Chrome / Edge 105+, Firefox 110+, Safari 16+                 | ✅ Full support, including fit-to-space sizing                                                                                                                                                               |
+| Android TV, Fire TV or Chromecast with an up-to-date browser | ✅ Full support                                                                                                                                                                                              |
+| Chromium 84–104 — Samsung TVs 2022–2023, LG 2022–2023        | ⚠️ Should work, with simpler text sizing based on screen size. Not tested on real TV hardware.                                                                                                               |
+| Chromium 63–83 — Samsung TVs 2019–2021, LG 2020–2021         | ⚠️ Should work: the build rewrites newer JavaScript, and `clamp()` / `min()` / `max()` sizes get plain fallbacks. Some spacing is tighter (flexbox `gap` needs Chromium 84). Not tested on real TV hardware. |
+| Chromium before 63 — Samsung 2017–2018, LG 2017–2019         | ❌ Not supported (needs a separate legacy build). Use a media player or mini PC instead.                                                                                                                     |
 
 To check a TV, look up its browser's Chromium version (many TV browsers show it in their settings or "about" page), or open the display and see whether it loads.
 
-The app needs ES2020 JavaScript, CSS Grid, custom properties, `min()` / `max()` / `clamp()`, `Intl.DateTimeFormat` with timezone support, and service workers for offline use. Where container queries are available (Chromium 105+), text is sized from the space each area has; other browsers get fallback sizes.
+The build targets Chromium 63 (`build.target` in `vite.config.js`): newer JavaScript syntax is rewritten, `Object.fromEntries` is filled in (`src/lib/polyfills.js`), and CSS `clamp()` / `min()` / `max()` rules get fallbacks for browsers without them (`src/lib/cssMathFallback.js`, chosen for a TV's fixed 1920 × 1080 or 1280 × 720 screen). The app also needs CSS Grid, custom properties, `Intl.DateTimeFormat` with timezone support, and service workers for offline use. Where container queries are available (Chromium 105+), text is sized from the space each area has; other browsers get fallback sizes. Samsung and LG list their TVs' Chromium versions in their developer documentation.
 
 ---
 

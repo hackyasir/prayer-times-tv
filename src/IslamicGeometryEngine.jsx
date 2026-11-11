@@ -94,12 +94,24 @@ function IslamicGeometryEngine({
 
   useEffect(() => {
     const el = svgRef.current?.parentElement;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => {
-      setSize({ W: Math.ceil(e.contentRect.width), H: Math.ceil(e.contentRect.height) });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+    if (!el) return undefined;
+    const measure = (w, h) => setSize((s) => (s.W === w && s.H === h ? s : { W: w, H: h }));
+    if (typeof ResizeObserver === 'function') {
+      const ro = new ResizeObserver(([e]) => {
+        measure(Math.ceil(e.contentRect.width), Math.ceil(e.contentRect.height));
+      });
+      ro.observe(el);
+      return () => ro.disconnect();
+    }
+    // Chromium < 64 (Samsung's 2019 TVs) has no ResizeObserver: follow the
+    // window instead (the art fills the window).
+    const onResize = () => {
+      const r = el.getBoundingClientRect();
+      measure(Math.ceil(r.width), Math.ceil(r.height));
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const { W, H } = size;
@@ -109,26 +121,30 @@ function IslamicGeometryEngine({
   const pal = blendPal(PALETTES[prayer], themePal);
   const accent = themePal.hi;
 
-  // Master opacity: a little stronger at night, when the screen is darker.
-  const ecoScalar = ecoMode ? 0.72 : 1;
+  // Redrawing this full-screen SVG is the costliest thing the display does
+  // on a TV, so it should happen only a few times a day:
+  //   - Brightness follows the sun continuously, but as the opacity of the
+  //     SVG's own compositing layer (style below), which the compositor
+  //     applies without redrawing anything.
+  //   - Line width changes in three steps: night, low sun, high sun.
+  //   - The rosette grows in three steps before a prayer, not every minute.
+  // (Each of these used to redraw the whole screen — 270–360 times a day.)
+  const ecoScalar = ecoMode ? 0.56 : 1; // eco mode: dimmer background
   const masterOp =
     sunElevation > 0
       ? lerp(0.18, 0.26, clamp(sunElevation / 90, 0, 1))
       : lerp(0.22, 0.3, clamp(-sunElevation / 18, 0, 1));
-
-  // Line width (CSS px): finer in daylight, never under 1 px.
-  const sw = lerp(1.6, 1.1, clamp(sunElevation / 90, 0, 1));
-  // The rosette grows slightly over the last half hour before a prayer.
-  const scale = minutesToNext <= 30 ? lerp(1.0, 1.18, clamp(1 - minutesToNext / 30, 0, 1)) : 1.0;
+  const sw = sunElevation <= 0 ? 1.6 : sunElevation < 30 ? 1.35 : 1.1; // CSS px, never < 1
+  const scale =
+    minutesToNext <= 5 ? 1.18 : minutesToNext <= 15 ? 1.12 : minutesToNext <= 30 ? 1.06 : 1;
 
   const minSide = Math.min(W, H);
   const medR = minSide * 0.21 * scale;
 
   // The pattern and borders depend only on the screen size, so they are
-  // built once. The rosette and scrolls are rebuilt as the rosette grows
-  // (once a minute in the last half hour) — measured cheaper than scaling
-  // them with an SVG transform, which makes the browser redraw the masked
-  // layer.
+  // built once. The rosette and scrolls are rebuilt at each growth step —
+  // measured cheaper than scaling them with an SVG transform, which makes
+  // the browser redraw the masked layer.
   const field = useMemo(() => {
     if (W < 10 || H < 10) return null;
     const lattice = starPatternPath(W, H, minSide * 0.075, W / 2, H / 2);
@@ -161,12 +177,15 @@ function IslamicGeometryEngine({
       className="geometry-engine"
       style={{
         position: 'absolute',
-        inset: 0,
+        top: 0, // not `inset` — Chromium < 87 lacks it, and inline styles aren't rewritten
+        left: 0,
         width: '100%',
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
         overflow: 'hidden',
+        // Applied to the SVG's own layer, so changing it doesn't redraw the art.
+        opacity: +(masterOp * ecoScalar).toFixed(3),
       }}
       viewBox={`0 0 ${W} ${H}`}
       xmlns="http://www.w3.org/2000/svg"
@@ -202,7 +221,7 @@ function IslamicGeometryEngine({
         </mask>
       </defs>
 
-      <g opacity={masterOp * ecoScalar} fill="none" strokeLinejoin="round" strokeLinecap="round">
+      <g fill="none" strokeLinejoin="round" strokeLinecap="round">
         <g mask="url(#geo-under-shamsa)">
           {lw.lattice > 0 && (
             <path

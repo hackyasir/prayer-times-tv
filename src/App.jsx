@@ -19,7 +19,8 @@ import { normalizeImportedSettings } from './lib/settingsImport.js';
 import { buildThemeVars } from './lib/themes.js';
 import { resolveTypeScale, clampCalibration } from './lib/viewingScale.js';
 import { buildAutoAnnouncements } from './lib/autoAnnouncements.js';
-import { buildCongregations, findPendingIqamah } from './lib/congregations.js';
+import { shouldReload } from './lib/dailyReload.js';
+import { DAILY_PRAYER_KEYS, buildCongregations, findPendingIqamah } from './lib/congregations.js';
 import { suggestRegionSettings } from './lib/regionDefaults.js';
 
 // Custom hooks — pure logic extracted to their own files
@@ -755,6 +756,37 @@ export default function App() {
     dismissedAt: blackoutDismissedAt,
     forceUntil: testBlackoutUntil,
   });
+  const blackoutActive = Boolean(blackout?.active);
+
+  // ── Daily reload ─────────────────────────────────────────────────────────
+  // Once a day at a quiet moment (normally 1–5 a.m.), reload the page to
+  // clear the memory long-running TV browsers accumulate and pick up a new
+  // build. The rules are in lib/dailyReload.js.
+  useEffect(() => {
+    const loadedAt = performance.timeOrigin || performance.timing?.navigationStart || 0;
+    const reload = shouldReload({
+      uptimeMs: nowMinute.getTime() - loadedAt,
+      cityHour: cityNowParts.h,
+      nowMs: nowMinute.getTime(),
+      events: [
+        ...DAILY_PRAYER_KEYS.map((key) => todayTimes?.[key]),
+        ...congregations.map((c) => c.time),
+        next?.time,
+      ],
+      busy: showSett || showPin || blackoutActive,
+      canReload: Boolean(navigator.serviceWorker?.controller) || navigator.onLine !== false,
+    });
+    if (reload) window.location.reload();
+  }, [
+    nowMinute,
+    cityNowParts.h,
+    todayTimes,
+    congregations,
+    next,
+    showSett,
+    showPin,
+    blackoutActive,
+  ]);
 
   // ── Clock countdown target ───────────────────────────────────────────────
   // Between a daily prayer's adhan and its iqamah, the big countdown targets
@@ -776,7 +808,6 @@ export default function App() {
   // the masjid's adjustment; times are the city's clock. The lines only
   // change at minute boundaries, so they are rebuilt once a minute rather
   // than on every tick.
-  const blackoutActive = Boolean(blackout?.active);
   const autoAnnouncementText = useMemo(() => {
     if (!autoAnnouncements) return '';
     const hijriAt = (days) => {

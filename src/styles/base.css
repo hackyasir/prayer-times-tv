@@ -143,22 +143,21 @@ body {
   color: var(--t-text);
 }
 
-/* Background art (IslamicGeometryEngine) — a full-screen SVG of ~600 shapes.
- * Its own compositing layer means the clock ticking above it repaints only
- * the clock, not the art underneath; `contain` keeps its layout and paint
+/* Background art (IslamicGeometryEngine) — a full-screen SVG on its own
+ * compositing layer: the clock ticking above it repaints only the clock, and
+ * the art's brightness (its inline opacity, eco mode included) is applied by
+ * the compositor without redrawing it. `contain` keeps its layout and paint
  * work separate from the rest of the page. */
 .geometry-engine {
   contain: strict;
   will-change: transform;
 }
 
-/* Eco / screen-protection mode — opt-in settings state that calms motion and
-   lowers the background-art intensity even when the OS has not requested
-   reduced motion. This is stronger than the accessibility override because
-   it is meant for always-on kiosk displays. */
-.app--eco .geometry-engine {
-  opacity: 0.78;
-}
+/* Eco / screen-protection mode — opt-in settings state that calms motion
+   even when the OS has not requested reduced motion. This is stronger than
+   the accessibility override because it is meant for always-on kiosk
+   displays. (The background art dims itself in eco mode: see
+   IslamicGeometryEngine.jsx.) */
 
 .app--eco *,
 .app--eco *::before,
@@ -182,7 +181,6 @@ body {
 
 /* Shared animations (used across multiple components) */
 @keyframes blink {
-
   0%,
   100% {
     opacity: 1;
@@ -199,7 +197,6 @@ body {
    composite without repainting. (They used to animate box-shadow, which
    repaints every frame — costly on TV browsers when eco mode is off.) */
 @keyframes cardpulse {
-
   0%,
   100% {
     opacity: 0;
@@ -211,7 +208,6 @@ body {
 }
 
 @keyframes ablink {
-
   0%,
   100% {
     opacity: 1;
@@ -269,7 +265,6 @@ body {
  *     and small, not a flicker pattern.
  */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {

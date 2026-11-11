@@ -1840,7 +1840,10 @@ export default function SettingsPanel({
                       <div
                         style={{
                           position: 'absolute',
-                          inset: 0,
+                          top: 0, // not `inset`: older TV browsers lack it
+                          right: 0,
+                          bottom: 0,
+                          left: 0,
                           background: `rgba(0,0,0,${draftBlackoutOpacity / 100})`,
                           display: 'flex',
                           alignItems: 'center',
