@@ -3,6 +3,56 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { cssMathFallback } from './src/lib/cssMathFallback.js';
 
+// The page's Content-Security-Policy (index.html) only allows requests to
+// the weather services. When the shared-settings source is on
+// (VITE_SETTINGS_SOURCE, see docs/remote-settings.md), also allow its
+// address: Google Sheets, or the Cloudflare Worker (https + wss).
+//
+// With Google Sheets, admins of self-serve masjids turn their publish
+// passphrase into the masjid's key with Argon2id, which runs as
+// WebAssembly; browsers refuse to run WebAssembly unless the policy allows
+// it. 'wasm-unsafe-eval' allows WebAssembly only — never JavaScript eval —
+// and only from this site's own files (script-src stays 'self'). Browsers
+// too old to know it ignore it; they never run the passphrase step anyway.
+function settingsSourceCsp() {
+  let env = {};
+  return {
+    name: 'settings-source-csp',
+    configResolved(config) {
+      env = config.env || {};
+    },
+    transformIndexHtml(html) {
+      const source = String(env.VITE_SETTINGS_SOURCE || '').toLowerCase();
+      const connect = [];
+      if (source === 'sheet')
+        connect.push('https://docs.google.com', 'https://*.googleusercontent.com');
+      if (source === 'cloudflare' && env.VITE_SETTINGS_API_URL) {
+        try {
+          const { origin } = new URL(env.VITE_SETTINGS_API_URL);
+          connect.push(origin, origin.replace(/^http/, 'ws'));
+        } catch {
+          // not a URL: nothing added, the app shows the source as unreachable
+        }
+      }
+      // Only inside the policy tag (a comment above it mentions the directives too).
+      let out = html;
+      if (connect.length) {
+        out = out.replace(
+          /(Content-Security-Policy"[\s\S]*?connect-src[^;]*)/,
+          `$1 ${connect.join(' ')}`
+        );
+      }
+      if (source === 'sheet') {
+        out = out.replace(
+          /(Content-Security-Policy"[\s\S]*?script-src[^;]*)/,
+          `$1 'wasm-unsafe-eval'`
+        );
+      }
+      return out;
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   // For GitHub Pages: set VITE_BASE_URL env var in CI, default '/' for local dev
@@ -10,6 +60,7 @@ export default defineConfig({
 
   plugins: [
     react(),
+    settingsSourceCsp(),
 
     VitePWA({
       registerType: 'autoUpdate',

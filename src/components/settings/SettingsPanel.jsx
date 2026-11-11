@@ -42,13 +42,19 @@ import { findNonAscendingSlot, buildOrderErrorMessage } from '../../lib/schedule
 import NumberStepper from '../NumberStepper.jsx';
 import LogoUploader from './LogoUploader.jsx';
 import RegionHint from './RegionHint.jsx';
+import MasjidSync, { PassphraseInput } from './MasjidSync.jsx';
 
 // Settings are grouped by task. "Masjid" comes first and holds the
 // first-time setup essentials (name, location, language); the calculation
 // method and Jumu'ah time are the other two things every mosque must check.
+// "Share & follow" (how the screen is used: following a masjid, a masjid
+// screen, or managing one) is there only when the deployment shares masjid
+// settings, and then comes first: it decides what the other tabs can change.
 const TAB_ORDER = ['masjid', 'prayerTimes', 'iqamah', 'display', 'announcements', 'duringPrayer'];
+const TAB_ORDER_SHARING = ['sharing', ...TAB_ORDER];
 const TAB_LABEL_KEYS = {
   masjid: 'settings.tab.masjid',
+  sharing: 'settings.tab.sharing',
   prayerTimes: 'settings.tab.prayerTimes',
   iqamah: 'settings.tab.iqamah',
   display: 'settings.tab.screen',
@@ -262,6 +268,11 @@ export default function SettingsPanel({
   currentLng,
   // Today's prayer times — used by the iqamah offset preview ("Fajr 4:19 → 4:39")
   todayTimes,
+  // Shared masjid settings (hooks/useRemoteSettings.js) and its actions
+  remoteSync,
+  onPublish,
+  onRegister,
+  onExportSheet,
 }) {
   // NOTE: this component is now mounted conditionally by App.jsx only when
   // the settings dialog is visible, so hooks can run normally without a
@@ -270,6 +281,21 @@ export default function SettingsPanel({
   // Newer settings are read and written straight from the settings context
   // (older ones still arrive as draftX / setDraftX props from App).
   const { drafts, updateDrafts } = useSettings();
+  // Following a masjid: its settings (place, method, iqamah, Jumu'ah, Eid,
+  // name, logo, announcements) are locked here. A screen that manages the
+  // masjid (Share & follow → I manage this masjid) has nothing locked, and
+  // its Apply publishes to every screen.
+  const lockMasjid = Boolean(remoteSync?.locked);
+  const managing = Boolean(remoteSync?.enabled && remoteSync.code && remoteSync.mode === 'manage');
+  // Share & follow: the answer chosen before following anything, and whether
+  // to register or use an existing code (kept here so it survives a visit
+  // to another tab).
+  const [sharingFlow, setSharingFlow] = useState({ choice: 'follow', manageView: 'new' });
+  // Apply and publish: the passphrase bar, and what it says.
+  const [publishBar, setPublishBar] = useState(false);
+  const [publishPass, setPublishPass] = useState('');
+  const [publishMsg, setPublishMsg] = useState('');
+  const [publishing, setPublishing] = useState(false);
   const dialogRef = useRef(null);
   // The location the "Usual in …" notes compare with: the city picked but not
   // yet applied, otherwise the current location (known only by its timezone).
@@ -277,33 +303,44 @@ export default function SettingsPanel({
     ? { countryCode: selectedCity.countryCode, timeZone: selectedCity.tz }
     : { timeZone: cityTz };
 
-  // Active tab — local component state. Resets to 'display' each time the
-  // panel opens (the component unmounts when the dialog is closed).
+  // Active tab — local component state. Opens on the first tab each time
+  // the panel opens (the component unmounts when the dialog is closed).
   // Drafts persist across tab switches because they live in the parent.
-  const [activeTab, setActiveTab] = useState('masjid');
+  const tabs = remoteSync?.enabled ? TAB_ORDER_SHARING : TAB_ORDER;
+  const [activeTab, setActiveTab] = useState(tabs[0]);
   const tabButtonRefs = useRef([]);
 
   function handleTabKeyDown(event, index) {
     if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
 
-    const lastIndex = TAB_ORDER.length - 1;
+    const lastIndex = tabs.length - 1;
     const nextIndex =
       event.key === 'Home'
         ? 0
         : event.key === 'End'
           ? lastIndex
           : event.key === 'ArrowRight'
-            ? (index + 1) % TAB_ORDER.length
-            : (index - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+            ? (index + 1) % tabs.length
+            : (index - 1 + tabs.length) % tabs.length;
 
-    setActiveTab(TAB_ORDER[nextIndex]);
+    setActiveTab(tabs[nextIndex]);
     tabButtonRefs.current[nextIndex]?.focus();
   }
 
   useEffect(() => {
-    tabButtonRefs.current[TAB_ORDER.indexOf(activeTab)]?.focus();
-  }, [activeTab]);
+    tabButtonRefs.current[tabs.indexOf(activeTab)]?.focus();
+  }, [activeTab, tabs]);
+
+  // What registering a masjid will share, as set now (drafts included).
+  const sharingDetails = {
+    name: draftMasjid,
+    location: selectedCity
+      ? [selectedCity.name, selectedCity.admin1, selectedCity.country].filter(Boolean).join(', ')
+      : currentLocName,
+    method: METHOD_LABELS[draftMethod] || draftMethod,
+    jumuah: (draftJumuah || []).filter((slot) => slot.enabled).map((slot) => slot.time),
+  };
 
   useEffect(() => {
     const node = dialogRef.current;
@@ -338,7 +375,7 @@ export default function SettingsPanel({
     // roving-tabindex tabs that aren't selected.
     const visibleFocusables = () =>
       Array.from(node.querySelectorAll(focusableSelector)).filter(
-        (el) => el.tabIndex >= 0 && el.getClientRects().length > 0
+        (el) => el.tabIndex >= 0 && el.getClientRects().length > 0 && !el.matches(':disabled')
       );
 
     const onKeyDown = (event) => {
@@ -534,6 +571,63 @@ export default function SettingsPanel({
     onApply?.();
   };
 
+  // A managing screen's Apply. Cloudflare: the Worker's tab asks the admin
+  // to sign in. Google Sheet: the masjid's publish passphrase (asked once
+  // each time Settings is open), then the signed settings are sent; Settings
+  // closes once they've arrived (App's publishSettings).
+  const sendPublish = async () => {
+    setPublishing(true);
+    setPublishMsg(t('settings.sync.sending'));
+    try {
+      const result = await onPublish?.();
+      if (!result?.ok) setPublishMsg(t(`settings.sync.problem.${result?.reason || 'error'}`));
+    } catch {
+      setPublishMsg(t('settings.sync.problem.error'));
+    } finally {
+      setPublishing(false);
+    }
+  };
+  const applyAndPublish = () => {
+    if (hasValidationErrors || publishing) return;
+    if (remoteSync.source === 'cloudflare') {
+      // Synchronous from the click: the Worker's tab must open now.
+      setPublishing(true);
+      setPublishMsg(t('settings.sync.publishing'));
+      onPublish?.().then((result) => {
+        setPublishing(false);
+        if (!result?.ok) {
+          setPublishMsg(
+            t(result?.blocked ? 'settings.sync.popupBlocked' : 'settings.sync.notPublished')
+          );
+        }
+      });
+      return;
+    }
+    if (remoteSync.unlocked) sendPublish();
+    else {
+      setPublishBar(true);
+      setPublishMsg('');
+    }
+  };
+  const unlockAndPublish = async () => {
+    if (publishing) return;
+    setPublishing(true);
+    setPublishMsg(t('settings.sync.checkingPassphrase'));
+    let unlocked;
+    try {
+      unlocked = await remoteSync.unlock(publishPass);
+    } catch {
+      unlocked = { ok: false, reason: 'error' };
+    }
+    setPublishing(false);
+    if (!unlocked?.ok) {
+      setPublishMsg(t(`settings.sync.problem.${unlocked?.reason || 'error'}`));
+      return;
+    }
+    setPublishPass('');
+    await sendPublish();
+  };
+
   const handleSearchInput = onSearchInput;
   const handleSelectCity = onSelectCity;
   const geolocate = onGeolocate;
@@ -558,25 +652,73 @@ export default function SettingsPanel({
             </button>
             <button
               className="sbtn pri"
-              onClick={applySettings}
-              disabled={hasValidationErrors}
+              onClick={managing ? applyAndPublish : applySettings}
+              disabled={hasValidationErrors || publishing}
               title={
                 hasValidationErrors
                   ? validationErrors.jumuah || validationErrors.eidFitr || validationErrors.eidAdha
                   : ''
               }
             >
-              {t('settings.apply')}
+              {t(managing ? 'settings.applyPublish' : 'settings.apply')}
             </button>
           </div>
         </div>
+
+        {/* Apply and publish: the masjid's publish passphrase, and progress. */}
+        {managing && (publishBar || publishMsg) && (
+          <div className="publish-bar" role="group" aria-label={t('settings.applyPublish')}>
+            {publishBar && !remoteSync.unlocked && (
+              <>
+                <PassphraseInput
+                  id="publish-pass"
+                  label={fmtStr(t('settings.sync.publishBar'), {
+                    name: remoteSync.status?.name || remoteSync.code,
+                  })}
+                  value={publishPass}
+                  onChange={setPublishPass}
+                  autoComplete="current-password"
+                  disabled={publishing}
+                  onEnter={unlockAndPublish}
+                />
+                <div className="sync-actions">
+                  <button
+                    type="button"
+                    className="sbtn pri"
+                    onClick={unlockAndPublish}
+                    disabled={publishing}
+                  >
+                    {t('settings.sync.publishBarButton')}
+                  </button>
+                  <button
+                    type="button"
+                    className="sbtn-meta"
+                    onClick={() => {
+                      setPublishBar(false);
+                      setPublishPass('');
+                      setPublishMsg('');
+                    }}
+                    disabled={publishing}
+                  >
+                    {t('settings.cancel')}
+                  </button>
+                </div>
+              </>
+            )}
+            {publishMsg && (
+              <div className="publish-bar-msg" role="status">
+                {publishMsg}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tab strip — horizontal navigation across the panel. Five tabs
               ordered by usage frequency: Display first (most-tweaked), then
               Location, Prayer Times, Iqamah, and Behaviour. On narrow widths
               the tab buttons wrap to a second row (flex-wrap in CSS). */}
         <div className="stab-strip" role="tablist" aria-label={t('settings.title')}>
-          {TAB_ORDER.map((key, index) => {
+          {tabs.map((key, index) => {
             const label = t(TAB_LABEL_KEYS[key]);
             return (
               <button
@@ -606,6 +748,28 @@ export default function SettingsPanel({
           role="tabpanel"
           aria-labelledby={`settings-tab-${activeTab}`}
         >
+          {/* Following or managing a masjid: say where shared changes come from. */}
+          {(remoteSync?.locked || managing) && (
+            <div className="sync-banner" role="note" data-editing={managing || undefined}>
+              {fmtStr(t(managing ? 'settings.sync.bannerManage' : 'settings.sync.bannerLocked'), {
+                name: remoteSync.status?.name || remoteSync.code,
+              })}
+              {!managing &&
+                remoteSync.mode === 'masjid' &&
+                ` ${t('settings.sync.bannerMasjidScreen')}`}
+            </div>
+          )}
+          {activeTab === 'sharing' && (
+            <MasjidSync
+              remoteSync={remoteSync}
+              onRegister={onRegister}
+              onExportSheet={onExportSheet}
+              cityTz={cityTz}
+              details={sharingDetails}
+              flow={sharingFlow}
+              setFlow={setSharingFlow}
+            />
+          )}
           {activeTab === 'masjid' && (
             <>
               {/* First-time setup guide — the essentials, in order. */}
@@ -622,26 +786,45 @@ export default function SettingsPanel({
               >
                 {t('settings.setupHint')}
               </div>
-              {/* Masjid name */}
-              <div className="sgrp">
-                <label className="slbl">{t('settings.masjidName')}</label>
-                <input
-                  className="sinput"
-                  type="text"
-                  placeholder={t('settings.masjidName.placeholder')}
-                  value={draftMasjid}
-                  onChange={(e) => setDraftMasjid(e.target.value)}
-                  maxLength={60}
-                />
-                {draftMasjid && (
-                  <div
-                    style={{ marginTop: 5, fontSize: 11, color: '#9A8B6E', letterSpacing: '.05em' }}
+              {/* Following or registering a masjid has its own tab. */}
+              {remoteSync?.enabled && !remoteSync.code && (
+                <div className="sync-pointer">
+                  <span>{t('settings.sync.pointer')}</span>
+                  <button
+                    type="button"
+                    className="sbtn-meta"
+                    onClick={() => setActiveTab('sharing')}
                   >
-                    Shown in header · leave blank to show "Prayer Times"
-                  </div>
-                )}
-              </div>
-
+                    {t('settings.tab.sharing')}
+                  </button>
+                </div>
+              )}
+              {/* Masjid name */}
+              <fieldset className="locked-fields" disabled={lockMasjid}>
+                <div className="sgrp">
+                  <label className="slbl">{t('settings.masjidName')}</label>
+                  <input
+                    className="sinput"
+                    type="text"
+                    placeholder={t('settings.masjidName.placeholder')}
+                    value={draftMasjid}
+                    onChange={(e) => setDraftMasjid(e.target.value)}
+                    maxLength={60}
+                  />
+                  {draftMasjid && (
+                    <div
+                      style={{
+                        marginTop: 5,
+                        fontSize: 11,
+                        color: '#9A8B6E',
+                        letterSpacing: '.05em',
+                      }}
+                    >
+                      Shown in header · leave blank to show "Prayer Times"
+                    </div>
+                  )}
+                </div>
+              </fieldset>
               {/* Screen label — optional per-screen subtitle. Replaces the
                   "Prayer Times · Digital Display" line. Useful when one masjid
                   runs several screens (Main Hall, Women's Section, etc.). */}
@@ -662,20 +845,22 @@ export default function SettingsPanel({
                 </div>
               </div>
 
-              {/* Mosque logo upload — optional branding.
-               * Reads the picked file via FileReader → base64 string, then
-               * stores it in `draftLogo`. The handler enforces a 100 KB cap to
-               * keep localStorage usage modest; larger files are rejected with
-               * a small inline warning rather than silently truncated. */}
-              <div className="sgrp">
-                <label className="slbl">Mosque Logo (optional)</label>
-                <LogoUploader value={draftLogo} onChange={setDraftLogo} />
-              </div>
+              <fieldset className="locked-fields" disabled={lockMasjid}>
+                {/* Mosque logo upload — optional branding.
+                 * Reads the picked file via FileReader → base64 string, then
+                 * stores it in `draftLogo`. The handler enforces a 100 KB cap to
+                 * keep localStorage usage modest; larger files are rejected with
+                 * a small inline warning rather than silently truncated. */}
+                <div className="sgrp">
+                  <label className="slbl">Mosque Logo (optional)</label>
+                  <LogoUploader value={draftLogo} onChange={setDraftLogo} />
+                </div>
+              </fieldset>
             </>
           )}
 
           {activeTab === 'masjid' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* City search */}
               <div className="sgrp">
                 <div
@@ -790,7 +975,7 @@ export default function SettingsPanel({
                 </div>
                 <RegionHint where={regionWhere} place={selectedCity?.country} />
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'masjid' && (
@@ -817,7 +1002,7 @@ export default function SettingsPanel({
           )}
 
           {activeTab === 'prayerTimes' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               <div className="sgrp">
                 <label className="slbl">{t('settings.method')}</label>
                 <select
@@ -833,11 +1018,11 @@ export default function SettingsPanel({
                 </select>
                 <RegionHint where={regionWhere} place={selectedCity?.country} />
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'prayerTimes' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               <div className="sgrp">
                 <label className="slbl">{t('settings.asrMethod')}</label>
                 <select
@@ -849,11 +1034,11 @@ export default function SettingsPanel({
                   <option value="Hanafi">{t('settings.asr.hanafi')}</option>
                 </select>
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'prayerTimes' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* High-latitude rule — for cities above ~48° (Stockholm, Edmonton,
               etc) where the sun doesn't dip 18° below the horizon in summer.
               Has no observable effect below ~48° latitude — fine to leave at
@@ -882,11 +1067,11 @@ export default function SettingsPanel({
                   below the horizon for standard Fajr/Isha angles.
                 </div>
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'prayerTimes' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* Hijri date adjustment */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.hijri')}</label>
@@ -988,7 +1173,7 @@ export default function SettingsPanel({
                   })()}
                 </div>
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'prayerTimes' && (
@@ -1629,85 +1814,87 @@ export default function SettingsPanel({
                   {t('settings.announcements.format')}
                 </div>
 
-                <div className="ann-preview">
-                  <div className="ann-preview-head">
-                    <div className="ann-preview-title">
-                      {t('settings.announcements.previewEditable')}
+                <fieldset className="locked-fields" disabled={lockMasjid}>
+                  <div className="ann-preview">
+                    <div className="ann-preview-head">
+                      <div className="ann-preview-title">
+                        {t('settings.announcements.previewEditable')}
+                      </div>
+                      <button
+                        type="button"
+                        className="ann-preview-add"
+                        onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
+                        aria-label={t('settings.announcements.addRow')}
+                        title={t('settings.announcements.addRow')}
+                      >
+                        +
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      className="ann-preview-add"
-                      onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
-                      aria-label={t('settings.announcements.addRow')}
-                      title={t('settings.announcements.addRow')}
-                    >
-                      +
-                    </button>
-                  </div>
-                  {announcementPreviewItems.map((item, idx) => (
-                    <div
-                      key={`${idx}-${item.text}-${item.expiresOn}`}
-                      className={`ann-editor-row${item.expired ? ' is-expired' : ''}`}
-                    >
-                      <div className="ann-row-meta">
-                        <button
-                          type="button"
-                          className={`ann-icon-toggle${item.urgent ? ' is-on' : ''}`}
-                          onClick={() => patchAnnouncementRow(idx, { urgent: !item.urgent })}
-                          aria-label={t('settings.announcements.preview.urgent')}
-                          title={t('settings.announcements.preview.urgent')}
-                        >
-                          !
-                        </button>
+                    {announcementPreviewItems.map((item, idx) => (
+                      <div
+                        key={`${idx}-${item.text}-${item.expiresOn}`}
+                        className={`ann-editor-row${item.expired ? ' is-expired' : ''}`}
+                      >
+                        <div className="ann-row-meta">
+                          <button
+                            type="button"
+                            className={`ann-icon-toggle${item.urgent ? ' is-on' : ''}`}
+                            onClick={() => patchAnnouncementRow(idx, { urgent: !item.urgent })}
+                            aria-label={t('settings.announcements.preview.urgent')}
+                            title={t('settings.announcements.preview.urgent')}
+                          >
+                            !
+                          </button>
 
-                        <div className={`ann-expiry-wrap${item.expired ? ' is-expired' : ''}`}>
-                          <span className="ann-expiry-icon">@</span>
-                          <input
-                            type="date"
-                            className="ann-date ann-row-date"
-                            value={item.expiresOn || ''}
-                            onChange={(e) =>
-                              patchAnnouncementRow(idx, { expiresOn: e.target.value })
-                            }
-                            aria-label={t('settings.announcements.insertDate')}
-                          />
+                          <div className={`ann-expiry-wrap${item.expired ? ' is-expired' : ''}`}>
+                            <span className="ann-expiry-icon">@</span>
+                            <input
+                              type="date"
+                              className="ann-date ann-row-date"
+                              value={item.expiresOn || ''}
+                              onChange={(e) =>
+                                patchAnnouncementRow(idx, { expiresOn: e.target.value })
+                              }
+                              aria-label={t('settings.announcements.insertDate')}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            className="ann-row-remove"
+                            onClick={() => removeAnnouncementRow(idx)}
+                            aria-label={t('settings.announcements.removeRow')}
+                            title={t('settings.announcements.removeRow')}
+                          >
+                            ×
+                          </button>
                         </div>
 
-                        <button
-                          type="button"
-                          className="ann-row-remove"
-                          onClick={() => removeAnnouncementRow(idx)}
-                          aria-label={t('settings.announcements.removeRow')}
-                          title={t('settings.announcements.removeRow')}
-                        >
-                          ×
-                        </button>
-                      </div>
+                        <input
+                          className="sinput ann-row-input"
+                          value={item.text}
+                          placeholder={t('settings.announcements.placeholder')}
+                          onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
+                        />
 
-                      <input
-                        className="sinput ann-row-input"
-                        value={item.text}
-                        placeholder={t('settings.announcements.placeholder')}
-                        onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
-                      />
-
-                      <div className="ann-preview-tags">
-                        {item.expiresOn && !item.expired && (
-                          <span className="ann-tag">
-                            {fmtStr(t('settings.announcements.preview.expires'), {
-                              date: item.expiresOn,
-                            })}
-                          </span>
-                        )}
-                        {item.expired && (
-                          <span className="ann-tag ann-tag-expired">
-                            {t('settings.announcements.preview.expired')}
-                          </span>
-                        )}
+                        <div className="ann-preview-tags">
+                          {item.expiresOn && !item.expired && (
+                            <span className="ann-tag">
+                              {fmtStr(t('settings.announcements.preview.expires'), {
+                                date: item.expiresOn,
+                              })}
+                            </span>
+                          )}
+                          {item.expired && (
+                            <span className="ann-tag ann-tag-expired">
+                              {t('settings.announcements.preview.expired')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </fieldset>
               </div>
             </>
           )}
@@ -2074,7 +2261,7 @@ export default function SettingsPanel({
           )}
 
           {activeTab === 'iqamah' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* Auto-iqamah toggle + per-prayer buffers.
               When enabled, iqamah times are computed daily from adhan +
               buffer minutes, rounded to the NEAREST quarter-hour, with a
@@ -2273,11 +2460,11 @@ export default function SettingsPanel({
                     );
                   })()}
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'iqamah' && !draftIqamahAutoCalc && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* Iqamah offsets — manual mode. Hidden when auto is on. */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.iqamahOffset')}</label>
@@ -2305,11 +2492,11 @@ export default function SettingsPanel({
                   })}
                 </div>
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'iqamah' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* Jumu'ah congregations (single time per slot) */}
               <div className="sgrp">
                 <label className="slbl">{t('settings.jumuah')}</label>
@@ -2403,11 +2590,11 @@ export default function SettingsPanel({
                   </div>
                 )}
               </div>
-            </>
+            </fieldset>
           )}
 
           {activeTab === 'iqamah' && (
-            <>
+            <fieldset className="locked-fields" disabled={lockMasjid}>
               {/* Eid prayers — separate Fitr / Adha schedules.
               Auto-detection via Hijri calendar picks which one's active
               when Eid approaches; no manual toggle needed. Each schedule
@@ -2609,7 +2796,7 @@ export default function SettingsPanel({
                   {t('settings.eid.note')}
                 </p>
               </div>
-            </>
+            </fieldset>
           )}
         </div>
         {/* end sbox-body */}

@@ -1,5 +1,7 @@
 // ── Constants — enum-like values used across the app ─────────────────────────
 
+import { sheetIdFrom } from './sheetFormat.js';
+
 export const STORAGE_KEY = 'masjid_dashboard_v1';
 
 // Days of week (Sun = 0)
@@ -161,6 +163,30 @@ export const GEO_API = 'https://geocoding-api.open-meteo.com/v1/search';
 // the Settings panel opens. Leave unset or empty for open access (good for
 // trusted kiosk environments where the screen is physically secured).
 export const SETTINGS_PIN = import.meta.env.VITE_SETTINGS_PIN || '';
+
+// Shared masjid settings (docs/remote-settings.md). Set at build time —
+// in GitHub: Settings → Secrets and variables → Actions → Variables
+// (SETTINGS_SOURCE, SETTINGS_API_URL), read by .github/workflows/deploy.yml.
+//   'none'        each screen keeps its own settings (default)
+//   'sheet'       Google Sheets: self-serve masjids in your one registration
+//                 sheet, and any masjid you list with its own sheet in
+//                 public/masjids.json
+//   'cloudflare'  the Worker in worker/, at VITE_SETTINGS_API_URL
+const SOURCE_ENV = String(import.meta.env.VITE_SETTINGS_SOURCE || 'none').toLowerCase();
+export const SETTINGS_SOURCE = ['sheet', 'cloudflare'].includes(SOURCE_ENV) ? SOURCE_ENV : 'none';
+export const SETTINGS_API_URL = String(import.meta.env.VITE_SETTINGS_API_URL || '').replace(
+  /\/+$/,
+  ''
+);
+// Self-serve masjids (Google Sheet source, docs/remote-settings.md): the
+// registration form's pre-filled link, made with the answers NAME, CITY,
+// CODE, SETTINGS and KEY, and the ID of the form's responses sheet, where
+// every self-serve masjid's signed settings are kept. Both are public by
+// design: the sheet is view-only, and only signed rows are ever applied.
+// GitHub: the variables REGISTER_FORM_URL and REGISTRATIONS_SHEET_ID.
+// The sheet may be given as its ID or as a whole link to it.
+export const REGISTER_FORM_URL = String(import.meta.env.VITE_REGISTER_FORM_URL || '').trim();
+export const REGISTRATIONS_SHEET_ID = sheetIdFrom(import.meta.env.VITE_REGISTRATIONS_SHEET_ID);
 
 // Show the "Test Pattern" / "Test Jumu'ah" buttons in the footer status strip?
 // Default behavior:

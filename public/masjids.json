@@ -1,0 +1,8 @@
+{
+  "_note": "The masjids people can find in Settings → Share & follow → Find your masjid. Each code (4-16 letters or digits) has a name and city; with the Google Sheet source (SETTINGS_SOURCE=sheet) also the ID of its own sheet, shared 'Anyone with the link: Viewer'. Self-serve masjids aren't listed here: the deploy adds the approved ones from the registration sheet. \"listed\": false leaves a masjid out of the list. Keys starting with _ are ignored. See docs/remote-settings.md.",
+  "_example": {
+    "name": "Example Masjid (replace with a real entry, e.g. \"TOR4K7Q\": { ... })",
+    "city": "Toronto",
+    "sheetId": "1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdEF"
+  }
+}
