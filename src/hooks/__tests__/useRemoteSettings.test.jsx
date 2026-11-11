@@ -29,19 +29,21 @@ const jsonRes =
   () =>
     new Response(JSON.stringify(body), { status });
 
-// No registration sheet or form unless a test gives one: the defaults come
-// from the build settings, which may be set on this computer (.env.local).
-const NO_SHARED = { sharedSheetId: '', formUrl: '' };
+// Nothing comes from the build settings (VITE_SETTINGS_SOURCE and so on),
+// which differ between computers (.env.local) and the deploy: each test
+// says what it uses.
+const NO_BUILD_SETTINGS = { source: 'none', apiUrl: '', sharedSheetId: '', formUrl: '' };
 
 function render(props) {
   const updateApplied = vi.fn();
+  const initialProps = { applied: base, paused: false, ...props };
   const hook = renderHook(
-    (p) => useRemoteSettings({ updateApplied, baseUrl: '/', ...NO_SHARED, ...p }),
-    {
-      initialProps: { applied: base, paused: false, ...props },
-    }
+    (p) => useRemoteSettings({ updateApplied, baseUrl: '/', ...NO_BUILD_SETTINGS, ...p }),
+    { initialProps }
   );
-  return { ...hook, updateApplied };
+  // A rerender changes only what it names; the rest stays as rendered.
+  const rerender = (next) => hook.rerender({ ...initialProps, ...next });
+  return { ...hook, rerender, updateApplied };
 }
 
 beforeEach(() => {
