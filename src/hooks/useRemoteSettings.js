@@ -30,6 +30,7 @@ import {
   REGISTER_FORM_URL,
   REGISTRATIONS_SHEET_ID,
   SETTINGS_API_URL,
+  SETTINGS_PIN,
   SETTINGS_SOURCE,
 } from '../lib/constants.js';
 import {
@@ -38,6 +39,7 @@ import {
   MODES,
   MODE_STORAGE_KEY,
   modeFromSearch,
+  placeFromAddress,
   pickKeys,
   publishPayload,
   sharedForMode,
@@ -126,32 +128,30 @@ const sendProblem = (err) =>
       ? 'setup'
       : 'error';
 
-function initialCode(storage) {
-  const fromUrl = typeof window !== 'undefined' ? codeFromSearch(window.location.search) : null;
-  if (fromUrl) {
+/** The code and mode to start with, from the address or saved (see placeFromAddress). */
+function initialPlace(storage) {
+  const search = typeof window !== 'undefined' ? window.location.search : '';
+  const read = (key) => {
     try {
-      storage?.setItem(CODE_STORAGE_KEY, fromUrl);
+      return storage?.getItem(key) ?? null;
     } catch {
-      // not saved; the address still carries it
+      return null;
     }
-    return fromUrl;
-  }
+  };
+  const place = placeFromAddress({
+    urlCode: codeFromSearch(search),
+    urlMode: modeFromSearch(search),
+    savedCode: normalizeCode(read(CODE_STORAGE_KEY)),
+    savedMode: read(MODE_STORAGE_KEY),
+    pinSet: Boolean(SETTINGS_PIN),
+  });
   try {
-    return normalizeCode(storage?.getItem(CODE_STORAGE_KEY));
+    if (place.code) storage?.setItem(CODE_STORAGE_KEY, place.code);
+    storage?.setItem(MODE_STORAGE_KEY, place.mode);
   } catch {
-    return null;
+    // not saved; the address still carries it
   }
-}
-
-function initialMode(storage) {
-  const fromUrl = typeof window !== 'undefined' ? modeFromSearch(window.location.search) : null;
-  try {
-    if (fromUrl) storage?.setItem(MODE_STORAGE_KEY, fromUrl);
-    const saved = fromUrl || storage?.getItem(MODE_STORAGE_KEY);
-    return MODES.includes(saved) ? saved : 'follow';
-  } catch {
-    return fromUrl || 'follow';
-  }
+  return place;
 }
 
 /** Rows (header first) answering a query on a Google Sheet. */
@@ -202,8 +202,9 @@ export default function useRemoteSettings({
     source === 'sheet' ? [!sharedSheet && 'sheetId', !parsedForm && 'formUrl'].filter(Boolean) : [];
 
   const [storage] = useState(safeStorage);
-  const [code, setCodeState] = useState(() => (enabled ? initialCode(storage) : null));
-  const [mode, setModeState] = useState(() => initialMode(storage));
+  const [initial] = useState(() => initialPlace(storage));
+  const [code, setCodeState] = useState(() => (enabled ? initial.code : null));
+  const [mode, setModeState] = useState(initial.mode);
   const [status, setStatus] = useState(() => {
     const cached = code ? loadSyncState(storage, code) : null;
     return {
@@ -742,7 +743,7 @@ export default function useRemoteSettings({
         // The new key counts once you approve its row; until then the old
         // one still does, so nothing is unlocked.
         checkRef.current();
-        return { ok: true, code: next };
+        return { ok: true, code: next, key: pair.publicKey };
       }
       // This screen's settings are what it just sent: keep them as the
       // masjid's copy, and keep the key for this Settings visit.
@@ -759,11 +760,15 @@ export default function useRemoteSettings({
         signedAt: sent.time,
         signedKey: pair.publicKey,
       });
-      keyRef.current = { code: next, ...pair };
-      setUnlockedCode(next);
+      // Settings closed while this ran: the masjid is registered, but its
+      // key isn't kept.
+      if (pausedRef.current) {
+        keyRef.current = { code: next, ...pair };
+        setUnlockedCode(next);
+      }
       setMode('manage');
       setCode(next);
-      return { ok: true, code: next };
+      return { ok: true, code: next, key: pair.publicKey };
     },
     [
       canRegister,
@@ -806,6 +811,8 @@ export default function useRemoteSettings({
       if (!pair) return { ok: false, reason: 'keyFailed' };
       const ok = keys.approved ? pair.publicKey === keys.approved : keys.keys.has(pair.publicKey);
       if (!ok) return { ok: false, reason: 'wrong' };
+      // Settings closed while the key was worked out: don't keep it.
+      if (!pausedRef.current) return { ok: false, reason: 'error' };
       if (target === code) approvedKeyRef.current = keys.approved;
       keyRef.current = { code: target, ...pair };
       setUnlockedCode(target);
@@ -892,7 +899,8 @@ export default function useRemoteSettings({
           resolve(result);
         };
         const onMessage = (event) => {
-          if (event.origin !== urls.origin || !event.data || typeof event.data !== 'object') return;
+          if (event.source !== win || event.origin !== urls.origin) return;
+          if (!event.data || typeof event.data !== 'object') return;
           if (event.data.type === 'ready') {
             event.source?.postMessage({ type: 'settings', code, settings: payload }, urls.origin);
           } else if (event.data.type === 'published') {
@@ -922,6 +930,13 @@ export default function useRemoteSettings({
     [code, setCode, setMode]
   );
 
+  // Read again only when the status changes, not on every render.
+  const ownKey = useMemo(
+    () => (code && loadSyncState(storage, code)?.signedKey) || null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [code, storage, status]
+  );
+
   // The masjid's settings are locked on this screen while it follows a code
   // (not while it manages it).
   const locked = enabled && Boolean(code) && mode !== 'manage';
@@ -945,5 +960,8 @@ export default function useRemoteSettings({
     lock,
     manage,
     unlocked: Boolean(code) && unlockedCode === code,
+    // The publish key this screen registered the masjid with, while it
+    // waits for approval (public: for the sheet's owner to check).
+    ownKey,
   };
 }

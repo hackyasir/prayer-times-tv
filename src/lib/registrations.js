@@ -57,11 +57,108 @@ export function newMasjidCode(random = randomInts) {
   return code;
 }
 
-/** 'short' | 'mismatch' | null. Without `confirm`, only the length counts. */
-export function passphraseProblem(passphrase, confirm) {
+/**
+ * Is it a code this app made (6 characters from CODE_ALPHABET, starting
+ * with one of FIRST_LETTERS), written exactly so? Only those belong in the
+ * shared registration sheet; anything else there is junk.
+ */
+export function isSharedCode(code) {
+  const c = String(code ?? '');
+  if (c.length !== CODE_LENGTH || !FIRST_LETTERS.includes(c[0])) return false;
+  for (const ch of c.slice(1)) if (!CODE_ALPHABET.includes(ch)) return false;
+  return true;
+}
+
+/**
+ * Letters and digits only, lower case (any script; ASCII punctuation goes),
+ * with Arabic-Indic digits written as 0–9.
+ */
+const plainText = (s) =>
+  String(s ?? '')
+    .toLowerCase()
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/[\s!-/:-@[-`{-~]/g, '');
+
+/**
+ * What anyone would try first: words about a masjid, and the most common
+ * passwords and keyboard runs (they're removed before the rest is counted).
+ */
+const OBVIOUS_WORDS = [
+  'masjid',
+  'mosque',
+  'islamic',
+  'centre',
+  'center',
+  'jamia',
+  'jame',
+  'musalla',
+  'bismillah',
+  'allahuakbar',
+  'allah',
+  'islam',
+  'muslim',
+  'salam',
+  'ramadan',
+  'password',
+  'passw0rd',
+  'qwerty',
+  'asdf',
+  'zxcv',
+  'iloveyou',
+  'letmein',
+  'welcome',
+  'admin',
+  'abc',
+];
+
+/**
+ * Too easy to guess? The masjid's public key lets anyone try guesses on
+ * their own computer, as many as they like. So after taking out the
+ * masjid's name, city and code, the obvious words, and runs of four or more
+ * digits (years, 123456…), at least 10 letters or digits must be left, with
+ * at least 6 different characters in the whole passphrase.
+ */
+function isWeak(passphrase, avoid) {
+  const plain = plainText(passphrase);
+  if (new Set(plain).size < 6) return true;
+  // Each name whole ("Al-Noor" → "alnoor") and word by word, longest first.
+  const words = [];
+  for (const s of avoid) {
+    words.push(plainText(s));
+    for (const part of String(s ?? '').split(/[\s,]+/)) words.push(plainText(part));
+  }
+  let rest = plain;
+  for (const word of words.concat(OBVIOUS_WORDS).sort((a, b) => b.length - a.length)) {
+    if (word.length >= 3) rest = rest.split(word).join('');
+  }
+  return rest.replace(/[0-9]{4,}/g, '').length < 10;
+}
+
+/**
+ * 'short' | 'mismatch' | 'weak' | null. Without `confirm` (typing an
+ * existing passphrase), only the length counts; with it (choosing a new
+ * one), it mustn't be easy to guess either — `avoid`: the masjid's name,
+ * city and code.
+ */
+export function passphraseProblem(passphrase, confirm, { avoid = [] } = {}) {
   if (String(passphrase ?? '').length < MIN_PASSPHRASE) return 'short';
-  if (confirm !== undefined && passphrase !== confirm) return 'mismatch';
+  if (confirm === undefined) return null;
+  if (passphrase !== confirm) return 'mismatch';
+  if (isWeak(passphrase, avoid)) return 'weak';
   return null;
+}
+
+/**
+ * The start of a publish key, in groups of four ("ed25519:AbCd EfGh IjKl
+ * MnOp", 96 bits), for an admin to read out and the sheet's owner to compare
+ * with the Publish key column before ticking Approved.
+ */
+export function keyFingerprint(key) {
+  const k = String(key ?? '').trim();
+  if (!KEY_RE.test(k)) return '';
+  const body = k.slice('ed25519:'.length, 'ed25519:'.length + 16);
+  return `ed25519:${body.match(/.{4}/g).join(' ')}`;
 }
 
 // ── The registration form ────────────────────────────────────────────────────
@@ -185,6 +282,18 @@ export function approvedKey(rows) {
 }
 
 /**
+ * `verify` for one row; a row it can't read counts as not verified, so one
+ * bad row (anyone can send one) never stops the others being read.
+ */
+function verifyRow(verify, text, key, code) {
+  try {
+    return verify(String(text ?? ''), key, code);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * The newest update among `texts` (Settings cells) that `verify` accepts
  * for this code and key; null if none.
  * @param {(text, key, code) => ({ time, settings } | null)} verify
@@ -192,7 +301,7 @@ export function approvedKey(rows) {
 export function newestUpdate(texts, key, code, verify) {
   let best = null;
   for (const text of texts || []) {
-    const update = verify(String(text ?? ''), key, code);
+    const update = verifyRow(verify, text, key, code);
     if (update && (!best || update.time > best.time)) best = update;
   }
   return best;
@@ -211,8 +320,9 @@ export function sharedMasjids(rows, verify) {
   const { at } = cols;
   const byCode = new Map();
   for (const row of rows.slice(1)) {
-    const code = normalizeCode(row[at.code]);
-    if (!code) continue;
+    // Only codes this app makes, written exactly so (as screens query them).
+    const code = String(row[at.code] ?? '').trim();
+    if (!isSharedCode(code)) continue;
     const m = byCode.get(code) || { code, name: '', city: '', key: null, texts: [] };
     m.texts.push(row[at.settings]);
     const key = String(row[at.key] ?? '').trim();
@@ -253,91 +363,204 @@ function newer(a, b) {
 }
 const newestOf = (list) => list.reduce((best, e) => (!best || newer(e, best) ? e : best), null);
 const latestSigned = (list) =>
-  list.reduce((best, e) => (!best || e.update.time > best.update.time ? e : best), null);
+  list
+    .filter((e) => e.update)
+    .reduce((best, e) => (!best || e.update.time > best.update.time ? e : best), null);
+
+/** At most this many publish keys waiting to be approved are kept per masjid. */
+export const MAX_WAITING_KEYS = 5;
+/** Rows waiting for approval, and requests under a new key, go after this. */
+export const WAITING_DAYS = 30;
+/** At most this many of one masjid's rows are checked in one run. */
+export const MAX_CHECKS_PER_MASJID = 200;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The newest row of each key, for the newest `MAX_WAITING_KEYS` keys. */
+function newestPerKey(list) {
+  const byKey = new Map();
+  for (const e of list) {
+    const best = byKey.get(e.key);
+    if (!best || e.update.time > best.update.time) byKey.set(e.key, e);
+  }
+  return [...byKey.values()].sort((a, b) => (newer(a, b) ? -1 : 1)).slice(0, MAX_WAITING_KEYS);
+}
+
+/**
+ * Empty, apart from its Approved box and any other checkboxes (FALSE)? With
+ * a column made checkboxes, every empty row below the responses holds one.
+ */
+const isEmptyRow = (row, approvedAt) =>
+  !row.some((v, i) => i !== approvedAt && v !== false && String(v ?? '').trim() !== '');
 
 /**
  * What the registration sheet's clean-up script (docs/registration-sheet.gs)
  * changes, so each masjid keeps one row:
  *
  *   - An approved masjid keeps its newest approved row, tick and all, with
- *     the newest settings signed with that row's key copied into it; its
- *     other rows go. A newer request under a different key (a re-registration
- *     after a lost passphrase — or someone else's attempt) stays, the newest
- *     one only, until you tick or delete it.
- *   - A masjid waiting for approval keeps the newest row of each key.
- *   - Rows that aren't validly signed for their code (test rows, junk,
- *     anything edited) go.
+ *     the newest settings signed with that row's key copied into it (the
+ *     settings, name and city: never the Timestamp, so a key you tick later
+ *     always outranks an older one). Its other unticked rows go. Requests
+ *     under keys never approved that are newer than the approved row (a
+ *     re-registration after a lost passphrase — or someone else's attempt)
+ *     stay, the newest row of each of the newest few keys, until you tick or
+ *     delete them, or for WAITING_DAYS.
+ *   - A masjid waiting for approval keeps the newest row of each of its
+ *     newest few keys, for WAITING_DAYS.
+ *   - Rows that aren't validly signed for their code go, and so do rows
+ *     whose code isn't one this app makes, written exactly so (test rows,
+ *     junk, anything edited).
+ *   - Ticks are yours: each key you ticked keeps one ticked row. Other
+ *     ticked rows of the same key (copies) go, but only once that key has a
+ *     row that verifies. A ticked row that doesn't verify (edited by hand,
+ *     say) gets the newest settings signed with its key copied in if there
+ *     are any, and is otherwise left as it is and counted in
+ *     `summary.unverified`.
+ *   - Empty rows stay (the next response may go there); a tick on one is
+ *     cleared, and counted in `summary.cleared`.
  *
- * Screens read the result exactly as before: one approved row whose
- * settings are the newest valid ones.
+ * Screens read the result exactly as before: the newest approved row's key,
+ * and the newest settings signed with it.
+ *
+ * Signatures are checked masjid by masjid, those with fewest rows first,
+ * and at most MAX_CHECKS_PER_MASJID of one masjid's rows (the newest) per
+ * run. With `budgetMs`, masjids not reached in time are left for the next
+ * run. Either way `summary.partial` says so; what wasn't checked is left as
+ * it is.
+ *
+ * With `only`, just that masjid's rows (and empty rows) are looked at (the
+ * script does this after each form response); everything else is left as it
+ * is. A code that isn't valid changes only empty rows.
  *
  * @param {Array<Array>} rows   the sheet's values, header row first
  * @param {Function}     verify verifyUpdate from lib/signatures.js
+ * @param {{ only?: string, now?: number, budgetMs?: number, clock?: Function }} [options]
  * @returns {{ ok: boolean, reason?: string, updates: Array<{ row: number,
  *   cells: Array<[number, *]> }>, deletes: number[], summary: object }}
  *   rows and columns are 0-based positions in `rows`
  */
-export function tidyPlan(rows, verify) {
-  const summary = { approved: 0, merged: 0, pending: 0, waiting: 0, removed: 0 };
+export function tidyPlan(
+  rows,
+  verify,
+  { only, now = Date.now(), budgetMs = Infinity, clock = Date.now } = {}
+) {
+  const summary = {
+    approved: 0,
+    merged: 0,
+    pending: 0,
+    waiting: 0,
+    removed: 0,
+    unverified: 0,
+    cleared: 0,
+    expired: 0,
+    partial: false,
+  };
   const result = (extra) => ({ ok: true, updates: [], deletes: [], summary, ...extra });
   if (!Array.isArray(rows) || !rows.length) return result({ ok: false, reason: 'empty' });
   const cols = sheetColumns(rows[0]);
   if (!cols.ready) return result({ ok: false, reason: 'columns' });
   const { at } = cols;
   const cell = (row, k) => (at[k] >= 0 ? row[at[k]] : '');
+  const target = only === undefined ? null : normalizeCode(only) || '';
+  const fresh = (e) => e.ts == null || now - e.ts <= WAITING_DAYS * DAY_MS;
 
   const deletes = new Set();
+  const updates = [];
+  // First the cheap checks, row by row: empty rows, and rows that could
+  // never verify. The rest are grouped by masjid for their signatures.
   const byCode = new Map();
   rows.forEach((row, index) => {
-    if (index === 0 || !row.some((v) => String(v ?? '').trim() !== '')) return;
-    const code = normalizeCode(cell(row, 'code'));
-    const key = String(cell(row, 'key') ?? '').trim();
-    const update =
-      code && KEY_RE.test(key) ? verify(String(cell(row, 'settings') ?? ''), key, code) : null;
-    if (!update) {
-      deletes.add(index);
+    if (index === 0) return;
+    const approved = at.approved >= 0 && isApproved(cell(row, 'approved'));
+    if (isEmptyRow(row, at.approved)) {
+      if (approved) {
+        updates.push({ row: index, cells: [[at.approved, false]] });
+        summary.cleared++;
+      }
       return;
     }
-    const entry = {
-      index,
-      row,
-      code,
-      key,
-      update,
-      ts: toTime(cell(row, 'timestamp')),
-      approved: at.approved >= 0 && isApproved(cell(row, 'approved')),
-    };
+    const code = String(cell(row, 'code') ?? '').trim();
+    if (target !== null && code !== target) return;
+    const key = String(cell(row, 'key') ?? '').trim();
+    if (!isSharedCode(code) || !KEY_RE.test(key)) {
+      // Ticked, but there's nothing it could approve: left for you to see.
+      if (approved) summary.unverified++;
+      else deletes.add(index);
+      return;
+    }
+    const entry = { index, row, code, key, approved, ts: toTime(cell(row, 'timestamp')) };
     byCode.set(code, [...(byCode.get(code) || []), entry]);
   });
 
-  const updates = [];
-  for (const group of byCode.values()) {
+  const started = clock();
+  const groups = [...byCode.values()].sort((a, b) => a.length - b.length);
+  for (const list of groups) {
+    if (clock() - started > budgetMs) {
+      summary.partial = true;
+      break;
+    }
+    // Ticked rows always; then the newest of the rest, up to the limit.
+    const others = list.filter((e) => !e.approved).sort((a, b) => (newer(a, b) ? -1 : 1));
+    if (others.length > MAX_CHECKS_PER_MASJID) summary.partial = true;
+    const checked = list.filter((e) => e.approved).concat(others.slice(0, MAX_CHECKS_PER_MASJID));
+    const group = [];
+    for (const e of checked) {
+      const update = verifyRow(verify, cell(e.row, 'settings'), e.key, e.code);
+      if (!update && !e.approved) deletes.add(e.index);
+      else group.push({ ...e, update });
+    }
+    if (group.length) tidyMasjid(group);
+  }
+
+  /** One masjid's checked rows → updates and deletes. */
+  function tidyMasjid(group) {
     const approved = group.filter((e) => e.approved);
     const kept = newestOf(approved);
-    if (kept) {
-      summary.approved++;
-      const best = latestSigned(group.filter((e) => e.key === kept.key));
-      if (best !== kept) {
-        summary.merged++;
-        const cells = [['timestamp'], ['settings'], ['name'], ['city']]
-          .map(([k]) => [at[k], cell(best.row, k)])
-          .filter(([col]) => col >= 0);
-        updates.push({ row: kept.index, cells });
+    if (!kept) {
+      const keep = newestPerKey(group.filter(fresh));
+      summary.waiting += keep.length;
+      for (const e of group) {
+        if (keep.includes(e)) continue;
+        if (!fresh(e)) summary.expired++;
+        deletes.add(e.index);
       }
-      const everApproved = new Set(approved.map((e) => e.key));
-      const request = newestOf(group.filter((e) => !everApproved.has(e.key) && newer(e, kept)));
-      if (request) summary.pending++;
-      for (const e of group) if (e !== kept && e !== request) deletes.add(e.index);
-    } else {
-      const byKey = new Map();
-      for (const e of group) byKey.set(e.key, [...(byKey.get(e.key) || []), e]);
-      for (const list of byKey.values()) {
-        summary.waiting++;
-        const keep = latestSigned(list);
-        for (const e of list) if (e !== keep) deletes.add(e.index);
+      return;
+    }
+    summary.approved++;
+    const best = latestSigned(group.filter((e) => e.key === kept.key));
+    if (best && best !== kept) {
+      summary.merged++;
+      const cells = [['settings'], ['name'], ['city']]
+        .map(([k]) => [at[k], cell(best.row, k)])
+        .filter(([col]) => col >= 0);
+      updates.push({ row: kept.index, cells });
+    }
+    // One ticked row per key. Other ticked rows of a key are copies of the
+    // same approval and go, but only once that key has a row that
+    // verifies (for the approved key: the kept row, with the newest
+    // settings in it), so the last copy of a tick is never removed.
+    const keepTicked = new Set();
+    const extraTicked = new Set();
+    const tickedByKey = new Map();
+    for (const e of approved) tickedByKey.set(e.key, [...(tickedByKey.get(e.key) || []), e]);
+    for (const [key, ticked] of tickedByKey) {
+      const valid =
+        key === kept.key ? (best ? kept : null) : newestOf(ticked.filter((e) => e.update));
+      keepTicked.add(key === kept.key ? kept : valid || newestOf(ticked));
+      for (const e of ticked) if (!keepTicked.has(e) && valid) extraTicked.add(e);
+      if (!valid) for (const e of ticked) if (!e.update) summary.unverified++;
+    }
+    const candidates = group.filter((e) => !tickedByKey.has(e.key) && newer(e, kept));
+    const requests = newestPerKey(candidates.filter(fresh));
+    summary.pending += requests.length;
+    for (const e of group) {
+      if (keepTicked.has(e) || requests.includes(e)) continue;
+      if (!e.approved || extraTicked.has(e)) {
+        if (candidates.includes(e) && !fresh(e)) summary.expired++;
+        deletes.add(e.index);
       }
     }
   }
+
   summary.removed = deletes.size;
   return result({ updates, deletes: [...deletes].sort((a, b) => b - a) });
 }

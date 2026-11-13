@@ -20,7 +20,7 @@
 // This module is pure (no React, no timers) so it can be tested directly;
 // hooks/useRemoteSettings.js runs it.
 
-import { normalizeImportedSettings } from './settingsImport.js';
+import { normalizeImportedSettings, roundDeviceLocation } from './settingsImport.js';
 import { csvField, normalizeCode, parseCsv, sheetCsvUrl, stableStringify } from './sheetFormat.js';
 import { describeSetting } from './settingDescriptions.js';
 
@@ -90,6 +90,21 @@ export const MASJID_KEYS = [
  * settings; only the passphrase (or sign-in) can change them.
  */
 export const MODES = ['follow', 'masjid', 'manage'];
+
+/**
+ * The masjid code and mode a screen starts with: from its address
+ * (?masjid=CODE, &screen=masjid), else what it saved. A link can't re-point
+ * a screen whose Settings is behind the PIN and that already shows a masjid
+ * (a masjid screen, or one managing it): that takes the PIN, in Settings.
+ */
+export function placeFromAddress({ urlCode, urlMode, savedCode, savedMode, pinSet }) {
+  const mode = MODES.includes(savedMode) ? savedMode : 'follow';
+  if (!urlCode) return { code: savedCode || null, mode };
+  if (pinSet && savedCode && mode !== 'follow' && urlCode !== savedCode) {
+    return { code: savedCode, mode };
+  }
+  return { code: urlCode, mode: urlMode || mode };
+}
 
 /** "masjid" for a masjid-screen setup link (?masjid=CODE&screen=masjid). */
 export function modeFromSearch(search) {
@@ -257,7 +272,12 @@ export function loadSyncState(storage, code) {
 
 export function saveSyncState(storage, state) {
   try {
-    storage?.setItem(SYNC_STORAGE_KEY, JSON.stringify(state));
+    // A location once taken from a device is kept only to about 1 km here
+    // too (see lib/settingsImport.js).
+    const saved = state?.settings
+      ? { ...state, settings: roundDeviceLocation(state.settings) }
+      : state;
+    storage?.setItem(SYNC_STORAGE_KEY, JSON.stringify(saved));
   } catch {
     // Storage full or unavailable: the screen still runs; it just
     // re-downloads after a restart.

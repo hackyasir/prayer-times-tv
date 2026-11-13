@@ -32,6 +32,14 @@ export function teamHost(teamDomain) {
     .replace(/\/.*$/, '');
 }
 
+/**
+ * Is it a Cloudflare Access team domain? Only those are trusted to hand out
+ * signing keys, so a mistyped setting can't point the check at another host.
+ */
+export function isTeamDomain(teamDomain) {
+  return /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.cloudflareaccess\.com$/i.test(teamHost(teamDomain));
+}
+
 async function publicKeys(host, fetchImpl, now) {
   const url = `https://${host}/cdn-cgi/access/certs`;
   if (keyCache.url === url && now - keyCache.at < KEY_CACHE_MS && keyCache.keys.length) {
@@ -54,15 +62,22 @@ export async function verifyAccessJwt(
   { teamDomain, aud, now = Date.now(), fetchImpl = fetch }
 ) {
   const host = teamHost(teamDomain);
-  if (!token || !host || !aud) throw new Error('not-configured');
+  if (!token || !isTeamDomain(host) || !aud) throw new Error('not-configured');
   const parts = String(token).split('.');
   if (parts.length !== 3) throw new Error('malformed');
   const header = decodeJson(parts[0]);
   const claims = decodeJson(parts[1]);
   if (header.alg !== 'RS256') throw new Error('bad-alg');
 
-  const keys = await publicKeys(host, fetchImpl, now);
-  const jwk = keys.find((k) => k.kid === header.kid);
+  let keys = await publicKeys(host, fetchImpl, now);
+  let jwk = keys.find((k) => k.kid === header.kid);
+  if (!jwk && now - keyCache.at > 60_000) {
+    // Access may have rotated its keys since they were cached: fetch once
+    // more (at most once a minute, whatever tokens arrive).
+    clearKeyCache();
+    keys = await publicKeys(host, fetchImpl, now);
+    jwk = keys.find((k) => k.kid === header.kid);
+  }
   if (!jwk) throw new Error('unknown-key');
   const key = await crypto.subtle.importKey(
     'jwk',
@@ -82,7 +97,9 @@ export async function verifyAccessJwt(
 
   const audiences = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   if (!audiences.includes(aud)) throw new Error('bad-audience');
-  if (claims.iss !== `https://${host}`) throw new Error('bad-issuer');
+  if (String(claims.iss || '').toLowerCase() !== `https://${host.toLowerCase()}`) {
+    throw new Error('bad-issuer');
+  }
   const seconds = Math.floor(now / 1000);
   if (typeof claims.exp !== 'number' || claims.exp < seconds) throw new Error('expired');
   if (typeof claims.nbf === 'number' && claims.nbf > seconds + 60) throw new Error('not-yet-valid');

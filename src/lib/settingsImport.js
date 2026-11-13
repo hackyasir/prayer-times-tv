@@ -12,6 +12,40 @@ function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// ── Coordinates from the device's own position ─────────────────────────────
+// Earlier versions could take the location from the device ("Use my
+// location", and a lookup on first run) and labelled it with the
+// coordinates: "43.65°N  79.38°W" (the first version: "43.65°N  -79.38°E").
+// Those coordinates pinpointed where the screen was. Settings with such a
+// label keep them only to two decimal places (about 1 km), which is plenty
+// for prayer times and weather. A city picked in the search keeps its own.
+const DEVICE_LOCATION_LABEL = /^-?\d{1,3}(?:\.\d+)?°[NS][\s,]+-?\d{1,3}(?:\.\d+)?°[EW]$/;
+
+/** Was this location taken from the device (rather than a city)? */
+export function isDeviceLocationLabel(locName) {
+  return typeof locName === 'string' && DEVICE_LOCATION_LABEL.test(locName.trim());
+}
+
+const roundCoordinate = (value) => Math.round(value * 100) / 100;
+
+/** The same settings, with a device-taken location rounded (anything else as it is). */
+export function roundDeviceLocation(settings) {
+  if (!isPlainObject(settings) || !isDeviceLocationLabel(settings.locName)) return settings;
+  const out = { ...settings };
+  for (const k of ['lat', 'lng']) {
+    if (typeof out[k] === 'number' && Number.isFinite(out[k])) out[k] = roundCoordinate(out[k]);
+  }
+  return out;
+}
+
+/**
+ * Text, at most `max` characters (imported files and shared settings can
+ * hold anything; the screens only ever need this much).
+ */
+function toText(value, max) {
+  return typeof value === 'string' ? value.slice(0, max) : null;
+}
+
 function toFiniteNumber(value) {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '') {
@@ -134,11 +168,12 @@ export function normalizeImportedSettings(raw, defaults) {
     ...defaults,
     lat: toFiniteNumber(source.lat) ?? defaults.lat,
     lng: toFiniteNumber(source.lng) ?? defaults.lng,
-    locName: toStringValue(source.locName) ?? defaults.locName,
-    cityTz: toStringValue(source.cityTz) ?? defaults.cityTz,
-    masjidName: toStringValue(source.masjidName) ?? defaults.masjidName,
-    screenLabel: toStringValue(source.screenLabel) ?? defaults.screenLabel,
-    logoDataUrl: toStringValue(source.logoDataUrl) ?? defaults.logoDataUrl,
+    locName: toText(source.locName, 200) ?? defaults.locName,
+    cityTz: toText(source.cityTz, 64) ?? defaults.cityTz,
+    masjidName: toText(source.masjidName, 100) ?? defaults.masjidName,
+    screenLabel: toText(source.screenLabel, 60) ?? defaults.screenLabel,
+    // A logo of up to 100 KB, as a data URL (LogoUploader).
+    logoDataUrl: toText(source.logoDataUrl, 200_000) ?? defaults.logoDataUrl,
     method: toStringValue(source.method) && ALLOWED_METHODS.has(source.method) ? source.method : defaults.method,
     shadow: source.shadow === 2 || source.shadow === 1 ? source.shadow : defaults.shadow,
     iqamah: normalizeNumberMap(source.iqamah, defaults.iqamah),
@@ -160,7 +195,7 @@ export function normalizeImportedSettings(raw, defaults) {
     eidFitr: normalizeSlotArray(source.eidFitr ?? legacyEid.eidFitr, defaults.eidFitr),
     eidAdha: normalizeSlotArray(source.eidAdha ?? legacyEid.eidAdha, defaults.eidAdha),
     eidDaysBefore: Math.min(30, Math.max(0, toFiniteNumber(source.eidDaysBefore) ?? defaults.eidDaysBefore)),
-    eidLocation: toStringValue(source.eidLocation) ?? defaults.eidLocation,
+    eidLocation: toText(source.eidLocation, 120) ?? defaults.eidLocation,
     hijriOffset: Math.min(3, Math.max(-3, toFiniteNumber(source.hijriOffset) ?? defaults.hijriOffset)),
     highLatRule:
       toStringValue(source.highLatRule) && ALLOWED_HIGH_LAT_RULES.has(source.highLatRule)
@@ -184,7 +219,7 @@ export function normalizeImportedSettings(raw, defaults) {
         : defaults.progressStyle,
     lang: toStringValue(source.lang) && ALLOWED_LANGS.has(source.lang) ? source.lang : defaults.lang,
     autoAnnouncements: toBoolean(source.autoAnnouncements) ?? defaults.autoAnnouncements,
-    announcements: toStringValue(source.announcements) ?? defaults.announcements,
+    announcements: toText(source.announcements, 12_000) ?? defaults.announcements,
     tickerMode:
       toStringValue(source.tickerMode) && ALLOWED_TICKER_MODES.has(source.tickerMode)
         ? source.tickerMode
@@ -200,6 +235,11 @@ export function normalizeImportedSettings(raw, defaults) {
       Math.min(100, Math.max(0, toFiniteNumber(source.blackoutOpacity) ?? defaults.blackoutOpacity)),
     blackoutDurations: normalizeNumberMap(source.blackoutDurations, defaults.blackoutDurations),
   };
+
+  if (isDeviceLocationLabel(normalized.locName)) {
+    normalized.lat = roundCoordinate(normalized.lat);
+    normalized.lng = roundCoordinate(normalized.lng);
+  }
 
   return { ok: true, value: normalized };
 }

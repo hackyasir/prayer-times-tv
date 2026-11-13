@@ -145,7 +145,8 @@ export default defineConfig({
 
   server: {
     port: 5173,
-    // Useful for testing on TV/Fire Stick on same LAN
-    host: '0.0.0.0',
+    // This computer only. To try the display on a TV or Fire Stick on the
+    // same network, run `npm run dev:lan` (anyone on that network can then
+    // open it, with your .env.local values built in).
   },
 });

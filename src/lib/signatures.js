@@ -12,6 +12,12 @@
 // `time` (set by the admin's device) orders updates: the newest valid one
 // wins, so an old update sent again changes nothing.
 //
+// Anyone can put any text in that cell, so checking a row never throws:
+// text too long for a cell, or settings nested deeper than any real ones,
+// is refused before the signature is checked (very deep JSON would
+// otherwise overflow the stack and stop the screens, the sheet's clean-up
+// script and the deploy, not just that row).
+//
 // Ed25519 by tweetnacl (pure JavaScript, audited, runs on the oldest TV
 // browsers this app supports). Loaded only where it's needed.
 
@@ -20,6 +26,11 @@ import { stableStringify } from './sheetFormat.js';
 
 export const KEY_PREFIX = 'ed25519:';
 export const UPDATE_VERSION = 1;
+
+/** A Google Sheets cell holds at most 50,000 characters. */
+export const MAX_UPDATE_TEXT = 50_000;
+/** Real settings are a few levels deep (settings → jumuah → slot). */
+export const MAX_SETTINGS_DEPTH = 32;
 
 // ── base64url (no padding) and UTF-8 ─────────────────────────────────────────
 // Written out here rather than with btoa/atob/TextEncoder, so the same code
@@ -123,20 +134,36 @@ export function updateSignature(text) {
   }
 }
 
+/** Is `value` nested more than `limit` levels deep? (Without recursion.) */
+function nestedDeeperThan(value, limit) {
+  const stack = [[value, 0]];
+  while (stack.length) {
+    const [item, depth] = stack.pop();
+    if (item === null || typeof item !== 'object') continue;
+    if (depth >= limit) return true;
+    for (const child of Object.values(item)) stack.push([child, depth + 1]);
+  }
+  return false;
+}
+
 /**
  * An update's contents if `text` is an update for `code` signed with
- * `publicKey` ("ed25519:…"); null for anything else.
+ * `publicKey` ("ed25519:…"); null for anything else. Never throws.
  * @returns {{ code: string, time: number, settings: object } | null}
  */
 export function verifyUpdate(text, publicKey, code) {
-  const key = decodePublicKey(publicKey);
-  if (!key) return null;
-  let update;
   try {
-    update = JSON.parse(text);
+    return checkUpdate(text, publicKey, code);
   } catch {
+    // Whatever else is wrong with the text, it isn't a valid update.
     return null;
   }
+}
+
+function checkUpdate(text, publicKey, code) {
+  const key = decodePublicKey(publicKey);
+  if (!key || typeof text !== 'string' || text.length > MAX_UPDATE_TEXT) return null;
+  const update = JSON.parse(text);
   if (
     !update ||
     update.v !== UPDATE_VERSION ||
@@ -144,7 +171,8 @@ export function verifyUpdate(text, publicKey, code) {
     !Number.isFinite(update.time) ||
     !update.settings ||
     typeof update.settings !== 'object' ||
-    Array.isArray(update.settings)
+    Array.isArray(update.settings) ||
+    nestedDeeperThan(update.settings, MAX_SETTINGS_DEPTH)
   ) {
     return null;
   }

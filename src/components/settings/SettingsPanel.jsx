@@ -62,6 +62,9 @@ const TAB_LABEL_KEYS = {
   duringPrayer: 'settings.tab.duringPrayer',
 };
 const EXP_TOKEN = /^@(\d{4}-\d{2}-\d{2})$/;
+// Enough for any notice board, and well inside what a masjid can publish.
+const MAX_ANNOUNCEMENTS = 30;
+const MAX_ANNOUNCEMENT_LENGTH = 300;
 
 function parseRawAnnouncements(raw) {
   const lines = (raw || '')
@@ -254,8 +257,6 @@ export default function SettingsPanel({
   onSelectCity,
   onClearCity,
   selectedCity,
-  // Geolocation handler
-  onGeolocate,
   onExportSettings,
   onImportSettings,
   onResetSettings,
@@ -490,6 +491,7 @@ export default function SettingsPanel({
   }
 
   function addAnnouncementRow(afterIndex) {
+    if (announcementRows.length >= MAX_ANNOUNCEMENTS) return;
     updateAnnouncementRows((rows) => {
       const at = Math.max(0, Math.min(rows.length, (afterIndex ?? rows.length - 1) + 1));
       rows.splice(at, 0, { text: '', urgent: false, expiresOn: '' });
@@ -546,7 +548,7 @@ export default function SettingsPanel({
 
   // Some local aliases to match the original variable names from App.jsx —
   // the inlined JSX below uses `setShowSett(false)` / `applySettings` /
-  // `handleSearchInput` / `handleSelectCity` / `geolocate`. We bind those
+  // `handleSearchInput` / `handleSelectCity`. We bind those
   // to the corresponding prop-named callbacks here so we don't have to
   // touch the (large) JSX block.
   const setShowSett = () => onCancel();
@@ -609,6 +611,16 @@ export default function SettingsPanel({
       setPublishMsg('');
     }
   };
+  // Settings can close (Cancel, Escape, or after a while without input)
+  // while the passphrase is checked: then nothing more is done.
+  const openRef = useRef(true);
+  useEffect(
+    () => () => {
+      openRef.current = false;
+    },
+    []
+  );
+
   const unlockAndPublish = async () => {
     if (publishing) return;
     setPublishing(true);
@@ -619,6 +631,7 @@ export default function SettingsPanel({
     } catch {
       unlocked = { ok: false, reason: 'error' };
     }
+    if (!openRef.current) return;
     setPublishing(false);
     if (!unlocked?.ok) {
       setPublishMsg(t(`settings.sync.problem.${unlocked?.reason || 'error'}`));
@@ -630,7 +643,6 @@ export default function SettingsPanel({
 
   const handleSearchInput = onSearchInput;
   const handleSelectCity = onSelectCity;
-  const geolocate = onGeolocate;
 
   return (
     <div className="overlay">
@@ -861,43 +873,10 @@ export default function SettingsPanel({
 
           {activeTab === 'masjid' && (
             <fieldset className="locked-fields" disabled={lockMasjid}>
-              {/* City search */}
+              {/* City search — the only way to set the location (the app never
+              asks for the device's own position). */}
               <div className="sgrp">
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: 7,
-                  }}
-                >
-                  <label className="slbl" style={{ margin: 0 }}>
-                    {t('settings.searchCity')}
-                  </label>
-                  <button
-                    onClick={geolocate}
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid var(--t-border)',
-                      borderRadius: 4,
-                      padding: '4px 10px',
-                      color: 'var(--t-accent)',
-                      fontFamily: 'Rajdhani,sans-serif',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      letterSpacing: '.08em',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap',
-                      transition: 'background .2s',
-                    }}
-                    onMouseOver={(e) =>
-                      (e.currentTarget.style.background = 'rgba(var(--t-accent-rgb),.1)')
-                    }
-                    onMouseOut={(e) => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    📍 {t('settings.useMyLocation')}
-                  </button>
-                </div>
+                <label className="slbl">{t('settings.searchCity')}</label>
                 {/* Search input — always rendered so the admin can refine their pick.
                 Picking a city from the dropdown sets `selectedCity` (parent state)
                 but does NOT clear this input — it stays for context. */}
@@ -919,7 +898,19 @@ export default function SettingsPanel({
                     <div className="search-status">{t('settings.searchCity.error')}</div>
                   )}
                   {searchResults.map((r) => (
-                    <div key={r.id} className="search-item" onClick={() => handleSelectCity(r)}>
+                    <div
+                      key={r.id}
+                      className="search-item"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => handleSelectCity(r)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelectCity(r);
+                        }
+                      }}
+                    >
                       <div className="search-item-name">{r.name}</div>
                       <div className="search-item-sub">
                         {[r.admin1, r.country].filter(Boolean).join(', ')}
@@ -1824,6 +1815,7 @@ export default function SettingsPanel({
                         type="button"
                         className="ann-preview-add"
                         onClick={() => addAnnouncementRow(announcementPreviewItems.length - 1)}
+                        disabled={announcementRows.length >= MAX_ANNOUNCEMENTS}
                         aria-label={t('settings.announcements.addRow')}
                         title={t('settings.announcements.addRow')}
                       >
@@ -1873,6 +1865,7 @@ export default function SettingsPanel({
                         <input
                           className="sinput ann-row-input"
                           value={item.text}
+                          maxLength={MAX_ANNOUNCEMENT_LENGTH}
                           placeholder={t('settings.announcements.placeholder')}
                           onChange={(e) => patchAnnouncementRow(idx, { text: e.target.value })}
                         />

@@ -10,7 +10,6 @@
  *  - .ssel        styled <select>
  *  - .sinput      styled <input>
  *  - .sbtn        action buttons (Cancel / Apply / Unlock)
- *  - .geo-btn     "Use my location" button
  *  - .search-*    city-search dropdown styling
  *
  * The PIN overlay reuses .overlay + .sbtn (+ inline styles for its inner
@@ -151,8 +150,15 @@
   border-bottom: none;
 }
 
-.search-item:hover {
+.search-item:hover,
+.search-item:focus {
   background: rgba(var(--t-accent-rgb), 0.08);
+}
+
+/* Reached with a TV remote's arrow keys: show where you are. */
+.search-item:focus {
+  outline: 2px solid var(--t-accent);
+  outline-offset: -2px;
 }
 
 .search-item-name {
@@ -213,7 +219,7 @@
   text-align: center;
 }
 
-/* Action buttons (Cancel / Apply / Unlock / Use my location) */
+/* Action buttons (Cancel / Apply / Unlock) */
 .sbtn {
   padding: 9px 22px;
   border-radius: var(--radius-sm);
@@ -241,28 +247,6 @@
   display: flex;
   gap: 10px;
   align-items: center;
-}
-
-.geo-btn {
-  width: 100%;
-  text-align: center;
-  border: 1px solid rgba(var(--t-accent-rgb), 0.3);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  color: var(--t-accent);
-  font-family: 'Rajdhani', sans-serif;
-  font-size: calc(14px * var(--t-fs, 1));
-  font-weight: 600;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-top: 4px;
-}
-
-.geo-btn:hover {
-  background: rgba(var(--t-accent-rgb), 0.1);
 }
 
 /* ── Announcements editor enhancements ──────────────────────────────────── */

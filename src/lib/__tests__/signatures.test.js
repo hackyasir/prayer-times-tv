@@ -7,6 +7,8 @@ import { describe, it, expect } from 'vitest';
 import { Buffer } from 'node:buffer';
 import {
   KEY_PREFIX,
+  MAX_SETTINGS_DEPTH,
+  MAX_UPDATE_TEXT,
   decodePublicKey,
   fromBase64Url,
   keyPairFromSeed,
@@ -22,6 +24,20 @@ const MASJID = keyPairFromSeed(new Uint8Array(32).fill(7));
 const OTHER = keyPairFromSeed(new Uint8Array(32).fill(8));
 const settings = { masjidName: 'Al-Noor', iqamah: { isha: 10 }, announcements: 'Eid ✓ عيد' };
 const FAST = { iterations: 1, memorySize: 64, parallelism: 1 };
+
+/** Settings with `levels` objects nested inside them. */
+function nestedSettings(levels) {
+  const top = {};
+  let at = top;
+  for (let i = 0; i < levels; i++) {
+    at.x = {};
+    at = at.x;
+  }
+  return top;
+}
+
+/** A cell anyone could send: 10 KB of arrays nested 5,000 deep. */
+const DEEP = `{"v":1,"code":"ABC234","time":1,"sig":"${'A'.repeat(86)}","settings":{"x":${'['.repeat(5000)}${']'.repeat(5000)}}}`;
 
 describe('signed updates', () => {
   const text = signUpdate({ code: 'ABC234', time: 1794418255000, settings }, MASJID.secretKey);
@@ -45,6 +61,21 @@ describe('signed updates', () => {
     expect(verifyUpdate(JSON.stringify(later), MASJID.publicKey, 'ABC234')).toBeNull();
     expect(verifyUpdate('not json', MASJID.publicKey, 'ABC234')).toBeNull();
     expect(verifyUpdate(text, 'ed25519:short', 'ABC234')).toBeNull();
+  });
+
+  it('are refused when too long for a sheet cell, or nested deeper than settings ever are', () => {
+    const sign = (s) => signUpdate({ code: 'ABC234', time: 1, settings: s }, MASJID.secretKey);
+    const tooLong = sign({ announcements: 'x'.repeat(MAX_UPDATE_TEXT) });
+    expect(verifyUpdate(tooLong, MASJID.publicKey, 'ABC234')).toBeNull();
+    const deepest = sign(nestedSettings(MAX_SETTINGS_DEPTH - 1));
+    expect(verifyUpdate(deepest, MASJID.publicKey, 'ABC234')).not.toBeNull();
+    const tooDeep = sign(nestedSettings(MAX_SETTINGS_DEPTH));
+    expect(verifyUpdate(tooDeep, MASJID.publicKey, 'ABC234')).toBeNull();
+  });
+
+  it('never throw, even for text nested deep enough to overflow the stack', () => {
+    expect(() => verifyUpdate(DEEP, MASJID.publicKey, 'ABC234')).not.toThrow();
+    expect(verifyUpdate(DEEP, MASJID.publicKey, 'ABC234')).toBeNull();
   });
 
   it("don't depend on the order of the settings' keys", () => {

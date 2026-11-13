@@ -4,6 +4,15 @@ name = "prayer-times-settings"
 main = "src/index.js"
 compatibility_date = "2025-10-01"
 
+# Only your own domain: the workers.dev address would get round the edge
+# cache and your rate-limiting rule. Add the domain here, or in the dashboard
+# (Settings → Domains & Routes), e.g.:
+# routes = [{ pattern = "settings.your-domain.org", custom_domain = true }]
+workers_dev = false
+
+# Keep the variables you set in the dashboard when deploying from here.
+keep_vars = true
+
 # One Durable Object per masjid code (SQLite storage — on the Workers Free plan).
 [[durable_objects.bindings]]
 name = "MASJID"
@@ -13,14 +22,22 @@ class_name = "MasjidSettings"
 tag = "v1"
 new_sqlite_classes = ["MasjidSettings"]
 
-[vars]
-# The display app's address (origin), comma-separated if more than one,
-# e.g. "https://you.github.io,http://localhost:5173".
-ALLOWED_ORIGINS = ""
-# From Cloudflare Zero Trust → Access: your team domain and the AUD tag of
-# the application that protects /m/*/publish. Publishing stays off until
-# both are set.
-ACCESS_TEAM_DOMAIN = ""
-ACCESS_AUD = ""
-# Optional: who may publish which code, e.g.
-# MASJID_ADMINS = '{"TOR4K7Q":["admin@example.org"],"*":["you@example.org"]}'
+# Variables: set them in the dashboard (the Worker → Settings → Variables
+# and Secrets), so admins' email addresses never go into this repository.
+# Publishing is refused until all of these are set:
+#   ALLOWED_ORIGINS     the display's address, e.g. https://you.github.io
+#                       (https only; http://localhost only while testing)
+#   ACCESS_TEAM_DOMAIN  yourteam.cloudflareaccess.com
+#   ACCESS_AUD          the AUD tag of the Access application on /m/*/publish
+#   MASJID_ADMINS       who may publish which code ("*" = every code), e.g.
+#                       {"TOR4K7Q":["admin@example.org"],"*":["you@example.org"]}
+# Or, instead of MASJID_ADMINS, only if everyone Access lets in may publish
+# any code (a service for one masjid): ALLOW_ANY_PUBLISHER = true.
+# Values put in a [vars] section here replace the dashboard's on deploy.
+
+# Workers Logs: the Worker logs publishes and refused publishes (code,
+# outcome and a reference; never an email address or the settings). Check
+# in the dashboard that Cloudflare's own invocation logs don't keep request
+# headers (they would include the Access token).
+[observability]
+enabled = true

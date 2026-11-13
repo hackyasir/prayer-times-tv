@@ -17,10 +17,14 @@
     font-src    'self' data:  – self-hosted fonts (@fontsource, bundled by Vite;
                                 data: covers any font Vite inlines)
     img-src     'self' data:  – App icons, data URIs for favicons
-    connect-src 'self'        – Fetch/XHR only to same origin (adhan is local)
+    connect-src 'self' …      – Fetch/XHR to this site and Open-Meteo (weather and
+                                city search); the build adds the shared-settings
+                                source's address
     worker-src  'self'        – Service worker from same origin
     manifest-src 'self'       – Web app manifest
-    frame-ancestors 'none'   – Prevent embedding in iframes (clickjacking)
+    (frame-ancestors isn't set: browsers ignore it in a <meta> tag, and
+    GitHub Pages can't send it as a header. Settings refuses to open when
+    the display is inside another site's page instead — see FRAMED in App.jsx.)
     base-uri    'self'        – Prevent base tag injection
     form-action 'self'        – Prevent form hijacking
     object-src  'none'        – No Flash / plugins
@@ -36,7 +40,6 @@
       connect-src 'self' https://geocoding-api.open-meteo.com https://api.open-meteo.com;
       worker-src  'self';
       manifest-src 'self';
-      frame-ancestors 'none';
       base-uri    'self';
       form-action 'self';
       object-src  'none';
