@@ -61,6 +61,18 @@ describe('SettingsProvider — localStorage persistence', () => {
     expect(result.current.applied.hijriOffset).toBe(1);
   });
 
+  it('rounds a location once taken from the device, and saves it rounded', () => {
+    const saved = { ...DEFAULTS, lat: 43.467891, lng: -79.688123, locName: '43.47°N  79.69°W' };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+
+    const { result } = renderHook(() => useSettings(), { wrapper });
+    expect(result.current.applied).toMatchObject({ lat: 43.47, lng: -79.69 });
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toMatchObject({
+      lat: 43.47,
+      lng: -79.69,
+    });
+  });
+
   it('updateApplied persists changes to localStorage', () => {
     const { result } = renderHook(() => useSettings(), { wrapper });
     act(() => {

@@ -27,6 +27,7 @@ import {
   directoryEntries,
   filterDirectory,
   followLink,
+  placeFromAddress,
 } from '../remoteSettings.js';
 
 const memoryStorage = () => {
@@ -163,7 +164,67 @@ describe('merging shared settings', () => {
   });
 });
 
+describe('a link and the PIN', () => {
+  const place = (o) => placeFromAddress({ pinSet: true, ...o });
+
+  it("can't re-point a masjid screen (or a managing one) behind the PIN", () => {
+    expect(place({ urlCode: 'XYZ789', savedCode: 'ABC234', savedMode: 'masjid' })).toEqual({
+      code: 'ABC234',
+      mode: 'masjid',
+    });
+    expect(place({ urlCode: 'XYZ789', savedCode: 'ABC234', savedMode: 'manage' })).toEqual({
+      code: 'ABC234',
+      mode: 'manage',
+    });
+    // The same code, or no PIN: as before.
+    expect(place({ urlCode: 'ABC234', savedCode: 'ABC234', savedMode: 'masjid' }).code).toBe(
+      'ABC234'
+    );
+    expect(
+      placeFromAddress({
+        urlCode: 'XYZ789',
+        savedCode: 'ABC234',
+        savedMode: 'masjid',
+        pinSet: false,
+      })
+    ).toEqual({ code: 'XYZ789', mode: 'masjid' });
+  });
+
+  it('follows from a link on a new screen or a follower’s, and sets up a masjid screen', () => {
+    expect(place({ urlCode: 'ABC234' })).toEqual({ code: 'ABC234', mode: 'follow' });
+    expect(place({ urlCode: 'XYZ789', savedCode: 'ABC234', savedMode: 'follow' })).toEqual({
+      code: 'XYZ789',
+      mode: 'follow',
+    });
+    expect(place({ urlCode: 'ABC234', urlMode: 'masjid' })).toEqual({
+      code: 'ABC234',
+      mode: 'masjid',
+    });
+    expect(place({ savedCode: 'ABC234', savedMode: 'nonsense' })).toEqual({
+      code: 'ABC234',
+      mode: 'follow',
+    });
+  });
+});
+
 describe('addresses and the saved copy', () => {
+  it('keeps a location once taken from a device only to about 1 km', () => {
+    const storage = memoryStorage();
+    saveSyncState(storage, {
+      code: 'ABC234',
+      settings: { lat: 43.467891, lng: -79.688123, locName: '43.47°N  79.69°W' },
+    });
+    expect(loadSyncState(storage, 'ABC234').settings).toMatchObject({ lat: 43.47, lng: -79.69 });
+    saveSyncState(storage, {
+      code: 'ABC234',
+      settings: { lat: 43.6532, lng: -79.3832, locName: 'Toronto, Ontario, Canada' },
+    });
+    expect(loadSyncState(storage, 'ABC234').settings).toMatchObject({
+      lat: 43.6532,
+      lng: -79.3832,
+    });
+  });
+
   it('finds a code in masjids.json', () => {
     const id = '1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdEF';
     const registry = {

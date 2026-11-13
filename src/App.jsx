@@ -87,19 +87,32 @@ import HeaderQibla from './components/widgets/HeaderQibla.jsx';
 
 import IslamicGeometryEngine from './IslamicGeometryEngine';
 
-function formatGeoLabel(latitude, longitude) {
-  const latAbs = Math.abs(latitude).toFixed(2);
-  const lngAbs = Math.abs(longitude).toFixed(2);
-  const latDir = latitude >= 0 ? 'N' : 'S';
-  const lngDir = longitude >= 0 ? 'E' : 'W';
-  return `${latAbs}°${latDir}  ${lngAbs}°${lngDir}`;
-}
+// Is the display shown inside another site's page? It may be (some signage
+// players do that), but Settings never opens there: another site could
+// trick someone into clicking through it. GitHub Pages can't send the
+// header that would forbid framing altogether.
+const FRAMED = (() => {
+  try {
+    return window.top !== window.self;
+  } catch {
+    return true;
+  }
+})();
+
+// The PIN prompt and Settings close by themselves after a while without
+// any input: left open on a masjid screen they'd hold back the masjid's
+// updates and the nightly reload (and leave Settings open to passers-by).
+const PIN_IDLE_MS = 60_000;
+const SETTINGS_IDLE_MS = 15 * 60_000;
+
+// A settings file is a few kilobytes (a logo adds up to about 140 KB).
+const MAX_IMPORT_BYTES = 1024 * 1024;
 
 export default function App() {
   // ── Persistent settings via React Context ──────────────────────────────
   // applied = currently in effect; drafts = what the Settings panel edits.
   // localStorage is owned by the SettingsProvider — direct setters here
-  // (e.g. setLat from geolocation) call updateApplied which persists.
+  // (e.g. picking a city) call updateApplied which persists.
   const { applied, drafts, updateApplied, updateDrafts, beginEditing } = useSettings();
 
   // Translation hook — used for alerts and any inline strings rendered
@@ -436,54 +449,10 @@ export default function App() {
   // The chime fires at adhan AND iqamah times for each daily prayer +
   // Jumu'ah (Fridays) + Eid (when banner active). See hook for details.
 
-  // Auto-geolocation — FIRST RUN ONLY.
-  // Once anything has been saved on this device (Apply, city search, the
-  // "Use my location" button, or an earlier auto lookup), the saved location
-  // wins. Running this on every load used to replace the admin's chosen city
-  // with an approximate device position after each restart.
-  // CRITICAL: must also update the timezone so the clock matches reality.
-  // We use the device's resolved timezone — close enough for auto-detection
-  // (city search later resolves a more precise IANA tz).
-  const didAutoGeoRef = useRef(false);
-  useEffect(() => {
-    if (didAutoGeoRef.current) return;
-    didAutoGeoRef.current = true;
-    if (hasSavedSettings()) return;
-    // A screen following a masjid takes the masjid's location: don't ask
-    // for the device's.
-    if (remoteSync.code) return;
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // The lookup can take several seconds. If the admin saved settings
-        // in the meantime, keep their choice.
-        if (hasSavedSettings()) return;
-        // Batch all geolocation fields into one updateApplied — saves to
-        // localStorage exactly once and triggers a single re-render.
-        let tz = null;
-        try {
-          tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        } catch {
-          // Some browsers (very old Safari, locked-down kiosks) throw on
-          // Intl.DateTimeFormat with no args. tz stays null; downstream
-          // code falls back to the device's UTC offset.
-        }
-        updateApplied({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          locName: formatGeoLabel(pos.coords.latitude, pos.coords.longitude),
-          ...(tz ? { cityTz: tz } : {}),
-          // First run only: the country's usual calculation method, Asr
-          // convention and iqamah preset (from the device timezone), so the
-          // admin just confirms.
-          ...suggestRegionSettings({ timeZone: tz }),
-        });
-      },
-      () => {},
-      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The location only ever comes from the city search (or from the masjid a
+  // screen follows). The app never asks for the device's own position, so a
+  // home screen can't share where someone lives: prayer times and weather
+  // use the city's coordinates.
 
   // (Weather fetch is owned by useWeather hook above)
 
@@ -935,6 +904,10 @@ export default function App() {
     mode: remoteSync.mode,
   });
   const openSettings = useCallback(() => {
+    if (FRAMED) {
+      window.alert(t('settings.framed'));
+      return;
+    }
     if (needPin) {
       // Always ask PIN — never cache the unlock
       setPinInput('');
@@ -943,7 +916,26 @@ export default function App() {
       return;
     }
     doOpenSettings();
-  }, [doOpenSettings, needPin]);
+  }, [doOpenSettings, needPin, t]);
+
+  useEffect(() => {
+    if (!showPin && !showSett) return undefined;
+    let timer;
+    const restart = () => {
+      clearTimeout(timer);
+      timer = setTimeout(
+        () => (showPin ? setShowPin(false) : setShowSett(false)),
+        showPin ? PIN_IDLE_MS : SETTINGS_IDLE_MS
+      );
+    };
+    const events = ['pointerdown', 'keydown', 'input', 'wheel', 'touchstart'];
+    for (const name of events) window.addEventListener(name, restart, true);
+    restart();
+    return () => {
+      clearTimeout(timer);
+      for (const name of events) window.removeEventListener(name, restart, true);
+    };
+  }, [showPin, showSett]);
 
   function submitPin() {
     if (pinInput === SETTINGS_PIN) {
@@ -971,16 +963,20 @@ export default function App() {
           `${GEO_API}?name=${encodeURIComponent(q.trim())}&count=8&language=en&format=json`
         );
         const data = await res.json();
-        const results = (data.results || []).map((r) => ({
-          id: r.id,
-          name: r.name,
-          country: r.country || '',
-          admin1: r.admin1 || '',
-          lat: r.latitude,
-          lng: r.longitude,
-          tz: r.timezone || '',
-          countryCode: r.country_code || '',
-        }));
+        // Only places with real coordinates (anything else from the service
+        // is left out rather than saved as the location).
+        const results = (Array.isArray(data.results) ? data.results : [])
+          .filter((r) => r && Number.isFinite(r.latitude) && Number.isFinite(r.longitude))
+          .map((r) => ({
+            id: r.id,
+            name: String(r.name ?? ''),
+            country: String(r.country || ''),
+            admin1: String(r.admin1 || ''),
+            lat: r.latitude,
+            lng: r.longitude,
+            tz: typeof r.timezone === 'string' ? r.timezone : '',
+            countryCode: String(r.country_code || ''),
+          }));
         setSearchResults(results);
         setSearchStatus(results.length ? 'done' : 'empty');
       } catch {
@@ -1035,6 +1031,10 @@ export default function App() {
   // so the caller can show feedback.
   function importSettings(file) {
     return new Promise((resolve) => {
+      if (!file || file.size > MAX_IMPORT_BYTES) {
+        resolve(false);
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -1204,49 +1204,6 @@ export default function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  function geolocate() {
-    if (!navigator.geolocation) return alert(t('alert.geoUnsupported'));
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // Batch lat/lng/cityTz/locName into one update
-        updateApplied({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          cityTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          locName: formatGeoLabel(pos.coords.latitude, pos.coords.longitude),
-        });
-        setShowSett(false);
-      },
-      (err) => {
-        // Surface WHY it failed so it's diagnosable rather than a generic
-        // "could not get location". The common repeat-failure cause is a
-        // non-secure context (http:// on a LAN IP) where the browser grants
-        // permission once then blocks subsequent calls, or a device with no
-        // GPS that times out on a fresh fix.
-        let msg = t('alert.geoFailed');
-        if (err && typeof err.code === 'number') {
-          if (err.code === err.PERMISSION_DENIED) {
-            msg = t('alert.geoDenied');
-          } else if (err.code === err.POSITION_UNAVAILABLE || err.code === err.TIMEOUT) {
-            msg = t('alert.geoUnavailable');
-          }
-        }
-        alert(msg);
-      },
-      {
-        // Network/IP-based fix is plenty for prayer times (city-level is fine);
-        // high accuracy needlessly invokes slow/absent GPS hardware.
-        enableHighAccuracy: false,
-        // Give it a real ceiling instead of waiting forever.
-        timeout: 10000,
-        // Accept a position fixed up to 5 min ago — this is the key fix for
-        // "works once then fails": a TV/desktop with no live GPS can reuse the
-        // recent fix instead of failing on every fresh request.
-        maximumAge: 300000,
-      }
-    );
   }
 
   // Keyboard accessibility shortcuts:
@@ -1607,7 +1564,6 @@ export default function App() {
               setSearchStatus('idle');
             }}
             selectedCity={selectedCity}
-            onGeolocate={geolocate}
             onExportSettings={exportSettings}
             onImportSettings={importSettings}
             onResetSettings={resetSettings}

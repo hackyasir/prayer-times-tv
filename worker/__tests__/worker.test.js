@@ -4,7 +4,8 @@
 
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import worker, { MasjidSettings, authorizePublish, allowedOrigins } from '../src/index.js';
-import { verifyAccessJwt, clearKeyCache } from '../src/access.js';
+import { verifyAccessJwt, clearKeyCache, isTeamDomain } from '../src/access.js';
+import { PUBLISH_JS } from '../src/publishPage.js';
 
 const TEAM = 'myteam.cloudflareaccess.com';
 const AUD = 'aud-tag-123';
@@ -96,6 +97,34 @@ describe('Cloudflare Access token check', () => {
       'not-configured'
     );
   });
+
+  it('rejects another issuer, a token not valid yet, and any algorithm but RS256', async () => {
+    const opts = { teamDomain: TEAM, aud: AUD, fetchImpl: certsFetch() };
+    await expect(
+      verifyAccessJwt(await token({ iss: 'https://other.cloudflareaccess.com' }), opts)
+    ).rejects.toThrow('bad-issuer');
+    const later = Math.floor(Date.now() / 1000) + 3600;
+    await expect(verifyAccessJwt(await token({ nbf: later }), opts)).rejects.toThrow(
+      'not-yet-valid'
+    );
+    const [, payload, sig] = (await token()).split('.');
+    const none = `${b64json({ alg: 'none', kid: 'k1' })}.${payload}.${sig}`;
+    await expect(verifyAccessJwt(none, opts)).rejects.toThrow('bad-alg');
+  });
+
+  it('fetches the keys again for a key it has not seen (after a minute)', async () => {
+    const fetchImpl = certsFetch();
+    const opts = { teamDomain: TEAM, aud: AUD, fetchImpl };
+    await verifyAccessJwt(await token(), opts);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    await expect(verifyAccessJwt(await token({}, { kid: 'k2' }), opts)).rejects.toThrow(
+      'unknown-key'
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1); // cached a moment ago: not again
+    const later = { ...opts, now: Date.now() + 120_000 };
+    await expect(verifyAccessJwt(await token({}, { kid: 'k2' }), later)).rejects.toThrow();
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('who may publish', () => {
@@ -110,10 +139,19 @@ describe('who may publish', () => {
       throw new Error('bad');
     };
     expect((await authorizePublish(req('t'), env, 'TOR4K7Q', bad)).status).toBe(401);
-    expect(await authorizePublish(req('t'), env, 'TOR4K7Q', ok)).toEqual({
+    // No MASJID_ADMINS: nobody, unless ALLOW_ANY_PUBLISHER says so on purpose.
+    expect((await authorizePublish(req('t'), env, 'TOR4K7Q', ok)).status).toBe(403);
+    const open = { ...env, ALLOW_ANY_PUBLISHER: 'true' };
+    expect(await authorizePublish(req('t'), open, 'TOR4K7Q', ok)).toEqual({
       ok: true,
       email: 'admin@example.org',
+      listed: false,
     });
+    // Only a Cloudflare Access team domain is trusted for the keys.
+    const elsewhere = { ...open, ACCESS_TEAM_DOMAIN: 'keys.example.org' };
+    expect((await authorizePublish(req('t'), elsewhere, 'TOR4K7Q', ok)).status).toBe(503);
+    expect(isTeamDomain('https://myteam.cloudflareaccess.com/')).toBe(true);
+    expect(isTeamDomain('myteam.cloudflareaccess.com.evil.example')).toBe(false);
   });
 
   it('limits accounts to their own masjid when MASJID_ADMINS is set', async () => {
@@ -126,11 +164,18 @@ describe('who may publish', () => {
     expect((await authorizePublish(req('t'), env, 'OTHER1', ok)).status).toBe(403);
     const owner = async () => ({ email: 'owner@example.org' });
     expect((await authorizePublish(req('t'), env, 'OTHER1', owner)).ok).toBe(true);
-    const broken = { ...env, MASJID_ADMINS: '{not json' };
-    expect((await authorizePublish(req('t'), broken, 'TOR4K7Q', ok)).status).toBe(403);
+    // A list that can't be read, or isn't a list of codes, lets nobody in.
+    for (const MASJID_ADMINS of ['{not json', 'null', '[]', '0', '"x"']) {
+      const broken = { ...env, MASJID_ADMINS, ALLOW_ANY_PUBLISHER: 'true' };
+      expect((await authorizePublish(req('t'), broken, 'TOR4K7Q', ok)).status).toBe(403);
+    }
   });
 
   it('reads the allowed app origins', () => {
+    // Plain http only for this computer.
+    expect(
+      allowedOrigins({ ALLOWED_ORIGINS: 'http://evil.example, http://127.0.0.1:5173' })
+    ).toEqual(['http://127.0.0.1:5173']);
     expect(
       allowedOrigins({ ALLOWED_ORIGINS: 'https://you.github.io/, http://localhost:5173, nonsense' })
     ).toEqual(['https://you.github.io', 'http://localhost:5173']);
@@ -147,8 +192,15 @@ function fakeEnv(extra = {}) {
       if (!objects.has(id)) {
         const store = new Map();
         const ctx = {
-          storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v) },
-          getWebSockets: () => sockets,
+          storage: {
+            get: async (k) => store.get(k),
+            put: async (k, v) => {
+              if (typeof k === 'object')
+                for (const [kk, vv] of Object.entries(k)) store.set(kk, vv);
+              else store.set(k, v);
+            },
+          },
+          getWebSockets: (tag) => (tag ? sockets.filter((s) => s.tags?.includes(tag)) : sockets),
           acceptWebSocket: () => {},
         };
         objects.set(id, new MasjidSettings(ctx, {}));
@@ -163,6 +215,7 @@ function fakeEnv(extra = {}) {
       ALLOWED_ORIGINS: 'https://you.github.io',
       ACCESS_TEAM_DOMAIN: TEAM,
       ACCESS_AUD: AUD,
+      MASJID_ADMINS: JSON.stringify({ '*': ['admin@example.org'] }),
       ...extra,
     },
     sockets,
@@ -240,6 +293,152 @@ describe('the service', () => {
       await put({ Origin: ORIGIN, 'Content-Type': 'application/json' }, 'x'.repeat(600 * 1024))
     ).toBe(413);
     expect(await put({ Origin: ORIGIN, 'Content-Type': 'application/json' }, '[1]')).toBe(400);
+  });
+
+  it('keeps who published each version, for signed-in admins only', async () => {
+    vi.stubGlobal('fetch', certsFetch());
+    const { env } = fakeEnv();
+    const send = async (method, path, extra = {}) =>
+      worker.fetch(
+        new Request(`${ORIGIN}${path}`, {
+          method,
+          headers: {
+            Origin: ORIGIN,
+            'Content-Type': 'application/json',
+            'Cf-Access-Jwt-Assertion': await token(),
+            ...extra,
+          },
+          ...(method === 'PUT' ? { body: JSON.stringify({ settings: {} }) } : {}),
+        }),
+        env
+      );
+    await send('PUT', '/m/TOR4K7Q/publish');
+    await send('PUT', '/m/TOR4K7Q/publish');
+    const res = await send('GET', '/m/TOR4K7Q/publish?history');
+    expect(res.status).toBe(200);
+    const { history } = await res.json();
+    expect(history.map((h) => [h.version, h.updatedBy])).toEqual([
+      [2, 'admin@example.org'],
+      [1, 'admin@example.org'],
+    ]);
+    const stranger = await send('GET', '/m/TOR4K7Q/publish?history', {
+      'Cf-Access-Jwt-Assertion': 'not-a-token',
+    });
+    expect(stranger.status).toBe(401);
+  });
+
+  it('caches public reads at the edge, and clears them on publish', async () => {
+    vi.stubGlobal('fetch', certsFetch());
+    const store = new Map();
+    vi.stubGlobal('caches', {
+      default: {
+        match: async (req) => store.get(req.url)?.clone(),
+        put: async (req, res) => void store.set(req.url, res),
+        delete: async (req) => store.delete(req.url),
+      },
+    });
+    const waits = [];
+    const ctx = { waitUntil: (p) => waits.push(p) };
+    const { env } = fakeEnv();
+    const get = async () => {
+      const res = await worker.fetch(new Request(`${ORIGIN}/m/tor4k7q`), env, ctx);
+      await Promise.all(waits);
+      return res;
+    };
+    expect((await get()).status).toBe(404);
+    expect(store.has(`${ORIGIN}/m/TOR4K7Q`)).toBe(true);
+    expect((await get()).status).toBe(404); // from the cache
+    const put = await worker.fetch(
+      new Request(`${ORIGIN}/m/TOR4K7Q/publish`, {
+        method: 'PUT',
+        headers: {
+          Origin: ORIGIN,
+          'Content-Type': 'application/json',
+          'Cf-Access-Jwt-Assertion': await token(),
+        },
+        body: JSON.stringify({ settings: { masjidName: 'Al-Noor' } }),
+      }),
+      env,
+      ctx
+    );
+    expect(put.status).toBe(200);
+    expect(store.has(`${ORIGIN}/m/TOR4K7Q`)).toBe(false);
+    const fresh = await get();
+    expect(fresh.status).toBe(200);
+    expect(fresh.headers.get('Cache-Control')).toBe('public, max-age=30');
+  });
+
+  it('shows the history only to admins listed in MASJID_ADMINS', async () => {
+    vi.stubGlobal('fetch', certsFetch());
+    const history = async (extra) => {
+      const { env } = fakeEnv(extra);
+      return (
+        await worker.fetch(
+          new Request(`${ORIGIN}/m/TOR4K7Q/publish?history`, {
+            headers: { 'Cf-Access-Jwt-Assertion': await token() },
+          }),
+          env
+        )
+      ).status;
+    };
+    expect(await history()).toBe(200);
+    const otherCode = JSON.stringify({ OTHER2: ['admin@example.org'] });
+    expect(await history({ MASJID_ADMINS: otherCode })).toBe(403);
+    expect(await history({ MASJID_ADMINS: '', ALLOW_ANY_PUBLISHER: 'true' })).toBe(403);
+  });
+
+  it('counts the settings size in bytes', async () => {
+    vi.stubGlobal('fetch', certsFetch());
+    const { env } = fakeEnv();
+    // Under the limit in characters, over it in bytes (Arabic: two each).
+    const announcements = 'ع'.repeat(300 * 1024);
+    const res = await worker.fetch(
+      new Request(`${ORIGIN}/m/TOR4K7Q/publish`, {
+        method: 'PUT',
+        headers: {
+          Origin: ORIGIN,
+          'Content-Type': 'application/json',
+          'Cf-Access-Jwt-Assertion': await token(),
+        },
+        body: JSON.stringify({ settings: { announcements } }),
+      }),
+      env
+    );
+    expect(res.status).toBe(413);
+  });
+
+  it('limits live connections from one address', async () => {
+    const { env, sockets } = fakeEnv();
+    for (let i = 0; i < 20; i++) sockets.push({ send() {}, tags: ['203.0.113.7'] });
+    const live = (ip) =>
+      worker.fetch(
+        new Request(`${ORIGIN}/m/TOR4K7Q/live`, {
+          headers: { Upgrade: 'websocket', 'CF-Connecting-IP': ip },
+        }),
+        env
+      );
+    expect((await live('203.0.113.7')).status).toBe(429);
+  });
+
+  it('limits live connections per code, and gives every error a reference', async () => {
+    const { env, sockets } = fakeEnv();
+    for (let i = 0; i < 500; i++) sockets.push({ send() {} });
+    const live = await worker.fetch(
+      new Request(`${ORIGIN}/m/TOR4K7Q/live`, { headers: { Upgrade: 'websocket' } }),
+      env
+    );
+    expect(live.status).toBe(503);
+    const bad = await worker.fetch(
+      new Request(`${ORIGIN}/m/%E0%A4%A/`, { headers: { 'cf-ray': '8f1e2d3c4b5a6978-YYZ' } }),
+      env
+    );
+    expect(bad.status).toBe(400);
+    expect(await bad.json()).toEqual({ error: 'bad masjid code', ref: '8f1e2d3c4b5a6978' });
+  });
+
+  it('takes settings only from the app page that opened the publish tab', () => {
+    expect(PUBLISH_JS).toContain('event.source !== window.opener');
+    expect(PUBLISH_JS).not.toContain("'*'");
   });
 
   it('serves the publish page with a strict policy, and checks codes', async () => {

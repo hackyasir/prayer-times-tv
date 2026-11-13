@@ -333,8 +333,9 @@ describe('Self-serve masjids (shared registration sheet)', () => {
     const sheet = fakeShared();
     sheet.add({ ...(await signedRow('ABC234', 1, { masjidName: 'v1' })), approved: 'TRUE' });
     localStorage.setItem(CODE_STORAGE_KEY, 'ABC234');
-    const { result } = render(sharedProps);
+    const { result, rerender } = render(sharedProps);
     await waitFor(() => expect(result.current.status.phase).toBe('ok'));
+    rerender({ ...sharedProps, applied: base, paused: true }); // the admin opens Settings
 
     let res;
     await act(async () => {
@@ -370,12 +371,27 @@ describe('Self-serve masjids (shared registration sheet)', () => {
     expect(result.current.unlocked).toBe(false);
   });
 
+  it("doesn't keep a key worked out after Settings closed", async () => {
+    const sheet = fakeShared();
+    sheet.add({ ...(await signedRow('ABC234', 1, { masjidName: 'v1' })), approved: 'TRUE' });
+    localStorage.setItem(CODE_STORAGE_KEY, 'ABC234');
+    const { result } = render(sharedProps); // Settings isn't open
+    await waitFor(() => expect(result.current.status.phase).toBe('ok'));
+    let res;
+    await act(async () => {
+      res = await result.current.unlock(PASS);
+    });
+    expect(res.ok).toBe(false);
+    expect(result.current.unlocked).toBe(false);
+  });
+
   it("says when a publish didn't arrive", async () => {
     const sheet = fakeShared();
     sheet.add({ ...(await signedRow('ABC234', 1, { masjidName: 'v1' })), approved: 'TRUE' });
     localStorage.setItem(CODE_STORAGE_KEY, 'ABC234');
-    const { result } = render(sharedProps);
+    const { result, rerender } = render(sharedProps);
     await waitFor(() => expect(result.current.status.phase).toBe('ok'));
+    rerender({ ...sharedProps, applied: base, paused: true }); // the admin opens Settings
     await act(async () => {
       await result.current.unlock(PASS);
     });

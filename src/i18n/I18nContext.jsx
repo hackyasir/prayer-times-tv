@@ -93,8 +93,10 @@ export function useT() {
 //   → 'Until Asr · 4:30 PM'
 // Exported separately so non-React code (rare) can use it too.
 export function fmtStr(str, vars) {
-  return Object.entries(vars || {}).reduce(
-    (s, [k, v]) => s.replace(new RegExp(`\\{${k}\\}`, 'g'), v),
-    str
+  // One pass, with a function: a value is used as it is, even with $ in
+  // it or a {placeholder} of its own (a masjid's name, say).
+  const values = vars || {};
+  return String(str).replace(/\{(\w+)\}/g, (whole, key) =>
+    Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : whole
   );
 }

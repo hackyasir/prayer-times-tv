@@ -77,9 +77,13 @@ export const PUBLISH_JS = `(function () {
   }
 
   window.addEventListener('message', function (event) {
-    if (allowed.indexOf(event.origin) === -1) return;
+    // Only the display app's page that opened this tab, on an allowed origin
+    // (other pages on the same origin don't count).
+    if (allowed.indexOf(event.origin) === -1 || !window.opener || event.source !== window.opener) return;
     var data = event.data || {};
     if (data.type !== 'settings' || data.code !== code || !data.settings || typeof data.settings !== 'object') return;
+    // The first settings only: nothing can swap them after you've seen them.
+    if (pending) return;
     pending = { settings: data.settings, origin: event.origin };
     summarise(data.settings);
     status('Check the details, then publish. Every screen following ' + code + ' updates within seconds.');
@@ -117,7 +121,10 @@ export const PUBLISH_JS = `(function () {
   });
 
   if (!allowed.length) status('Publishing is not set up: ALLOWED_ORIGINS is empty.');
-  else if (window.opener) window.opener.postMessage({ type: 'ready' }, '*');
+  else if (window.opener) {
+    // Said only to an allowed origin: the browser drops it for any other.
+    allowed.forEach(function (origin) { window.opener.postMessage({ type: 'ready' }, origin); });
+  }
   else status('Open this page with the Publish button in the display app\\'s Settings.');
 })();
 `;

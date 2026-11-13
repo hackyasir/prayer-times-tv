@@ -61,7 +61,7 @@ On a following screen the masjid's settings are shown greyed out with _come from
 - **Find your masjid:** **Settings → Share & follow → My own screen**, search by name or city, press **Follow**. The list is `public/masjids.json` plus the approved self-serve masjids, which the deploy adds.
 - **Link or QR code:** the masjid shares `https://you.github.io/prayer-times-tv/?masjid=TOR4K7Q` — on its website, or as a QR code on a poster (any QR generator works). Opening it once is enough; the screen remembers.
 - **Masjid screens:** set them up with `…?masjid=TOR4K7Q&screen=masjid`, or choose **A screen in the masjid** in Settings. Both links are shown, with **Copy** buttons, in **Settings → Share & follow** on any following or managing screen.
-- A screen that follows a masjid never asks for the device's location.
+- A screen that follows a masjid takes the masjid's location. No screen ever asks for the device's own location.
 
 Codes are 4–16 letters or digits; avoid look-alikes such as `0`/`O` and `1`/`I` so they're easy to type with a TV remote. **Stop following** returns the screen to its own settings.
 
@@ -69,7 +69,9 @@ The section shows the status: _Up to date · checked 10:42_, _Live_ (Cloudflare 
 
 ### The PIN
 
-The deployment's Settings PIN (`VITE_SETTINGS_PIN`) is asked for on masjid screens, managing screens and screens that don't follow a masjid — never on a follower's screen, whose Settings only holds their own display choices. The answer is a convenience, not security: any screen only reads public settings, and only the masjid's publish passphrase (or a Cloudflare sign-in, or edit rights on its sheet) can change them.
+The deployment's Settings PIN (`VITE_SETTINGS_PIN`) is asked for on masjid screens, managing screens and screens that don't follow a masjid — never on a follower's screen, whose Settings only holds their own display choices. The answer is a convenience, not security: any screen only reads public settings, and only the masjid's publish passphrase (or a Cloudflare sign-in, or edit rights on its sheet) can change them. Set it in GitHub as the **variable** `VITE_SETTINGS_PIN`: it ends up in the page's public code, so it isn't a secret.
+
+The PIN prompt closes after a minute without input, and Settings after 15 minutes (discarding changes that weren't applied), so a screen left with Settings open still gets the masjid's updates. Set a masjid's own TVs up with the masjid-screen link (`…&screen=masjid`): a screen set up with the follow link doesn't ask for the PIN. Once a TV is a masjid screen behind the PIN, a link can't point it at another masjid; that takes the PIN, in Settings.
 
 ---
 
@@ -119,7 +121,7 @@ There are two kinds of masjid with this source, and a deployment can have both:
 
 **What you do:**
 
-- **Approve:** open the responses sheet, check the masjid is genuine (for example, through its public website), and tick **Approved** on its row. Its screens apply the settings within minutes. With the clean-up script, the masjid's later changes are merged into that ticked row, so it stays approved. It appears in **Find your masjid** after the next deploy: within 6 hours, or straight away from **Actions → Deploy to GitHub Pages → Run workflow**.
+- **Approve:** open the responses sheet and check the masjid is genuine (for example, through its public website). Ask its admin for the start of the masjid's publish key, which Settings shows after **Register** (for example `ed25519:AbCd EfGh IjKl MnOp`), and check that the row's **Publish key** starts with those 16 characters, group by group: anyone can send a row with the masjid's name. Then tick **Approved** on that row. Its screens apply the settings within minutes. With the clean-up script, the masjid's later changes are merged into that ticked row, so it stays approved. It appears in **Find your masjid** after the next deploy: within 6 hours, or straight away from **Actions → Deploy to GitHub Pages → Run workflow**.
 - **Remove:** untick the row. The masjid's screens keep running on the settings they have.
 
 **Changing the masjid's settings (admins):**
@@ -132,38 +134,47 @@ To manage from another phone or laptop: **Settings → Share & follow → I mana
 
 While the masjid waits for approval, you can still publish from a managing screen: other screens get it once you approve.
 
-**A lost passphrase.** Nobody can look it up or reset it. An admin presses **Lost the passphrase?** in **Share & follow** on a managing screen and registers the masjid again with a new one. The masjid keeps its code. You tick the new row, and from then on the newest approved row's key counts. Only tick a second row for a code if the masjid has asked you to.
+**A lost passphrase.** Nobody can look it up or reset it. An admin presses **Lost the passphrase?** in **Share & follow** on a managing screen and registers the masjid again with a new one. The masjid keeps its code. You check the new row's **Publish key** against the start of the key the admin's screen shows (as when approving), tick it, and from then on the newest approved row's key counts. Only tick a second row for a code if the masjid has asked you to.
 
 **What's public, and why it's safe:**
 
 - **Who can read:** anyone with the sheet's ID can read it, including each masjid's settings, name, city and public key. Screens show those settings anyway.
 - **Who can publish:** only someone with the masjid's passphrase can make a row its screens accept. Screens check every row's Ed25519 signature against the approved key, so a changed setting, another key, a row copied to another code, or an old update sent again is ignored.
-- **The passphrase stays on the device:** it never leaves the admin's device. Argon2id (64 MiB) makes each guess slow, so a long passphrase can't be found from the public key. The key is kept in memory only while the admin publishes.
-- **Junk rows:** if someone floods the form with rows for one masjid, its screens can miss new updates (they look at that masjid's newest 10 rows) until you delete the junk. They keep running on what they have. A screen never goes back to an older update than the one it has, so old rows sent again change nothing on it.
+- **The passphrase stays on the device:** it never leaves the admin's device. Argon2id (64 MiB) makes each guess slow, so a long passphrase can't be found from the public key. The key is kept in memory only while Settings is open, and never if Settings closes while it's being worked out.
+- **Location:** a masjid's location comes from the city search. If yours was once set with the old **Use my location** button, the shared copy keeps those exact coordinates until you publish again: press **Apply and publish** once, and it's rounded to about 1 km.
+- **Junk rows:** if someone floods the form with rows for one masjid, its screens can miss new updates (they look at that masjid's newest 10 rows) until the clean-up script removes the junk. The script removes rows whose code this app never makes, checks at most 200 of one masjid's rows a run, and stops after about 4 minutes, so a flood can slow it down but not stop it. They keep running on what they have. A screen never goes back to an older update than the one it has, so old rows sent again change nothing on it.
 - **Old rows:** every publish adds a row. The clean-up script (below) merges them into the masjid's ticked row. Without it, you can delete old update rows by hand, but keep the row you ticked.
 
 **Limits:** the logo isn't shared (a sheet cell holds at most 50,000 characters, and the settings must fit in one), so set it on each screen. Very long announcements can make the settings too long to publish; the app says so.
 
 **Keep the sheet tidy: one row per masjid (recommended, about 5 minutes)**
 
-Every publish adds a row to the sheet. The clean-up script, [`registration-sheet.gs`](registration-sheet.gs), runs inside the sheet after each new response and leaves:
+Every publish adds a row to the sheet. The clean-up script, [`registration-sheet.gs`](registration-sheet.gs), runs inside the sheet. After each new response it tidies that masjid's rows, and once a day the whole sheet. It leaves:
 
 - **An approved masjid:** its ticked row, still ticked, with its newest settings copied in. Its other rows are removed.
-- **A newer request under a different publish key:** a masjid registering again after losing its passphrase, or someone else. It stays, the newest one only, until you tick it or delete it.
-- **A masjid waiting for approval:** its newest row.
-- **Anything not validly signed** (your test rows, junk, rows edited by hand): removed.
+- **Newer requests under a different publish key:** a masjid registering again after losing its passphrase, or someone else. The newest row of each of the newest five keys stays until you tick it or delete it, or for 30 days. A key you tick later always outranks the older one: merging an update into the ticked row never changes its **Timestamp**.
+- **A masjid waiting for approval:** its newest row (of each of its newest five keys), for 30 days; after that it registers again.
+- **A response that arrives in a ticked row** (a row ticked by mistake before it was filled) is unticked: you can't have approved it yet.
+- **Ticked rows:** each publish key you ticked keeps one ticked row; copies of it are removed. An older key you ticked before (from a re-registration) keeps its row too; delete it yourself when you no longer need it. A ticked row that's no longer validly signed (edited by hand, say) gets the masjid's newest signed settings copied in if there are any; otherwise it's left as it is, and **Tidy now** says how many there are.
+- **Anything else not validly signed** (your test rows, junk, unticked rows edited by hand): removed. Rows without a usable masjid code wait for the daily tidy; screens never read them.
+- **Empty rows** stay as they are, checkboxes and all (new responses go there). A tick on an empty row is cleared.
 
-It checks every row's signature with the same code the screens use, so a row sent by anyone else can never replace a masjid's settings.
+It checks every row's signature with the same rules and signature library the screens use, so a row sent by anyone else can never replace a masjid's settings.
 
 To install it:
 
 1. In the responses sheet: **Extensions → Apps Script**.
 2. Replace everything in `Code.gs` with the whole of [`registration-sheet.gs`](registration-sheet.gs) and press **Save**.
 3. Reload the sheet. A **Masjids** menu appears.
-4. **Masjids → Tidy automatically after each response.** Google asks you to allow it; because the script is your own and not published, it shows _Google hasn't verified this app_: choose **Advanced → Go to … (unsafe)** and **Allow**. The script can only see this spreadsheet.
+4. **Masjids → Tidy automatically** (after each response, and once a day). Google asks you to allow it; because the script is your own and not published, it shows _Google hasn't verified this app_: choose **Advanced → Go to … (unsafe)** and **Allow**. The script can only see this spreadsheet.
 5. It tidies once straight away and says what it did. **Masjids → Tidy now** runs it again at any time.
 
-The form keeps its own copy of every response (the form's **Responses** tab); screens never read it, and you can clear it with **Responses → ⋮ → Delete all responses** without affecting the sheet. After changing `src/lib/registrations.js` or `src/lib/signatures.js`, rebuild the script with `npm run build:sheet-script` and paste it in again.
+If the **Masjids** menu says _We're sorry, a server error occurred_, or _Couldn't set up …_: wait a minute and choose it again. The script already tries each step three times, and running it again only adds what's missing. If it keeps happening:
+
+- Open the sheet in a private (incognito) window, signed in only to the Google account that owns the sheet. Apps Script often fails when several Google accounts are signed in to the same browser.
+- **Extensions → Apps Script → Executions** shows the failed run and the step it stopped at; the message's _ref_ code is in its log.
+
+The form keeps its own copy of every response (the form's **Responses** tab); screens never read it, and you can clear it with **Responses → ⋮ → Delete all responses** without affecting the sheet. After changing `src/lib/registrations.js` or `src/lib/signatures.js`, rebuild the script with `npm run build:sheet-script`, paste it in again, and choose **Masjids → Tidy automatically** once more.
 
 ### A2. A masjid with its own sheet
 
@@ -197,7 +208,7 @@ Keep the settings on the **first tab** of the sheet.
 - Unknown settings and unreadable values are skipped; the screen's status says how many.
 - The logo isn't in the sheet (a cell holds at most 50,000 characters): set it on each screen, or use the Cloudflare source.
 
-A masjid can also host its own CSV file instead of a Google Sheet: use `"csvUrl": "https://…/settings.csv"` in `masjids.json` (the server must allow cross-site reads).
+A masjid can also host its own CSV file instead of a Google Sheet: use `"csvUrl": "https://…/settings.csv"` in `masjids.json` (the server must allow cross-site reads, and its address must be added to `connect-src` in the page's Content-Security-Policy in `index.html`: the build allows only Google's addresses).
 
 ---
 
@@ -208,22 +219,25 @@ A masjid can also host its own CSV file instead of a Google Sheet: use `"csvUrl"
 You need a free Cloudflare account and, for the sign-in step, a domain on Cloudflare (the free plan is fine).
 
 1. Install Node.js, then in the `worker/` folder run `npx wrangler login` and `npx wrangler deploy`.
-2. Give the Worker your own address: **Workers & Pages → prayer-times-settings → Settings → Domains & Routes → Add custom domain**, e.g. `settings.your-domain.org`.
+2. Give the Worker your own address: **Workers & Pages → prayer-times-settings → Settings → Domains & Routes → Add custom domain**, e.g. `settings.your-domain.org` (or as `routes` in `worker/wrangler.toml`). The `workers.dev` address is turned off (`workers_dev = false`): it would get round the edge cache and your rate-limiting rule.
 3. Protect publishing with **Cloudflare Access** (Zero Trust → Access → Applications → _Add an application → Self-hosted_):
    - Domain: `settings.your-domain.org`, path `m/*/publish`.
    - Policy: _Allow_ — the emails of the people who may publish (or your Google Workspace domain). Login methods: one-time PIN and/or Google.
    - Copy the application's **Audience (AUD) tag**, and note your team domain (`yourteam.cloudflareaccess.com`).
    - Access is free for up to 50 users.
-4. Set the Worker's variables (dashboard → the Worker → Settings → Variables, or `[vars]` in `worker/wrangler.toml` and deploy again):
+4. Set the Worker's variables in the dashboard (the Worker → **Settings → Variables and Secrets**). Keep them out of `worker/wrangler.toml`: `MASJID_ADMINS` holds people's email addresses, and the repository is public. Deploying keeps the dashboard's values (`keep_vars = true`).
 
-   | Variable                     | Value                                                                                                                                                    |
-   | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | `ALLOWED_ORIGINS`            | The display's address, e.g. `https://you.github.io` (comma-separate several)                                                                             |
-   | `ACCESS_TEAM_DOMAIN`         | `yourteam.cloudflareaccess.com`                                                                                                                          |
-   | `ACCESS_AUD`                 | the AUD tag                                                                                                                                              |
-   | `MASJID_ADMINS` _(optional)_ | Which emails may publish which code: `{"TOR4K7Q":["admin@masjid.org"],"*":["you@example.org"]}`. Without it, anyone Access lets in may publish any code. |
+   | Variable                           | Value                                                                                                                                                        |
+   | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | `ALLOWED_ORIGINS`                  | The display's address, e.g. `https://you.github.io` (comma-separate several)                                                                                 |
+   | `ACCESS_TEAM_DOMAIN`               | `yourteam.cloudflareaccess.com`                                                                                                                              |
+   | `ACCESS_AUD`                       | the AUD tag                                                                                                                                                  |
+   | `MASJID_ADMINS`                    | Which emails may publish which code (`"*"`: every code): `{"TOR4K7Q":["admin@masjid.org"],"*":["you@example.org"]}`. Publishing is refused without it.       |
+   | `ALLOW_ANY_PUBLISHER` _(optional)_ | `true` only if everyone Access lets in may publish any code (a service for one masjid, say), instead of `MASJID_ADMINS`. They can't see the publish history. |
 
-   Publishing is refused until `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` are set.
+   Publishing is refused until `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD` and `MASJID_ADMINS` (or `ALLOW_ANY_PUBLISHER`) are set. `ACCESS_TEAM_DOMAIN` must be your team's `….cloudflareaccess.com` domain.
+
+   Recommended: in the Cloudflare dashboard, **Security → WAF → Rate limiting rules**, add a rule for the path `/m/*`, per IP address. A screen makes only a few requests an hour, and the rule keeps one visitor from using up the plan's daily requests for every masjid.
 
 5. In GitHub set `SETTINGS_SOURCE=cloudflare` and `SETTINGS_API_URL=https://settings.your-domain.org`, and deploy (section 1).
 6. To list a masjid in **Find your masjid**, add it to [`public/masjids.json`](../public/masjids.json) with just its name and city: `"TOR4K7Q": { "name": "Masjid Al-Noor", "city": "Toronto" }`.
@@ -239,7 +253,10 @@ The first publish for a new code creates it — until then screens following tha
 
 ### What the service stores and shows
 
-- Per code: the settings, a version number, the time, and the email of whoever published (kept for your records, never shown to screens).
+- Per code: the settings, a version number, the time, and who published each of the last 50 versions (their email, kept for your records, never shown to screens). An admin listed in `MASJID_ADMINS` for that code (or `"*"`) sees that list at `https://settings.your-domain.org/m/<CODE>/publish?history` (signed in).
+- Workers Logs record each publish and each refused publish: the code, the outcome and a reference, never an email address or the settings. The service's error messages carry the same reference.
+- Public reads are cached at Cloudflare for 30 seconds. A code takes at most 500 live connections, and 20 from one address.
+- Check in the dashboard (the Worker → **Settings → Observability**) that Cloudflare's own invocation logs don't keep request headers: they would include the Access sign-in token.
 - `GET /m/<CODE>` returns `{ version, updatedAt, settings }` to anyone; `/m/<CODE>/live` pushes new versions.
 - Free-plan limits (Workers and Durable Objects, 2026): 100,000 requests a day. A masjid screen uses up to about 200 a day (96 checks plus its live connection's keep-alive messages, which count 20 to a request); a follower about 48 (a check every 30 minutes, no live connection). So, for example, 100 masjid screens and 1,500 followers fit. Above that, the Workers Paid plan is $5/month.
 - The service doesn't know or record who follows a masjid.
@@ -262,5 +279,5 @@ The first publish for a new code creates it — until then screens following tha
 | _Can't read the masjid's sheet_                   | The sheet is shared _Anyone with the link: Viewer_; the ID in `masjids.json` is right.                                                                                           |
 | _Offline; running on the saved settings_          | The screen has no internet. It carries on as it is and updates when it's back.                                                                                                   |
 | _The shared settings couldn't be read_            | The sheet or published file isn't valid settings; nothing was changed on the screen.                                                                                             |
-| _Not published_                                   | Sign in again on the publish tab; check `MASJID_ADMINS` includes you and `ALLOWED_ORIGINS` includes the display's address.                                                       |
+| _Not published_                                   | Sign in again on the publish tab; check `MASJID_ADMINS` is set and includes you, and `ALLOWED_ORIGINS` includes the display's address.                                           |
 | _The publish tab was blocked_                     | Allow pop-ups for the display's site.                                                                                                                                            |

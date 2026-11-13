@@ -17,7 +17,7 @@
 import { useEffect, useState } from 'react';
 import { useT, fmtStr } from '../../i18n/I18nContext.jsx';
 import { fmt12 } from '../../lib/formatters.js';
-import { passphraseProblem } from '../../lib/registrations.js';
+import { keyFingerprint, passphraseProblem } from '../../lib/registrations.js';
 import {
   directoryEntries,
   filterDirectory,
@@ -242,7 +242,7 @@ function DetailsSummary({ details }) {
  * screen's settings, or — with `again` — the managed masjid under a new
  * passphrase (a lost one), which counts once approved again.
  */
-function RegisterForm({ details = {}, onRegister, again = false }) {
+function RegisterForm({ details = {}, onRegister, again = false, avoid = [] }) {
   const { t } = useT();
   const [pass, setPass] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -256,7 +256,8 @@ function RegisterForm({ details = {}, onRegister, again = false }) {
   const submit = async () => {
     const problem = missing
       ? 'details'
-      : passphraseProblem(pass, confirm) || (authorised ? null : 'authorised');
+      : passphraseProblem(pass, confirm, { avoid: [details.name, details.location, ...avoid] }) ||
+        (authorised ? null : 'authorised');
     if (problem) {
       setMsg(
         t(
@@ -281,7 +282,14 @@ function RegisterForm({ details = {}, onRegister, again = false }) {
       setPass('');
       setConfirm('');
       // A new masjid: this screen now manages it (the tab shows it).
-      if (again) setMsg(t('settings.sync.registeredAgain'));
+      if (again) {
+        const key = keyFingerprint(result.key);
+        setMsg(
+          key
+            ? `${t('settings.sync.registeredAgain')} ${fmtStr(t('settings.sync.keyFingerprint'), { key })}`
+            : t('settings.sync.registeredAgain')
+        );
+      }
     } else {
       // A registration that never reached the sheet: almost always the
       // form's own settings (sign-in, required questions, not published).
@@ -659,7 +667,11 @@ export default function MasjidSync({
           )}
         </div>
         {status.phase === 'notApproved' && (
-          <div className="sync-next">{t('settings.sync.pendingManage')}</div>
+          <div className="sync-next">
+            {t('settings.sync.pendingManage')}
+            {keyFingerprint(remoteSync.ownKey) &&
+              ` ${fmtStr(t('settings.sync.keyFingerprint'), { key: keyFingerprint(remoteSync.ownKey) })}`}
+          </div>
         )}
       </>
     );
@@ -692,7 +704,7 @@ export default function MasjidSync({
       {mode === 'manage' && source === 'sheet' && (
         <>
           {lost ? (
-            <RegisterForm onRegister={onRegister} again />
+            <RegisterForm onRegister={onRegister} again avoid={[status.name, code]} />
           ) : (
             <div className="sync-actions" style={{ marginTop: 16 }}>
               <button type="button" className="sbtn-meta" onClick={() => setLost(true)}>

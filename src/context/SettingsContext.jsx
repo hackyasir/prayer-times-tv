@@ -12,8 +12,8 @@
 //   {
 //     applied,        // currently-live config — drives the dashboard render
 //     drafts,         // what the Settings panel mutates
-//     updateApplied(partial)  — change applied values directly (geolocation
-//                              auto-update, city search, etc — bypasses
+//     updateApplied(partial)  — change applied values directly (shared
+//                              masjid settings, city search, etc — bypasses
 //                              the draft/apply cycle)
 //     updateDrafts(partial)   — change drafts (Settings panel inputs)
 //     beginEditing()          — copy applied → drafts (call when opening panel)
@@ -26,7 +26,7 @@
 
 import { createContext, useContext, useState, useCallback } from 'react';
 import { STORAGE_KEY } from '../lib/constants.js';
-import { normalizeImportedSettings } from '../lib/settingsImport.js';
+import { isDeviceLocationLabel, normalizeImportedSettings } from '../lib/settingsImport.js';
 import { deviceLanguage, IQAMAH_PRESETS } from '../lib/regionDefaults.js';
 
 // ── Defaults & localStorage helpers ──────────────────────────────────────────
@@ -178,10 +178,10 @@ export const DEFAULTS = {
 };
 
 /**
- * True once any settings have been saved on this device (by Apply, the
- * "Use my location" button, or an earlier automatic location lookup).
- * App uses this to run the automatic location lookup on first run only,
- * so a restart never replaces a location the admin chose.
+ * True once any settings have been saved on this device (by Apply, or by
+ * the masjid's shared settings). App uses this to suggest the country's
+ * usual calculation method only during first-time setup, so picking a city
+ * later never replaces a method the admin chose.
  */
 export function hasSavedSettings() {
   try {
@@ -199,7 +199,15 @@ function loadSettings() {
     if (!raw) return { ...DEFAULTS, lang: deviceLanguage() };
     const stored = JSON.parse(raw);
     const normalized = normalizeImportedSettings(stored, DEFAULTS);
-    return normalized.ok ? normalized.value : DEFAULTS;
+    if (!normalized.ok) return DEFAULTS;
+    // Coordinates once taken from the device are rounded when read (see
+    // lib/settingsImport.js): save them rounded, so the precise ones don't
+    // stay on the device either.
+    const { lat, lng, locName } = normalized.value;
+    if (isDeviceLocationLabel(locName) && (stored.lat !== lat || stored.lng !== lng)) {
+      saveSettings({ ...stored, lat, lng });
+    }
+    return normalized.value;
   } catch {
     return DEFAULTS;
   }
@@ -225,7 +233,7 @@ export function SettingsProvider({ children }) {
   const [drafts, setDrafts] = useState(applied);
 
   // Direct setter for applied — used when settings change without going
-  // through the panel (geolocation, city-search select, geolocation pin).
+  // through the panel (shared masjid settings, city-search select).
   // Auto-persists to localStorage so a page reload keeps the new state.
   const updateApplied = useCallback((partial) => {
     setApplied((prev) => {

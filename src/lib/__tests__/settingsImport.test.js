@@ -131,3 +131,36 @@ describe('normalizeImportedSettings — automatic iqamah options', () => {
     expect(r.value.iqamahFajrBeforeSunrise).toBe(90);
   });
 });
+
+describe('normalizeImportedSettings — text limits', () => {
+  it('cuts text from a file or a masjid to what screens need', () => {
+    const r = normalizeImportedSettings(
+      {
+        masjidName: 'x'.repeat(500),
+        screenLabel: 'x'.repeat(500),
+        eidLocation: 'x'.repeat(500),
+        announcements: 'x'.repeat(20_000),
+      },
+      DEFAULTS
+    );
+    expect(r.value.masjidName).toHaveLength(100);
+    expect(r.value.screenLabel).toHaveLength(60);
+    expect(r.value.eidLocation).toHaveLength(120);
+    expect(r.value.announcements).toHaveLength(12_000);
+  });
+});
+
+describe('normalizeImportedSettings — a location taken from the device', () => {
+  it('keeps its coordinates only to about 1 km', () => {
+    const precise = { lat: 43.467891, lng: -79.688123 };
+    for (const locName of ['43.47°N  79.69°W', '43.47°N  -79.69°E']) {
+      const r = normalizeImportedSettings({ ...precise, locName }, DEFAULTS);
+      expect(r.value).toMatchObject({ lat: 43.47, lng: -79.69, locName });
+    }
+  });
+
+  it("leaves a city's coordinates as they are", () => {
+    const city = { lat: 43.6532, lng: -79.3832, locName: 'Toronto, Ontario, Canada' };
+    expect(normalizeImportedSettings(city, DEFAULTS).value).toMatchObject(city);
+  });
+});

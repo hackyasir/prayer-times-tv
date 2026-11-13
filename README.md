@@ -26,9 +26,9 @@ Most mosque display software needs a paid subscription, depends on a vendor serv
 - **Built to stay on a TV for years** — readable from the back of the hall, light on weak TV hardware, no pop-ups or nags.
 - **Free** — MIT licensed; every dependency is open source.
 
-Only two features use the network, and both fail gracefully:
+Without shared masjid settings (below), only two features use the network, and both fail gracefully:
 
-- **Weather** (optional) — sends the display's latitude and longitude to [Open-Meteo](https://open-meteo.com/) every 10 minutes.
+- **Weather** (optional) — sends the coordinates of the city chosen in Settings (never the device's own location) to [Open-Meteo](https://open-meteo.com/) every 10 minutes.
 - **City search** in Settings — sends the search text to Open-Meteo's geocoding service.
 
 Prayer times, Hijri date, Jumu'ah and Eid logic, blackout and the clock are all computed locally. Fonts are bundled with the app (no Google Fonts requests).
@@ -58,7 +58,7 @@ The defaults are chosen so a new display works straight away; only the mosque's 
 
 | Setting                        | Where                | What happens by default                                                                                                                                                                                                                                                                                                                                        |
 | ------------------------------ | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Masjid name and location**   | Masjid tab           | The tab Settings opens on, with a short "start here" note. On first open the display asks for the device's location and uses it; if that's refused, search for your city. The saved location is kept from then on. The name shows "Prayer Times" until set.                                                                                                    |
+| **Masjid name and location**   | Masjid tab           | The tab Settings opens on, with a short "start here" note. Search for your city: it sets the location and time zone that prayer times and weather use. The display never asks for the device's own location. The name shows "Prayer Times" until set.                                                                                                          |
 | **Calculation method and Asr** | Prayer Times tab     | Pre-selected for your country on first setup (e.g. ISNA in Canada and the US, University of Karachi + Hanafi in Pakistan, Umm al-Qura in Saudi Arabia). **Check it matches your mosque.** Elsewhere: Muslim World League, Standard Asr. Once saved, picking another city doesn't change it; a note under the city says what's usual there, with **Use these**. |
 | **Jumu'ah time(s)**            | Iqamah & Jumu'ah tab | One slot at 1:00 PM. **Set your mosque's time(s).**                                                                                                                                                                                                                                                                                                            |
 | **Iqamah**                     | Iqamah & Jumu'ah tab | Automatic, using your region's preset (see **Prayer-time calculation** under Features). Adjust the minutes, or switch it off and enter fixed times if your mosque posts them.                                                                                                                                                                                  |
@@ -96,7 +96,7 @@ Everything else can stay as it is. The display starts in the device's language (
 - **12 calculation methods** — Muslim World League, ISNA, Moonsighting Committee, Egyptian Authority, Umm al-Qura (Makkah), Dubai, Qatar, Kuwait, University of Karachi, MUIS Singapore, Diyanet (Turkey), University of Tehran.
 - **Two Asr conventions** — Standard (Shafi'i, Maliki, Hanbali) and Hanafi.
 - **The country's usual method, suggested** — ISNA for Canada and the US; University of Karachi + Hanafi Asr for Pakistan, India, Bangladesh and Afghanistan; Umm al-Qura for Saudi Arabia; Dubai, Qatar, Kuwait, Egyptian Authority and University of Tehran for their countries; Diyanet + Hanafi Asr for Türkiye; MUIS for Singapore, Malaysia, Indonesia and Brunei.
-  - During first-time setup (nothing saved yet), picking a city or allowing the device's location pre-selects these.
+  - During first-time setup (nothing saved yet), picking a city pre-selects these.
   - After that, picking a city never changes a saved method. A note under the location (Masjid tab) and under the method (Prayer Times tab) shows either "Matches what's usual in Canada: ISNA – North America, Standard Asr" or, if your choice differs, what's usual there with a **Use these** button. Nothing is saved until **Apply**.
   - For other countries the note asks you to check the method against your mosque's timetable.
 - **High-latitude rules** — Middle of the Night, Seventh of the Night, Twilight Angle (for cities above about 48°).
@@ -124,7 +124,7 @@ Everything else can stay as it is. The display starts in the device's language (
 - **Jumu'ah** — on Fridays, up to **4 congregations** replace Dhuhr in the list, the countdown, the beeps, the blackout and the announcements. If every Jumu'ah slot is disabled, Dhuhr stays.
 - **Eid detection** — the Eid banner appears automatically from the Hijri calendar, with separate schedules for Eid ul-Fitr (1 Shawwal) and Eid ul-Adha (10 Dhu al-Hijjah).
 - **Eid venue** — an optional location line for the banner and announcements (e.g. when Eid prayer is at a community centre).
-- **Test buttons** (development builds) preview Friday, Eid, blackout and the final-minute countdown on any day.
+- **Test buttons** (development builds; off on GitHub Pages unless you turn them on) preview Friday, Eid, blackout and the final-minute countdown on any day.
 
 </details>
 
@@ -328,7 +328,7 @@ Set these at build time, for example in `.env.local` at the project root (never 
 VITE_SETTINGS_PIN=4826
 ```
 
-> **About the PIN:** Vite builds environment values into the JavaScript the browser downloads, so anyone who opens the browser's developer tools can read the PIN. It keeps casual visitors out of Settings; it isn't a real lock. Don't reuse a PIN that protects anything else.
+> **About the PIN:** Vite builds environment values into the JavaScript the browser downloads, so anyone who opens the browser's developer tools can read the PIN. It keeps casual visitors out of Settings; it isn't a real lock. Don't reuse a PIN that protects anything else. The PIN prompt closes after a minute without input, and Settings after 15 minutes.
 
 ### Runtime settings
 
@@ -342,22 +342,23 @@ Because settings live on each device, the quickest way to set up several screens
 
 ### Prerequisites
 
-- **Node.js 20 or newer** (CI uses Node 20)
+- **Node.js 20 or newer** (CI uses Node 22)
 - **npm** (lockfile: `package-lock.json`)
 
 ### Scripts
 
-| Command                 | What it does                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| `npm run dev`           | Dev server at `http://localhost:5173` (also reachable on your LAN for testing on a TV) |
-| `npm run build`         | Production build → `./dist/`                                                           |
-| `npm run preview`       | Serve the production build locally                                                     |
-| `npm run lint`          | ESLint, then Stylelint on the CSS                                                      |
-| `npm run format`        | Format with Prettier                                                                   |
-| `npm test`              | Run the test suite once                                                                |
-| `npm run test:watch`    | Re-run tests on change                                                                 |
-| `npm run test:coverage` | Coverage report in `./coverage/`                                                       |
-| `npm run ci-check`      | `npm ci` + lint + test + build                                                         |
+| Command                 | What it does                                                                |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `npm run dev`           | Dev server at `http://localhost:5173` (this computer only)                  |
+| `npm run dev:lan`       | The same, reachable from other devices on your network, for testing on a TV |
+| `npm run build`         | Production build → `./dist/`                                                |
+| `npm run preview`       | Serve the production build locally                                          |
+| `npm run lint`          | ESLint, then Stylelint on the CSS                                           |
+| `npm run format`        | Format with Prettier                                                        |
+| `npm test`              | Run the test suite once                                                     |
+| `npm run test:watch`    | Re-run tests on change                                                      |
+| `npm run test:coverage` | Coverage report in `./coverage/`                                            |
+| `npm run ci-check`      | `npm ci` + lint + test + build                                              |
 
 ### Testing
 
@@ -372,15 +373,15 @@ npm run test:coverage    # HTML report at ./coverage/index.html
 
 ## Deployment
 
-The build is a static site in `./dist/`. HTTPS is required for the service worker (offline mode) and for location access.
+The build is a static site in `./dist/`. HTTPS is required for the service worker (offline mode).
 
 ### GitHub Pages
 
 `.github/workflows/deploy.yml` lints, tests, builds and deploys on every push to `main`, under `/<repository-name>/`.
 
 - In the repository settings, set **Pages → Source** to "GitHub Actions".
-- Optional repository **secret** `VITE_SETTINGS_PIN` — the Settings PIN.
-- Optional repository **variable** `VITE_SHOW_TEST_BUTTONS` — the workflow defaults it to `true`, so set it to `false` for a production display.
+- Optional repository **variable** `VITE_SETTINGS_PIN` — the Settings PIN. It ends up in the public page, so it isn't a secret (a secret of that name from an older setup still works).
+- Optional repository **variable** `VITE_SHOW_TEST_BUTTONS` — the test buttons stay off unless it is `true`. Turn them on only for a test copy, never for a masjid's screens: anyone at the screen can use them.
 
 ### Other static hosts
 

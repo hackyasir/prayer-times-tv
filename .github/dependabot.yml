@@ -70,7 +70,8 @@ updates:
       - 'dependencies'
 
   # ── GitHub Actions ─────────────────────────────────────────────────
-  # Keeps deploy.yml's actions/checkout@v4, actions/setup-node@v4, etc.
+  # Keeps deploy.yml's actions (pinned to commits) current: it updates the
+  # commit and the version comment beside it.
   # current. Same major-block rule applies — actions/checkout v4 → v6
   # in May 2026 worked but wasn't worth the click-merge risk pattern;
   # we'll bump these consciously.
